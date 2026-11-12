@@ -178,6 +178,10 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   descriptor; `O_CLOEXEC` (SF-2.4) covers the children that execute another program.
 - **SF-8** <a id="SF-8.1"></a> The waits (plan B-5): `open` waits on another process (`ProcessWait`), and `new`,
   `close` and `collect` do short blocking I/O (`Io`). A Rust function that blocks takes its token as its first argument.
+  <a id="SF-8.2"></a> The lifetime is an unsigned integer of the interface contract (`uint`), so a binding refuses a
+  value that is no integer of 0 or more before the store runs: a negative or fractional number with the kind
+  `invalid_number` and a text or a boolean with the kind `invalid_argument_type` (bindgen design T-1, E-1a). Such cases
+  of `contracts/file-sessions.json` carry `binding`, and the bindings run them; the Rust tests show them as ignored.
 - **SF-9** <a id="SF-9.1"></a> The kinds of `polyspec-sessions-file`:
 
   | Kind | Status | Category | Rule |
@@ -205,7 +209,7 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   |---|---|---|---|
   | `lifetime` | seconds after the last request of a session until it ends | 1440 (`session.gc_maxlifetime`) | 0, kind `invalid_lifetime` |
   | `prefix` | the prefix of the keys, the `prefix` of `session.save_path` of phpredis | `PHPREDIS_SESSION:` | none |
-  | `lock_expire` | seconds until a lock expires, `redis.session.lock_expire` | 30 | 0, kind `invalid_lock_expire` |
+  | `lock_expire` | seconds until a lock expires, `redis.session.lock_expire` | 30 | 0 and a number of seconds whose milliseconds pass 2^64 − 1, kind `invalid_lock_expire` |
   | `lock_retries` | how many more times a request tries a taken lock, `redis.session.lock_retries` | 100 | none |
   | `lock_wait` | microseconds between two tries, `redis.session.lock_wait_time` | 20000 | none |
 
@@ -235,8 +239,9 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   <a id="SR-4.3"></a> `write` of an existing identifier first sends `GET <key>_LOCK`: a reply other than the secret of
   the request means that the lock expired and another may hold it, so the request writes nothing, sends the release and
   fails with the kind `lock_lost`. <a id="SR-4.4"></a> Then it sends `SETEX <key> <lifetime> <record>`; a renewal writes
-  the new key and then sends `DEL <old key>`; then the release. A new identifier needs no lock and sends no `GET` of a
-  lock. <a id="SR-4.5"></a> A failure after the lock was taken still sends the release before the error reaches the
+  the new key and then sends `DEL <old key>`; then the release. A request that holds a lock compares it before it
+  writes anything, also when it writes a new identifier of a renewal; a request that found no session holds no lock
+  and sends no `GET` of a lock. <a id="SR-4.5"></a> A failure after the lock was taken still sends the release before the error reaches the
   caller, and the request leaves its turn in every case.
 - **SR-5** <a id="SR-5.1"></a> A reply of another type than the command gives (an integer for `EXISTS`, `OK` or nil for
   `SET`, a bulk string or nil for `GET`, an integer for `EXPIRE`, `DEL` and the release, `OK` for `SETEX`) fails with
@@ -262,7 +267,9 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   takes no lock, so on Redis Cluster no PHP process with phpredis shares the sessions.
 - **SR-8** <a id="SR-8.1"></a> The waits (plan B-5): `open` and `close` run on the tokio runtime (`async`), and the
   wait between two tries of a lock is a tokio sleep. A caller cancels by dropping the future; a lock that a dropped
-  opening took expires after `lock_expire`.
+  opening took expires after `lock_expire`. <a id="SR-8.2"></a> `lifetime`, `lock_expire`, `lock_retries` and
+  `lock_wait` are unsigned integers of the interface contract, which a binding judges as SF-8.2 states; the cases of
+  `contracts/redis-sessions.json` that carry `binding` run on the bindings.
 - **SR-9** <a id="SR-9.1"></a> The kinds of `polyspec-sessions-redis`:
 
   | Kind | Status | Category | Rule |
@@ -288,7 +295,8 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   `message`, and such a case has no result key. A case of several requests (`steps`) that fails names in `raises` the
   step and the operation that fail (`step`, `at`: `open`, `call` or `close`); it has no results, and its `records` or
   `stored` hold what the store keeps after the failure. A created identifier of a case is `#n`, the n-th identifier
-  that the case creates, counted from 0. <a id="SE-10.3"></a> Every record that a case writes is read again by
+  that the case creates, counted from 0. The secret of a lock is `<secret>` and the release script `<release>` in a
+  command record. <a id="SE-10.3"></a> Every record that a case writes is read again by
   real PHP (`unserialize` of PHP 8.4) in the tests of the core when a PHP binary is given (`PHP`), so the records are
   those of PHP. <a id="SE-10.4"></a> The commands of the Redis cases run against a model of the Redis commands that the
   protocol sends, and the same requests run against a real Redis server when one is given (`REDIS_URL`).

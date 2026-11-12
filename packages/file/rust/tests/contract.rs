@@ -243,7 +243,9 @@ fn main() {
                 panic!("a case of the group {group} has no id");
             };
             let name = format!("{group}::{id}");
-            trials.push(Trial::test(name, move || run(&case)));
+            // A value that no u64 holds is refused by the binding (SF-8.2); the bindings run such a case.
+            let binding = case.get("binding").is_some();
+            trials.push(Trial::test(name, move || run(&case)).with_ignored_flag(binding));
         }
     }
     libtest_mimic::run(&arguments, trials).exit();

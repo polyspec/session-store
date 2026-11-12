@@ -743,6 +743,123 @@
      ]
     ]
    ]
+  },
+  {
+   "id": "an_identifier_of_uppercase_digits_without_a_file_starts_a_new_session",
+   "label": "an identifier of uppercase hexadecimal digits without a file starts a new session",
+   "rules": [
+    "SE-5.1",
+    "SF-3.1",
+    "SF-3.3"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     null
+    ]
+   ],
+   "created": [
+    "#0"
+   ],
+   "records": [
+    [
+     [
+      "sess_#0",
+      "a:0:{}"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "an_identifier_of_lowercase_digits_without_a_file_starts_a_new_session",
+   "label": "an identifier of lowercase hexadecimal digits without a file starts a new session",
+   "rules": [
+    "SE-5.1",
+    "SF-3.1",
+    "SF-3.3"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     null
+    ]
+   ],
+   "created": [
+    "#0"
+   ],
+   "records": [
+    [
+     [
+      "sess_#0",
+      "a:0:{}"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "a_cookie_value_of_129_characters_starts_a_new_session",
+   "label": "a cookie value of 129 characters is no identifier and starts a new session",
+   "rules": [
+    "SE-5.1",
+    "SF-3.1",
+    "SF-3.3"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     null
+    ]
+   ],
+   "created": [
+    "#0"
+   ],
+   "records": [
+    [
+     [
+      "sess_#0",
+      "a:0:{}"
+     ]
+    ]
+   ]
   }
  ],
  "open": [
@@ -850,6 +967,74 @@
    "directory": "<temporary>",
    "lifetime": 1,
    "store_lifetime": 1
+  },
+  {
+   "id": "a_lifetime_that_is_negative_fails",
+   "label": "a lifetime of -1 is no uint and the binding refuses it",
+   "rules": [
+    "SF-1.3",
+    "SF-8.2"
+   ],
+   "directory": "<temporary>",
+   "lifetime": -1,
+   "binding": true,
+   "raises": {
+    "kind": "invalid_number",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_lifetime_that_is_no_integer_fails",
+   "label": "a lifetime of 1.5 is no uint and the binding refuses it",
+   "rules": [
+    "SF-1.3",
+    "SF-8.2"
+   ],
+   "directory": "<temporary>",
+   "lifetime": 1.5,
+   "binding": true,
+   "raises": {
+    "kind": "invalid_number",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_lifetime_that_is_a_text_fails",
+   "label": "a lifetime of \"60\" is no uint and the binding refuses it",
+   "rules": [
+    "SF-1.3",
+    "SF-8.2"
+   ],
+   "directory": "<temporary>",
+   "lifetime": "60",
+   "binding": true,
+   "raises": {
+    "kind": "invalid_argument_type",
+    "status": null,
+    "category": "type",
+    "message": null
+   }
+  },
+  {
+   "id": "a_lifetime_that_is_a_boolean_fails",
+   "label": "a lifetime of true is no uint and the binding refuses it",
+   "rules": [
+    "SF-1.3",
+    "SF-8.2"
+   ],
+   "directory": "<temporary>",
+   "lifetime": true,
+   "binding": true,
+   "raises": {
+    "kind": "invalid_argument_type",
+    "status": null,
+    "category": "type",
+    "message": null
+   }
   }
  ]
 }

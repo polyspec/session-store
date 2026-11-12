@@ -19,7 +19,7 @@ path = "src/lib.rs"
 # The random source of the operating system (SE-5.3).
 getrandom = "0.3"
 # The failure of a call into a store of another language (bindgen design E-1c, SE-3.2) and the kind interface (F-2).
-polyspec-bindgen-core = { path = "../../../../bindgen/packages/core/rust" }
+polyspec-bindgen-core = { git = "https://github.com/polyspec/bindgen.git", rev = "04f5ed595a40710f81cc0c3242142491fb3d7619" }
 # PHP values and their serialize form (SE-1.5, SE-6).
 polyspec-php-serialize = { path = "../../../../php-serialize/packages/rust" }
 

@@ -2,7 +2,7 @@
 # store of files (packages/file/rust) and the store of Redis (packages/redis/rust). One Cargo.lock pins them.
 [workspace]
 resolver = "2"
-members = ["packages/core/rust", "packages/file/rust"]
+members = ["packages/core/rust", "packages/file/rust", "packages/redis/rust"]
 
 [workspace.package]
 version = "0.0.0"

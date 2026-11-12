@@ -1,0 +1,37 @@
+[package]
+name = "polyspec-sessions-file"
+description = "The session store of files: one file of the form of the PHP files handler per session, under flock"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+include = ["/src/**/*.rs", "/interface.json"]
+
+[lib]
+name = "polyspec_sessions_file"
+path = "src/lib.rs"
+
+[dependencies]
+# The wait tokens Io and ProcessWait and the cancellation of a waiting caller (bindgen design I-2 (4), SF-3.8, SF-8).
+polyspec-bindgen-core = { path = "../../../../bindgen/packages/core/rust" }
+polyspec-php-serialize = { path = "../../../../php-serialize/packages/rust" }
+polyspec-sessions-core = { path = "../../core/rust" }
+# open with O_NOFOLLOW and O_CLOEXEC, flock, fstat and lstat, futimens (SF-2.4, SF-3, SF-4).
+rustix = { version = "1.1.6", default-features = false, features = ["fs", "std"] }
+
+[dev-dependencies]
+# Only generated code makes a wait token; the tests make them through the feature construct.
+polyspec-bindgen-core = { path = "../../../../bindgen/packages/core/rust", features = ["construct"] }
+libtest-mimic = "=0.8.2"
+serde_json = "1"
+tempfile = "3.27.0"
+
+# One trial per case of contracts/file-sessions.json.
+[[test]]
+name = "contract"
+harness = false
+
+[lints]
+workspace = true

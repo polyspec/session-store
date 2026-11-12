@@ -1363,7 +1363,7 @@ checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 [[package]]
 name = "polyspec-binding-core"
 version = "0.0.1"
-source = "git+https://github.com/polyspec/binding.git?branch=v1%2Frust-core#7cda8c03d825725366fd9957151711f5bac47eb7"
+source = "git+https://github.com/polyspec/binding.git?branch=v1%2Frust-core#9de9d035bebd888ad16c1ba6c7dfbab8706c20f6"
 dependencies = [
  "indexmap",
  "tokio-util",
@@ -1372,7 +1372,7 @@ dependencies = [
 [[package]]
 name = "polyspec-php-serialization"
 version = "0.0.6"
-source = "git+https://github.com/polyspec/php-serialization.git?branch=v1%2Frust-core#5dc75ffd80671e6bfe7bb28541ca0c1c56ec376e"
+source = "git+https://github.com/polyspec/php-serialization.git?branch=v1%2Frust-core#cb8eed97b1c6988924b727cdd906ad11d54313a1"
 dependencies = [
  "polyspec-binding-core",
  "ryu",

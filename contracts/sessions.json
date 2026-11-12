@@ -1,0 +1,929 @@
+{
+ "identifier": [
+  {
+   "id": "an_identifier_of_22_characters_is_accepted",
+   "label": "an identifier of 22 characters is accepted",
+   "rules": [
+    "SE-5.1"
+   ],
+   "cookie": "aaaaaaaaaaaaaaaaaaaaaa",
+   "identifier": "aaaaaaaaaaaaaaaaaaaaaa"
+  },
+  {
+   "id": "an_identifier_of_21_characters_names_no_session",
+   "label": "an identifier of 21 characters names no session",
+   "rules": [
+    "SE-5.1",
+    "SE-5.2"
+   ],
+   "cookie": "aaaaaaaaaaaaaaaaaaaaa",
+   "identifier": null
+  },
+  {
+   "id": "an_identifier_of_128_characters_is_accepted",
+   "label": "an identifier of 128 characters is accepted",
+   "rules": [
+    "SE-5.1"
+   ],
+   "cookie": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "identifier": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  {
+   "id": "an_identifier_of_129_characters_names_no_session",
+   "label": "an identifier of 129 characters names no session",
+   "rules": [
+    "SE-5.1",
+    "SE-5.2"
+   ],
+   "cookie": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "identifier": null
+  },
+  {
+   "id": "every_character_of_an_identifier_is_accepted",
+   "label": "letters of both cases, digits, a comma and a dash are characters of an identifier",
+   "rules": [
+    "SE-5.1"
+   ],
+   "cookie": "AZaz09,-AZaz09,-AZaz09,-",
+   "identifier": "AZaz09,-AZaz09,-AZaz09,-"
+  },
+  {
+   "id": "uppercase_hexadecimal_digits_are_an_identifier",
+   "label": "uppercase hexadecimal digits are an identifier",
+   "rules": [
+    "SE-5.1"
+   ],
+   "cookie": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+   "identifier": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+  },
+  {
+   "id": "a_path_names_no_session",
+   "label": "a cookie value that is a path names no session",
+   "rules": [
+    "SE-5.2"
+   ],
+   "cookie": "../../../../etc/passwdxxxxx",
+   "identifier": null
+  },
+  {
+   "id": "a_short_value_names_no_session",
+   "label": "a short cookie value names no session",
+   "rules": [
+    "SE-5.2"
+   ],
+   "cookie": "abc",
+   "identifier": null
+  },
+  {
+   "id": "the_empty_value_names_no_session",
+   "label": "the empty cookie value names no session",
+   "rules": [
+    "SE-5.2"
+   ],
+   "cookie": "",
+   "identifier": null
+  },
+  {
+   "id": "a_space_names_no_session",
+   "label": "a value with a space names no session",
+   "rules": [
+    "SE-5.2"
+   ],
+   "cookie": "aaaaaaaaaaa aaaaaaaaaaaa",
+   "identifier": null
+  },
+  {
+   "id": "a_dot_names_no_session",
+   "label": "a value with a dot names no session",
+   "rules": [
+    "SE-5.2"
+   ],
+   "cookie": "aaaaaaaaaaa.aaaaaaaaaaaa",
+   "identifier": null
+  },
+  {
+   "id": "a_byte_outside_ascii_names_no_session",
+   "label": "a value with the byte E9 names no session",
+   "rules": [
+    "SE-5.2"
+   ],
+   "cookie": "aaaaaaaaaaaéaaaaaaaaaaaa",
+   "identifier": null
+  },
+  {
+   "id": "a_nul_byte_names_no_session",
+   "label": "a value with the byte 00 names no session",
+   "rules": [
+    "SE-5.2"
+   ],
+   "cookie": "aaaaaaaaaaa\u0000aaaaaaaaaaaa",
+   "identifier": null
+  }
+ ],
+ "store": [
+  {
+   "id": "a_value_that_is_set_is_read_and_a_removed_value_is_absent",
+   "label": "get gives nothing for a key without a value, the value that set stored, and nothing after remove",
+   "rules": [
+    "SE-2.1",
+    "SE-2.3"
+   ],
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ],
+    [
+     "set",
+     [
+      "a",
+      "i:1;"
+     ]
+    ],
+    [
+     "get",
+     [
+      "a"
+     ]
+    ],
+    [
+     "remove",
+     [
+      "a"
+     ]
+    ],
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "results": [
+    null,
+    null,
+    "i:1;",
+    null,
+    null
+   ],
+   "renewals": 0,
+   "record": "a:0:{}"
+  },
+  {
+   "id": "a_set_of_a_key_replaces_its_value_in_its_place",
+   "label": "set of a key that holds a value replaces it in its place, and remove of one key leaves the other",
+   "rules": [
+    "SE-2.2",
+    "SE-6.6"
+   ],
+   "calls": [
+    [
+     "set",
+     [
+      "a",
+      "s:1:\"x\";"
+     ]
+    ],
+    [
+     "set",
+     [
+      "b",
+      "a:2:{i:0;i:1;i:1;i:2;}"
+     ]
+    ],
+    [
+     "set",
+     [
+      "c",
+      "b:1;"
+     ]
+    ],
+    [
+     "set",
+     [
+      "a",
+      "s:1:\"y\";"
+     ]
+    ],
+    [
+     "remove",
+     [
+      "b"
+     ]
+    ],
+    [
+     "get",
+     [
+      "a"
+     ]
+    ],
+    [
+     "get",
+     [
+      "b"
+     ]
+    ]
+   ],
+   "results": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    "s:1:\"y\";",
+    null
+   ],
+   "renewals": 0,
+   "record": "a:2:{s:1:\"a\";s:1:\"y\";s:1:\"c\";b:1;}"
+  },
+  {
+   "id": "a_remove_of_a_key_without_a_value_changes_nothing",
+   "label": "remove of a key that holds no value succeeds and changes nothing",
+   "rules": [
+    "SE-2.3"
+   ],
+   "calls": [
+    [
+     "set",
+     [
+      "a",
+      "b:1;"
+     ]
+    ],
+    [
+     "remove",
+     [
+      "b"
+     ]
+    ],
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "results": [
+    null,
+    null,
+    "b:1;"
+   ],
+   "renewals": 0,
+   "record": "a:1:{s:1:\"a\";b:1;}"
+  },
+  {
+   "id": "a_removed_key_that_is_set_again_goes_last",
+   "label": "a key that is removed and set again goes after the other keys",
+   "rules": [
+    "SE-2.2"
+   ],
+   "calls": [
+    [
+     "set",
+     [
+      "a",
+      "i:1;"
+     ]
+    ],
+    [
+     "set",
+     [
+      "b",
+      "i:2;"
+     ]
+    ],
+    [
+     "remove",
+     [
+      "a"
+     ]
+    ],
+    [
+     "set",
+     [
+      "a",
+      "i:3;"
+     ]
+    ]
+   ],
+   "results": [
+    null,
+    null,
+    null,
+    null
+   ],
+   "renewals": 0,
+   "record": "a:2:{s:1:\"b\";i:2;s:1:\"a\";i:3;}"
+  },
+  {
+   "id": "a_key_that_holds_null_holds_a_value",
+   "label": "a key set to null holds the value null",
+   "rules": [
+    "SE-2.1",
+    "SE-3.4"
+   ],
+   "calls": [
+    [
+     "set",
+     [
+      "a",
+      "N;"
+     ]
+    ],
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "results": [
+    null,
+    "N;"
+   ],
+   "renewals": 0,
+   "record": "a:1:{s:1:\"a\";N;}"
+  },
+  {
+   "id": "a_canonical_integer_text_names_the_integer_key",
+   "label": "the text 5 names the integer key 5 and the text 05 a string key",
+   "rules": [
+    "SE-2.5"
+   ],
+   "calls": [
+    [
+     "set",
+     [
+      "5",
+      "s:1:\"x\";"
+     ]
+    ],
+    [
+     "set",
+     [
+      "05",
+      "s:1:\"y\";"
+     ]
+    ],
+    [
+     "get",
+     [
+      "5"
+     ]
+    ]
+   ],
+   "results": [
+    null,
+    null,
+    "s:1:\"x\";"
+   ],
+   "renewals": 0,
+   "record": "a:2:{i:5;s:1:\"x\";s:2:\"05\";s:1:\"y\";}"
+  },
+  {
+   "id": "a_value_with_an_object_and_a_reference_is_kept",
+   "label": "a value that shares an object and holds a reference is read as it was set, and its slots count from its own top in the record",
+   "rules": [
+    "SE-2.4",
+    "SE-6.7"
+   ],
+   "calls": [
+    [
+     "set",
+     [
+      "a",
+      "a:3:{i:0;O:8:\"stdClass\":1:{s:1:\"p\";d:-0;}i:1;r:2;i:2;R:3;}"
+     ]
+    ],
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "results": [
+    null,
+    "a:3:{i:0;O:8:\"stdClass\":1:{s:1:\"p\";d:-0;}i:1;r:2;i:2;R:3;}"
+   ],
+   "renewals": 0,
+   "record": "a:1:{s:1:\"a\";a:3:{i:0;O:8:\"stdClass\":1:{s:1:\"p\";d:-0;}i:1;r:3;i:2;R:4;}}"
+  },
+  {
+   "id": "a_renewal_is_counted_and_keeps_the_values",
+   "label": "renew keeps the stored values; the memory store counts each renewal",
+   "rules": [
+    "SE-4.3",
+    "SE-7.3"
+   ],
+   "calls": [
+    [
+     "set",
+     [
+      "a",
+      "i:1;"
+     ]
+    ],
+    [
+     "renew",
+     []
+    ],
+    [
+     "renew",
+     []
+    ],
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "results": [
+    null,
+    null,
+    null,
+    "i:1;"
+   ],
+   "renewals": 2,
+   "record": "a:1:{s:1:\"a\";i:1;}"
+  }
+ ],
+ "record": [
+  {
+   "id": "a_session_that_is_not_used_is_unused",
+   "label": "a found session that no call uses is unused",
+   "rules": [
+    "SE-7.2",
+    "SE-7.4"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:3:{s:1:\"f\";d:1;s:1:\"o\";O:8:\"stdClass\":1:{s:1:\"0\";i:1;}s:1:\"l\";a:1:{i:0;s:1:\"x\";}}",
+   "calls": [],
+   "results": [],
+   "outcome": {
+    "kind": "unused"
+   }
+  },
+  {
+   "id": "no_session_that_is_not_used_is_unused",
+   "label": "a request without a session that no call uses creates none",
+   "rules": [
+    "SE-7.2",
+    "SE-7.4"
+   ],
+   "identifier": null,
+   "found": null,
+   "calls": [],
+   "results": [],
+   "outcome": {
+    "kind": "unused"
+   }
+  },
+  {
+   "id": "a_session_that_is_only_read_is_unchanged",
+   "label": "a session that is only read keeps its bytes",
+   "rules": [
+    "SE-7.4"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:3:{s:1:\"f\";d:1;s:1:\"o\";O:8:\"stdClass\":1:{s:1:\"0\";i:1;}s:1:\"l\";a:1:{i:0;s:1:\"x\";}}",
+   "calls": [
+    [
+     "get",
+     [
+      "o"
+     ]
+    ],
+    [
+     "get",
+     [
+      "f"
+     ]
+    ],
+    [
+     "get",
+     [
+      "x"
+     ]
+    ]
+   ],
+   "results": [
+    "O:8:\"stdClass\":1:{s:1:\"0\";i:1;}",
+    "d:1;",
+    null
+   ],
+   "outcome": {
+    "kind": "unchanged"
+   }
+  },
+  {
+   "id": "a_value_set_to_what_it_was_leaves_the_session_unchanged",
+   "label": "a value set to the value that it held leaves the record unchanged",
+   "rules": [
+    "SE-7.4"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:3:{s:1:\"f\";d:1;s:1:\"o\";O:8:\"stdClass\":1:{s:1:\"0\";i:1;}s:1:\"l\";a:1:{i:0;s:1:\"x\";}}",
+   "calls": [
+    [
+     "set",
+     [
+      "f",
+      "d:1;"
+     ]
+    ]
+   ],
+   "results": [
+    null
+   ],
+   "outcome": {
+    "kind": "unchanged"
+   }
+  },
+  {
+   "id": "a_set_keeps_the_other_values_as_they_were_read",
+   "label": "a set keeps the other values as they were read and adds the key last",
+   "rules": [
+    "SE-6.6",
+    "SE-7.4"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:3:{s:1:\"f\";d:1;s:1:\"o\";O:8:\"stdClass\":1:{s:1:\"0\";i:1;}s:1:\"l\";a:1:{i:0;s:1:\"x\";}}",
+   "calls": [
+    [
+     "set",
+     [
+      "n",
+      "i:1;"
+     ]
+    ]
+   ],
+   "results": [
+    null
+   ],
+   "outcome": {
+    "kind": "write",
+    "new": false,
+    "removes": false,
+    "record": "a:4:{s:1:\"f\";d:1;s:1:\"o\";O:8:\"stdClass\":1:{s:1:\"0\";i:1;}s:1:\"l\";a:1:{i:0;s:1:\"x\";}s:1:\"n\";i:1;}"
+   }
+  },
+  {
+   "id": "a_session_without_bytes_is_a_session_without_values",
+   "label": "a record without bytes is a session without values",
+   "rules": [
+    "SE-6.2"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "",
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "results": [
+    null
+   ],
+   "outcome": {
+    "kind": "write",
+    "new": false,
+    "removes": false,
+    "record": "a:0:{}"
+   }
+  },
+  {
+   "id": "a_record_that_cannot_be_decoded_fails",
+   "label": "a record that unserialize refuses fails the first call",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "s:5:\"token",
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "raises": {
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  },
+  {
+   "id": "a_record_that_holds_no_array_fails",
+   "label": "a record whose value is no array fails with the identifier in the message",
+   "rules": [
+    "SE-6.4"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "i:1;",
+   "calls": [
+    [
+     "set",
+     [
+      "a",
+      "i:1;"
+     ]
+    ]
+   ],
+   "raises": {
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": "the session of eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee holds no array of values"
+   }
+  },
+  {
+   "id": "a_record_that_holds_an_object_fails",
+   "label": "a record whose value is an object is no array",
+   "rules": [
+    "SE-6.4"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "O:8:\"stdClass\":0:{}",
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "raises": {
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": "the session of eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee holds no array of values"
+   }
+  },
+  {
+   "id": "an_element_that_is_a_reference_gives_its_value",
+   "label": "an element that is a reference gives the value that the reference holds, and the record keeps the reference",
+   "rules": [
+    "SE-6.5",
+    "SE-6.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:2:{s:1:\"a\";i:1;s:1:\"b\";R:2;}",
+   "calls": [
+    [
+     "get",
+     [
+      "b"
+     ]
+    ],
+    [
+     "set",
+     [
+      "c",
+      "b:0;"
+     ]
+    ]
+   ],
+   "results": [
+    "i:1;",
+    null
+   ],
+   "outcome": {
+    "kind": "write",
+    "new": false,
+    "removes": false,
+    "record": "a:3:{s:1:\"a\";i:1;s:1:\"b\";R:2;s:1:\"c\";b:0;}"
+   }
+  },
+  {
+   "id": "an_object_shared_by_two_keys_stays_shared",
+   "label": "an object that two keys share stays shared in the written record",
+   "rules": [
+    "SE-6.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:2:{s:1:\"a\";O:8:\"stdClass\":0:{}s:1:\"b\";r:2;}",
+   "calls": [
+    [
+     "get",
+     [
+      "b"
+     ]
+    ],
+    [
+     "set",
+     [
+      "c",
+      "N;"
+     ]
+    ]
+   ],
+   "results": [
+    "O:8:\"stdClass\":0:{}",
+    null
+   ],
+   "outcome": {
+    "kind": "write",
+    "new": false,
+    "removes": false,
+    "record": "a:3:{s:1:\"a\";O:8:\"stdClass\":0:{}s:1:\"b\";r:2;s:1:\"c\";N;}"
+   }
+  },
+  {
+   "id": "a_key_that_is_not_utf8_is_kept",
+   "label": "a key of the record whose bytes are not UTF-8 is written back as it was",
+   "rules": [
+    "SE-6.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"ÿ\";i:1;}",
+   "calls": [
+    [
+     "set",
+     [
+      "a",
+      "i:2;"
+     ]
+    ]
+   ],
+   "results": [
+    null
+   ],
+   "outcome": {
+    "kind": "write",
+    "new": false,
+    "removes": false,
+    "record": "a:2:{s:1:\"ÿ\";i:1;s:1:\"a\";i:2;}"
+   }
+  },
+  {
+   "id": "an_integer_key_is_named_by_its_decimal_text",
+   "label": "an integer key of the record is named by its decimal text",
+   "rules": [
+    "SE-2.5"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{i:7;s:1:\"x\";}",
+   "calls": [
+    [
+     "get",
+     [
+      "7"
+     ]
+    ]
+   ],
+   "results": [
+    "s:1:\"x\";"
+   ],
+   "outcome": {
+    "kind": "unchanged"
+   }
+  },
+  {
+   "id": "removing_every_key_writes_an_empty_array",
+   "label": "removing every key writes an empty array",
+   "rules": [
+    "SE-6.1"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"a\";i:1;}",
+   "calls": [
+    [
+     "remove",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "results": [
+    null
+   ],
+   "outcome": {
+    "kind": "write",
+    "new": false,
+    "removes": false,
+    "record": "a:0:{}"
+   }
+  },
+  {
+   "id": "a_renewal_writes_the_values_under_a_new_identifier",
+   "label": "a renewal writes the values under a new identifier and removes the found one",
+   "rules": [
+    "SE-7.3",
+    "SE-7.4"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"a\";i:1;}",
+   "calls": [
+    [
+     "renew",
+     []
+    ]
+   ],
+   "results": [
+    null
+   ],
+   "outcome": {
+    "kind": "write",
+    "new": true,
+    "removes": true,
+    "record": "a:1:{s:1:\"a\";i:1;}"
+   }
+  },
+  {
+   "id": "a_second_renewal_still_removes_the_found_identifier",
+   "label": "a second renewal changes the identifier again and removes the found one",
+   "rules": [
+    "SE-7.3"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"a\";i:1;}",
+   "calls": [
+    [
+     "renew",
+     []
+    ],
+    [
+     "renew",
+     []
+    ]
+   ],
+   "results": [
+    null,
+    null
+   ],
+   "outcome": {
+    "kind": "write",
+    "new": true,
+    "removes": true,
+    "record": "a:1:{s:1:\"a\";i:1;}"
+   }
+  },
+  {
+   "id": "a_renewal_of_a_new_session_removes_nothing",
+   "label": "a renewal of a session that the request created removes nothing",
+   "rules": [
+    "SE-7.3"
+   ],
+   "identifier": null,
+   "found": null,
+   "calls": [
+    [
+     "set",
+     [
+      "a",
+      "i:1;"
+     ]
+    ],
+    [
+     "renew",
+     []
+    ]
+   ],
+   "results": [
+    null,
+    null
+   ],
+   "outcome": {
+    "kind": "write",
+    "new": true,
+    "removes": false,
+    "record": "a:1:{s:1:\"a\";i:1;}"
+   }
+  },
+  {
+   "id": "the_first_use_without_a_session_creates_one",
+   "label": "the first use without a session creates a session with a new identifier",
+   "rules": [
+    "SE-7.2"
+   ],
+   "identifier": null,
+   "found": null,
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "results": [
+    null
+   ],
+   "outcome": {
+    "kind": "write",
+    "new": true,
+    "removes": false,
+    "record": "a:0:{}"
+   }
+  }
+ ]
+}

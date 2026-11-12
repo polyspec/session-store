@@ -1,0 +1,855 @@
+{
+ "requests": [
+  {
+   "id": "a_request_that_does_not_use_the_session_creates_no_file",
+   "label": "a request that does not use the session creates no file",
+   "rules": [
+    "SE-7.2"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": null,
+     "calls": []
+    }
+   ],
+   "results": [
+    []
+   ],
+   "created": [
+    null
+   ],
+   "records": [
+    []
+   ]
+  },
+  {
+   "id": "the_first_use_starts_the_session_and_writes_its_file",
+   "label": "the first use starts the session and writes its file with the mode 0600",
+   "rules": [
+    "SE-7.2",
+    "SF-2.1",
+    "SF-4.4"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": null,
+     "calls": [
+      [
+       "set",
+       [
+        "a",
+        "a:3:{i:0;i:1;i:1;d:-0;i:2;s:1:\"c\";}"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     null
+    ]
+   ],
+   "created": [
+    "#0"
+   ],
+   "records": [
+    [
+     [
+      "sess_#0",
+      "a:1:{s:1:\"a\";a:3:{i:0;i:1;i:1;d:-0;i:2;s:1:\"c\";}}"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "a_session_that_the_store_created_is_read",
+   "label": "a session that the store created is read by the next request, which sets no new identifier",
+   "rules": [
+    "SF-3.7"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": null,
+     "calls": [
+      [
+       "set",
+       [
+        "a",
+        "a:3:{i:0;i:1;i:1;d:-0;i:2;s:1:\"c\";}"
+       ]
+      ]
+     ]
+    },
+    {
+     "cookie": "#0",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     null
+    ],
+    [
+     "a:3:{i:0;i:1;i:1;d:-0;i:2;s:1:\"c\";}"
+    ]
+   ],
+   "created": [
+    "#0",
+    null
+   ],
+   "records": [
+    [
+     [
+      "sess_#0",
+      "a:1:{s:1:\"a\";a:3:{i:0;i:1;i:1;d:-0;i:2;s:1:\"c\";}}"
+     ]
+    ],
+    [
+     [
+      "sess_#0",
+      "a:1:{s:1:\"a\";a:3:{i:0;i:1;i:1;d:-0;i:2;s:1:\"c\";}}"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "a_session_file_that_holds_no_array_fails_the_call",
+   "label": "a session file that holds no array fails the call and keeps the file",
+   "rules": [
+    "SE-6.4"
+   ],
+   "files": [
+    {
+     "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "bytes": "i:1;",
+     "age": 0
+    }
+   ],
+   "steps": [
+    {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "raises": {
+    "step": 0,
+    "at": "call",
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": "the session of eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee holds no array of values"
+   },
+   "records": [
+    [
+     [
+      "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "i:1;"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "a_session_file_that_cannot_be_decoded_fails_the_call",
+   "label": "a session file that cannot be decoded fails the call and starts no session",
+   "rules": [
+    "SE-6.3"
+   ],
+   "files": [
+    {
+     "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "bytes": "s:5:\"token",
+     "age": 0
+    }
+   ],
+   "steps": [
+    {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "calls": [
+      [
+       "get",
+       [
+        "token"
+       ]
+      ]
+     ]
+    }
+   ],
+   "raises": {
+    "step": 0,
+    "at": "call",
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   },
+   "records": [
+    [
+     [
+      "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "s:5:\"token"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "an_identifier_without_a_file_creates_no_file_until_it_is_used",
+   "label": "an identifier without a file names no session and creates no file when unused",
+   "rules": [
+    "SF-3.3"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "calls": []
+    }
+   ],
+   "results": [
+    []
+   ],
+   "created": [
+    null
+   ],
+   "records": [
+    []
+   ]
+  },
+  {
+   "id": "an_identifier_without_a_file_starts_a_new_session",
+   "label": "an identifier without a file starts a session under a new identifier",
+   "rules": [
+    "SF-3.3",
+    "SE-7.2"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     null
+    ]
+   ],
+   "created": [
+    "#0"
+   ],
+   "records": [
+    [
+     [
+      "sess_#0",
+      "a:0:{}"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "a_session_file_without_bytes_is_a_session_without_values",
+   "label": "a session file without bytes is a session without values",
+   "rules": [
+    "SF-2.2"
+   ],
+   "files": [
+    {
+     "identifier": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "bytes": "",
+     "age": 0
+    }
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     null
+    ]
+   ],
+   "created": [
+    null
+   ],
+   "records": [
+    [
+     [
+      "sess_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "a:0:{}"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "a_request_that_changes_nothing_keeps_the_bytes_and_sets_a_new_time",
+   "label": "a request that changes nothing keeps the bytes and sets the modification time to now",
+   "rules": [
+    "SF-4.2"
+   ],
+   "files": [
+    {
+     "identifier": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "bytes": "a:3:{s:1:\"f\";d:1;s:1:\"o\";O:8:\"stdClass\":1:{s:1:\"0\";i:1;}s:1:\"r\";a:1:{i:0;s:1:\"x\";}}",
+     "age": 100
+    }
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "get",
+       [
+        "o"
+       ]
+      ],
+      [
+       "get",
+       [
+        "f"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     "O:8:\"stdClass\":1:{s:1:\"0\";i:1;}",
+     "d:1;"
+    ]
+   ],
+   "created": [
+    null
+   ],
+   "records": [
+    [
+     [
+      "sess_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "a:3:{s:1:\"f\";d:1;s:1:\"o\";O:8:\"stdClass\":1:{s:1:\"0\";i:1;}s:1:\"r\";a:1:{i:0;s:1:\"x\";}}"
+     ]
+    ]
+   ],
+   "touched": [
+    true
+   ]
+  },
+  {
+   "id": "a_shorter_record_leaves_no_bytes_of_the_longer_one",
+   "label": "a shorter record cuts the file to its length",
+   "rules": [
+    "SF-4.3"
+   ],
+   "files": [
+    {
+     "identifier": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "bytes": "a:1:{s:1:\"a\";s:100:\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\";}",
+     "age": 0
+    }
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "remove",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     null
+    ]
+   ],
+   "created": [
+    null
+   ],
+   "records": [
+    [
+     [
+      "sess_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "a:0:{}"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "a_short_cookie_value_starts_a_new_session",
+   "label": "a short cookie value starts a new session",
+   "rules": [
+    "SE-5.2",
+    "SF-3.1"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": "abc",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     null
+    ]
+   ],
+   "created": [
+    "#0"
+   ],
+   "records": [
+    [
+     [
+      "sess_#0",
+      "a:0:{}"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "a_cookie_value_that_is_a_path_starts_a_new_session",
+   "label": "a cookie value that is a path starts a new session and opens no file outside the directory",
+   "rules": [
+    "SE-5.2",
+    "SF-3.1"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": "../../../../../../etc/passwd",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     null
+    ]
+   ],
+   "created": [
+    "#0"
+   ],
+   "records": [
+    [
+     [
+      "sess_#0",
+      "a:0:{}"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "a_session_older_than_its_lifetime_ends_and_its_file_is_collected",
+   "label": "a session older than its lifetime names no session, and collect removes its file",
+   "rules": [
+    "SF-2.3",
+    "SF-3.6",
+    "SF-5.1"
+   ],
+   "files": [
+    {
+     "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "bytes": "a:1:{s:1:\"a\";i:1;}",
+     "age": 1441
+    }
+   ],
+   "steps": [
+    {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    },
+    {
+     "collect": true
+    }
+   ],
+   "results": [
+    [
+     null
+    ],
+    1
+   ],
+   "created": [
+    "#0",
+    null
+   ],
+   "records": [
+    [
+     [
+      "sess_#0",
+      "a:0:{}"
+     ],
+     [
+      "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "a:1:{s:1:\"a\";i:1;}"
+     ]
+    ],
+    [
+     [
+      "sess_#0",
+      "a:0:{}"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "a_session_within_its_lifetime_is_not_collected",
+   "label": "collect keeps a session within its lifetime",
+   "rules": [
+    "SF-5.2"
+   ],
+   "files": [
+    {
+     "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "bytes": "a:1:{s:1:\"a\";i:1;}",
+     "age": 100
+    }
+   ],
+   "steps": [
+    {
+     "collect": true
+    },
+    {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    0,
+    [
+     "i:1;"
+    ]
+   ],
+   "created": [
+    null,
+    null
+   ],
+   "records": [
+    [
+     [
+      "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "a:1:{s:1:\"a\";i:1;}"
+     ]
+    ],
+    [
+     [
+      "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "a:1:{s:1:\"a\";i:1;}"
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "collect_skips_files_that_are_not_sessions",
+   "label": "collect keeps a file whose name is no session file of an identifier",
+   "rules": [
+    "SF-5.2"
+   ],
+   "files": [
+    {
+     "name": "sess_abc",
+     "bytes": "",
+     "age": 5000
+    },
+    {
+     "name": "other",
+     "bytes": "",
+     "age": 5000
+    }
+   ],
+   "steps": [
+    {
+     "collect": true
+    }
+   ],
+   "results": [
+    0
+   ],
+   "created": [
+    null
+   ],
+   "records": [
+    [
+     [
+      "other",
+      ""
+     ],
+     [
+      "sess_abc",
+      ""
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "a_renewal_moves_the_values_to_a_new_identifier_and_removes_the_old_file",
+   "label": "a renewal writes the values under a new identifier and removes the old file",
+   "rules": [
+    "SE-7.3",
+    "SF-4.4"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": null,
+     "calls": [
+      [
+       "set",
+       [
+        "a",
+        "i:1;"
+       ]
+      ]
+     ]
+    },
+    {
+     "cookie": "#0",
+     "calls": [
+      [
+       "renew",
+       []
+      ]
+     ]
+    },
+    {
+     "cookie": "#1",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    },
+    {
+     "cookie": "#0",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "results": [
+    [
+     null
+    ],
+    [
+     null
+    ],
+    [
+     "i:1;"
+    ],
+    [
+     null
+    ]
+   ],
+   "created": [
+    "#0",
+    "#1",
+    null,
+    "#2"
+   ],
+   "records": [
+    [
+     [
+      "sess_#0",
+      "a:1:{s:1:\"a\";i:1;}"
+     ]
+    ],
+    [
+     [
+      "sess_#1",
+      "a:1:{s:1:\"a\";i:1;}"
+     ]
+    ],
+    [
+     [
+      "sess_#1",
+      "a:1:{s:1:\"a\";i:1;}"
+     ]
+    ],
+    [
+     [
+      "sess_#1",
+      "a:1:{s:1:\"a\";i:1;}"
+     ],
+     [
+      "sess_#2",
+      "a:0:{}"
+     ]
+    ]
+   ]
+  }
+ ],
+ "open": [
+  {
+   "id": "a_relative_directory_fails",
+   "label": "a relative session directory fails",
+   "rules": [
+    "SF-1.2"
+   ],
+   "directory": "var/sessions",
+   "raises": {
+    "kind": "invalid_directory",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_save_path_with_levels_fails",
+   "label": "a save path of PHP in the form N;/path is no absolute directory",
+   "rules": [
+    "SF-1.2"
+   ],
+   "directory": "2;/tmp",
+   "raises": {
+    "kind": "invalid_directory",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_save_path_with_levels_and_a_mode_fails",
+   "label": "a save path of PHP in the form N;MODE;/path is no absolute directory",
+   "rules": [
+    "SF-1.2"
+   ],
+   "directory": "2;600;/tmp",
+   "raises": {
+    "kind": "invalid_directory",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_missing_directory_fails",
+   "label": "a directory that does not exist fails",
+   "rules": [
+    "SF-1.2"
+   ],
+   "directory": "<temporary>/missing",
+   "raises": {
+    "kind": "invalid_directory",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_file_in_the_place_of_the_directory_fails",
+   "label": "a path of a file fails",
+   "rules": [
+    "SF-1.2"
+   ],
+   "directory": "<temporary>/file",
+   "raises": {
+    "kind": "invalid_directory",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_lifetime_of_zero_fails",
+   "label": "a lifetime of zero fails",
+   "rules": [
+    "SF-1.3"
+   ],
+   "directory": "<temporary>",
+   "lifetime": 0,
+   "raises": {
+    "kind": "invalid_lifetime",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "the_default_lifetime_is_1440_seconds",
+   "label": "without a lifetime the store takes 1440 seconds",
+   "rules": [
+    "SF-1.3"
+   ],
+   "directory": "<temporary>",
+   "lifetime": null,
+   "store_lifetime": 1440
+  },
+  {
+   "id": "a_lifetime_is_taken",
+   "label": "a stated lifetime is taken",
+   "rules": [
+    "SF-1.3"
+   ],
+   "directory": "<temporary>",
+   "lifetime": 1,
+   "store_lifetime": 1
+  }
+ ]
+}

@@ -282,7 +282,10 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   `contracts/redis-sessions.json` the requests of the store of Redis with the commands that each sends (SR-1 to SR-5).
   <a id="SE-10.2"></a> A PHP value of a case is its serialize form, and a byte string of a case is JSON text whose
   characters U+0000 to U+00FF are its bytes. A failure is the key `raises` with `kind`, `status`, `category` and
-  `message`, and such a case has no result key. <a id="SE-10.3"></a> Every record that a case writes is read again by
+  `message`, and such a case has no result key. A case of several requests (`steps`) that fails names in `raises` the
+  step and the operation that fail (`step`, `at`: `open`, `call` or `close`); it has no results, and its `records` or
+  `stored` hold what the store keeps after the failure. A created identifier of a case is `#n`, the n-th identifier
+  that the case creates, counted from 0. <a id="SE-10.3"></a> Every record that a case writes is read again by
   real PHP (`unserialize` of PHP 8.4) in the tests of the core when a PHP binary is given (`PHP`), so the records are
   those of PHP. <a id="SE-10.4"></a> The commands of the Redis cases run against a model of the Redis commands that the
   protocol sends, and the same requests run against a real Redis server when one is given (`REDIS_URL`).

@@ -110,6 +110,53 @@ fn a_cancelled_waiter_lets_the_next_request_go_on() {
 }
 
 #[test]
+fn a_cancelled_request_in_the_queue_returns_at_once() {
+    // SF-3.8: the holder keeps the session while the second request waits in the queue; its cancellation wakes it
+    // at once, and the third request gets the turn when the holder closes.
+    let Ok(directory) = tempfile::tempdir() else { panic!("no temporary directory") };
+    drop(session_file(directory.path(), b"a:1:{s:1:\"n\";i:3;}", 0));
+    let store = store(directory.path());
+    let Ok(holder) = store.open(ProcessWait::for_generated_call(), Some(ID.as_bytes()), None) else {
+        panic!("the session does not open");
+    };
+    let (trigger, cancel) = cancel_pair();
+    std::thread::scope(|scope| {
+        let waiter = scope.spawn(|| {
+            let started = std::time::Instant::now();
+            let result = store.open(ProcessWait::for_generated_call(), Some(ID.as_bytes()), Some(&cancel));
+            (result.map(|_session| ()), started.elapsed())
+        });
+        std::thread::sleep(Duration::from_millis(50));
+        trigger.cancel();
+        match waiter.join() {
+            Ok((Err(error), waited)) => {
+                assert_eq!(error.kind(), "cancelled");
+                assert!(waited < Duration::from_secs(5), "the cancelled request waited {waited:?}");
+            }
+            Ok((Ok(()), _)) => panic!("the cancelled request opened the session"),
+            Err(_) => panic!("the waiter panicked"),
+        }
+        let third = scope.spawn(|| read_integer(&store));
+        std::thread::sleep(Duration::from_millis(50));
+        assert_eq!(holder.close(Io::for_generated_call()), Ok(None));
+        assert!(matches!(third.join(), Ok(Some(3))));
+    });
+}
+
+#[test]
+fn a_request_cancelled_before_it_waits_fails_at_once() {
+    // SF-3.8: a cancellation that came before the request is seen at once.
+    let Ok(directory) = tempfile::tempdir() else { panic!("no temporary directory") };
+    drop(session_file(directory.path(), b"a:0:{}", 0));
+    let (trigger, cancel) = cancel_pair();
+    trigger.cancel();
+    match store(directory.path()).open(ProcessWait::for_generated_call(), Some(ID.as_bytes()), Some(&cancel)) {
+        Err(error) => assert_eq!(error.kind(), "cancelled"),
+        Ok(_) => panic!("the cancelled request opened the session"),
+    }
+}
+
+#[test]
 fn a_request_that_waited_for_a_removed_file_starts_a_new_session() {
     // SF-3.5, SF-4.4: the holder renews the session and removes the file while another request waits for its lock.
     let Ok(directory) = tempfile::tempdir() else { panic!("no temporary directory") };

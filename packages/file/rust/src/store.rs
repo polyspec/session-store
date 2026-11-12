@@ -146,10 +146,7 @@ impl FileSessions {
             return Ok(self.without_session());
         };
         let cancelled = || cancel.is_some_and(Cancel::is_cancelled);
-        let turn = self.shared.turns.enter(&id)?;
-        if cancelled() {
-            return Err(Error::Cancelled);
-        }
+        let turn = self.shared.turns.enter(&id, cancel)?;
         let path = self.shared.file(&id);
         let (file, locked) = loop {
             let file = match rustix::fs::open(&path, OPEN, Mode::empty()) {

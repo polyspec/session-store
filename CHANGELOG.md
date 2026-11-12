@@ -21,4 +21,5 @@
   the features `file` and `redis`) and holds the one interface contract `packages/rust/interface.json`, with the
   classes `Sessions<Category>Error`. Every kind is a variant of the one enum `Error`. No binding is generated yet.
 - A session identifier is 22 to 256 characters, and the lock expiry of the store of Redis has no default.
+- A cancelled request of the store of files that waits in the queue of its process returns at once (SF-3.8).
 - Windows is not supported.

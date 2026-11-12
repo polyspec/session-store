@@ -146,11 +146,11 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   the holder before it removed or replaced the file (SF-4.4), so it releases the lock and opens again from SF-3.3.
   <a id="SF-3.6"></a> A file older than the lifetime (SF-2.3) gives a record session without an existing session; the
   request releases the lock and its turn. <a id="SF-3.7"></a> Otherwise it reads the file from its start to its end
-  and keeps the lock and its turn until `close`. <a id="SF-3.8"></a> A caller that gave up waiting (its `cancel`, such
-  as a request whose connection closed) does not stop a blocking `flock`, which no thread can interrupt: when the
-  request gets its turn or the lock, it sees the cancellation, releases the lock and its turn at once and fails with the
-  kind `cancelled`, so the next request of the session goes on. A cancelled request that waits in the queue leaves it
-  when it is woken, at the latest when its turn comes.
+  and keeps the lock and its turn until `close`. <a id="SF-3.8"></a> A caller that gave up waiting (its `cancel`, such as a request whose
+  connection closed) fails with the kind `cancelled` and lets the next request of the session go on. A request that
+  waits in the queue is woken by the cancellation at once and leaves the queue. A request that waits in `flock` cannot
+  be woken, because no thread can interrupt a blocking `flock`: when it gets the lock, it sees the cancellation,
+  releases the lock and its turn at once and fails.
 - **SF-4** <a id="SF-4.1"></a> `close` takes the record session of the request and writes what `finish` gives (SE-7.4).
   <a id="SF-4.2"></a> `unused` writes nothing. `unchanged` keeps the bytes and sets the modification time of the file
   to now, so the session lives a lifetime from its last request. <a id="SF-4.3"></a> `write` of an existing identifier

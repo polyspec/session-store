@@ -20,4 +20,5 @@
   `Sessions<Category>Error`를 쓰는 인터페이스 계약 `packages/rust/interface.json` 하나를 담는다. 모든 kind는 enum `Error` 하나의
   변형이다. 아직 생성한 바인딩은 없다.
 - 세션 식별자는 22~256자이고, Redis 저장소의 잠금 만료에는 기본값이 없다.
+- 프로세스 queue에서 기다리던 파일 저장소 요청은 취소되면 곧바로 돌아온다(SF-3.8).
 - Windows는 지원하지 않는다.

@@ -223,7 +223,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e35d6e78f4cebb90e51d543db8fe41528851d6deeef6ef21ebd4bfdc1e784776"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -578,7 +578,7 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 [[package]]
 name = "polyspec-bindgen-core"
 version = "0.0.1"
-source = "git+https://github.com/polyspec/bindgen.git?branch=v1%2Frust-core#1b20ddaf05d1252e81de2b87d0f6ac26c7345bf9"
+source = "git+https://github.com/polyspec/bindgen.git?branch=v1%2Frust-core#1da44b339b740fab1b2af1da1b730d7aaf2290c9"
 dependencies = [
  "indexmap",
  "tokio-util",
@@ -750,7 +750,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -957,7 +957,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]

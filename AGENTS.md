@@ -14,9 +14,11 @@ Rules for every change of sessions. The rules of the library are in [docs/spec/s
 - `packages/redis/rust/`: the crate `polyspec-sessions-redis`, the store of Redis: its protocol without I/O and its
   connection (SR-1 to SR-9).
 - `packages/php-ext/`, `packages/python/`, `packages/ts/`: the binding packages, whose tracked files `bindgen scaffold`
-  writes and the contract check compares (bindgen CK-19); `make bindings` writes their `generated/`, which is not
-  tracked. They join the workspace when bindgen generates the callback interface `store`, which it does not yet (G-4).
-- `Cargo.toml` of the root is the workspace of the four crates with one `Cargo.lock`.
+  writes and the contract check compares (bindgen CK-19). They are members of the workspace; `make bindings` writes
+  their `generated/`, which is not tracked, and builds of them come after it. The targets of the core name the core
+  crates with `-p`, so they need no generated source.
+- `scripts/bindgen.mts`: runs bindgen at the commit of `polyspec-bindgen-core` that `Cargo.lock` pins.
+- `Cargo.toml` of the root is the workspace of the four crates and the three binding crates with one `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
 - `docs/spec/`: the specification. Root: `AGENTS.md`, `README.md`, `CHANGELOG.md` and their Korean translations
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`.

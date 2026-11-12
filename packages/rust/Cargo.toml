@@ -1,5 +1,5 @@
 [package]
-name = "polyspec-sessions"
+name = "polyspec-session-store"
 description = "The session stores of polyspec: the store interface and the record, and the stores of files and of Redis"
 version.workspace = true
 edition.workspace = true
@@ -12,19 +12,19 @@ publish.workspace = true
 include = ["/src/**/*.rs", "/interface.json"]
 
 [lib]
-name = "polyspec_sessions"
+name = "polyspec_session_store"
 path = "src/lib.rs"
 
 [features]
 # The bindings of every target build both stores (SE-1.3).
 default = ["file", "redis"]
-file = ["dep:polyspec-sessions-file"]
-redis = ["dep:polyspec-sessions-redis"]
+file = ["dep:polyspec-session-store-file"]
+redis = ["dep:polyspec-session-store-redis"]
 
 [dependencies]
-polyspec-sessions-core = { path = "../core/rust" }
-polyspec-sessions-file = { path = "../file/rust", optional = true }
-polyspec-sessions-redis = { path = "../redis/rust", optional = true }
+polyspec-session-store-core = { path = "../core/rust" }
+polyspec-session-store-file = { path = "../file/rust", optional = true }
+polyspec-session-store-redis = { path = "../redis/rust", optional = true }
 
 [lints]
 workspace = true

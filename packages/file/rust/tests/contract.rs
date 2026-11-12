@@ -5,8 +5,8 @@ use std::time::{Duration, SystemTime};
 
 use bindgen_core::{Failure, Io, Kinds, ProcessWait};
 use libtest_mimic::{Arguments, Failed, Trial};
-use polyspec_php_serialize::{serialize, unserialize};
-use polyspec_sessions_file::{FileSession, FileSessions};
+use polyspec_php_serialization::{serialize, unserialize};
+use polyspec_session_store_file::{FileSession, FileSessions};
 use serde_json::Value;
 
 const CONTRACT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../contracts/file-sessions.json"));
@@ -74,8 +74,8 @@ fn expected_records(value: &Value) -> Result<Vec<(String, String)>, Failed> {
 }
 
 /// The result of one call: the serialize form of a value, or null.
-fn call(session: &mut FileSession, call: &Value) -> Result<Result<Value, polyspec_sessions_core::Error>, Failed> {
-    use polyspec_sessions_core::Store;
+fn call(session: &mut FileSession, call: &Value) -> Result<Result<Value, polyspec_session_store_core::Error>, Failed> {
+    use polyspec_session_store_core::Store;
     let (name, arguments) = match call.as_array().map(Vec::as_slice) {
         Some([Value::String(name), Value::Array(arguments)]) => (name.as_str(), arguments),
         _ => return Err("a call is no pair".into()),

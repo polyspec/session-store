@@ -1,5 +1,5 @@
 //! The session store of files (SF-1 to SF-9): each session is the file `sess_<id>` of one directory, whose bytes are the
-//! record of `polyspec-sessions-core` (SE-6) and which a request holds under `flock(LOCK_EX)` from its opening to its
+//! record of `polyspec-session-store-core` (SE-6) and which a request holds under `flock(LOCK_EX)` from its opening to its
 //! closing. The rules are in `docs/spec/sessions.md`.
 #![forbid(unsafe_code)]
 

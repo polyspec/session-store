@@ -1,7 +1,7 @@
-# The workspace of sessions (SE-1.3): the crate of the library (packages/rust), which the bindings wrap, and its three
-# components: the store interface and the record (packages/core/rust), the
-# store of files (packages/file/rust) and the store of Redis (packages/redis/rust); and the binding crates, which bindgen
-# scaffold writes and whose sources make bindings generates (bindgen design L-2). One Cargo.lock pins them all.
+# The workspace of session-store (SE-1.3): the crate of the library (packages/rust), which the bindings wrap, and its
+# three components: the store interface and the record (packages/core/rust), the store of files (packages/file/rust) and
+# the store of Redis (packages/redis/rust); and the binding crates, which bindgen scaffold writes and whose sources make
+# bindings generates (bindgen design L-2). One Cargo.lock pins them all.
 [workspace]
 resolver = "2"
 members = [
@@ -18,7 +18,7 @@ members = [
 version = "0.0.0"
 edition = "2021"
 rust-version = "1.99.0"
-repository = "https://github.com/polyspec/sessions.git"
+repository = "https://github.com/polyspec/session-store.git"
 license = "MIT"
 publish = false
 

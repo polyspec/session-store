@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use tokio::sync::OwnedMutexGuard;
 
-use polyspec_sessions_core::Error as CoreError;
+use polyspec_session_store_core::Error as CoreError;
 
 /// The queues of every identifier of one store.
 #[derive(Debug, Default)]

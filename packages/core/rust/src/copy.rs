@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 
-use polyspec_php_serialize::{ArrayId, Node, ObjectId, PhpValue, ReferenceId};
+use polyspec_php_serialization::{ArrayId, Node, ObjectId, PhpValue, ReferenceId};
 
 use crate::error::{internal, Error};
 

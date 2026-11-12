@@ -1370,84 +1370,84 @@ dependencies = [
 ]
 
 [[package]]
-name = "polyspec-php-serialize"
+name = "polyspec-php-serialization"
 version = "0.0.6"
-source = "git+https://github.com/polyspec/php-serialize.git?branch=v1%2Frust-core#948de5850c20bd4a28956571ae482964f2ebc6bd"
+source = "git+https://github.com/polyspec/php-serialization.git?branch=v1%2Frust-core#5e78a5e31c0e538334e18ce2036befd2a0003b40"
 dependencies = [
  "polyspec-bindgen-core",
  "ryu",
 ]
 
 [[package]]
-name = "polyspec-sessions"
+name = "polyspec-session-store"
 version = "0.0.0"
 dependencies = [
- "polyspec-sessions-core",
- "polyspec-sessions-file",
- "polyspec-sessions-redis",
+ "polyspec-session-store-core",
+ "polyspec-session-store-file",
+ "polyspec-session-store-redis",
 ]
 
 [[package]]
-name = "polyspec-sessions-core"
+name = "polyspec-session-store-core"
 version = "0.0.0"
 dependencies = [
  "getrandom 0.3.4",
  "libtest-mimic",
  "polyspec-bindgen-core",
- "polyspec-php-serialize",
+ "polyspec-php-serialization",
  "serde_json",
 ]
 
 [[package]]
-name = "polyspec-sessions-file"
+name = "polyspec-session-store-file"
 version = "0.0.0"
 dependencies = [
  "libtest-mimic",
  "polyspec-bindgen-core",
- "polyspec-php-serialize",
- "polyspec-sessions-core",
+ "polyspec-php-serialization",
+ "polyspec-session-store-core",
  "rustix",
  "serde_json",
  "tempfile",
 ]
 
 [[package]]
-name = "polyspec-sessions-node"
+name = "polyspec-session-store-node"
 version = "0.0.0"
 dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
  "polyspec-bindgen-core",
- "polyspec-sessions",
+ "polyspec-session-store",
 ]
 
 [[package]]
-name = "polyspec-sessions-php-ext"
+name = "polyspec-session-store-php-ext"
 version = "0.0.0"
 dependencies = [
  "ext-php-rs",
  "polyspec-bindgen-core",
- "polyspec-sessions",
+ "polyspec-session-store",
 ]
 
 [[package]]
-name = "polyspec-sessions-python"
+name = "polyspec-session-store-python"
 version = "0.0.0"
 dependencies = [
  "polyspec-bindgen-core",
- "polyspec-sessions",
+ "polyspec-session-store",
  "pyo3",
 ]
 
 [[package]]
-name = "polyspec-sessions-redis"
+name = "polyspec-session-store-redis"
 version = "0.0.0"
 dependencies = [
  "libtest-mimic",
  "polyspec-bindgen-core",
- "polyspec-php-serialize",
- "polyspec-sessions-core",
+ "polyspec-php-serialization",
+ "polyspec-session-store-core",
  "redis",
  "rustls",
  "serde_json",

@@ -1,27 +1,27 @@
-# sessions: rules
+# session-store: rules
 
-This document is the specification of sessions. A rule is a list item `**SE-n**` (the store and its record, crate
-`polyspec-sessions-core`), `**SF-n**` (the store of files, crate `polyspec-sessions-file`) or `**SR-n**` (the store of
-Redis, crate `polyspec-sessions-redis`); a statement of a rule has the anchor `SE-n.m`, and a test names the statement
-that it checks. A PHP value and its serialize form are those of php-serialize (`polyspec-php-serialize`, rules RQ-n).
-phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
+This document is the specification of session-store. A rule is a list item `**SE-n**` (the store and its record, crate
+`polyspec-session-store-core`), `**SF-n**` (the store of files, crate `polyspec-session-store-file`) or `**SR-n**` (the
+store of Redis, crate `polyspec-session-store-redis`); a statement of a rule has the anchor `SE-n.m`, and a test names
+the statement that it checks. A PHP value and its serialize form are those of php-serialization
+(`polyspec-php-serialization`, rules RQ-n). phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
 
 ## Scope
 
-- **SE-1** <a id="SE-1.1"></a> sessions stores the values of browser sessions: it creates and accepts session
+- **SE-1** <a id="SE-1.1"></a> session-store stores the values of browser sessions: it creates and accepts session
   identifiers, opens, locks, reads, writes and closes the session of one request in that order, renews a session under
   a new identifier, ends a session after its lifetime and removes ended sessions. <a id="SE-1.2"></a> It does not know
   what a session holds: a key is a text and a value is a PHP value (RQ-008), and no key and no value has a meaning for
   the library. Which keys an application uses, what their values mean and how the values relate to other value types
   (such as the data model of a template language) are rules of the application, not of this library.
   <a id="SE-1.3"></a> Every rule is in the Rust crates of `packages/core/rust`, `packages/file/rust` and
-  `packages/redis/rust`; a binding converts types and holds no rule. The crate `polyspec-sessions` of `packages/rust` is
-  the library: it gives the items of the three crates again, the stores under the features `file` and `redis`, which
-  it builds by default, and its package holds the one interface contract of the bindings, so that every language has
-  one package of sessions. <a id="SE-1.4"></a> `polyspec-sessions-core` does no
-  I/O: it reads no file, no clock, no environment and no network. Its only outside source is the random source of the
+  `packages/redis/rust`; a binding converts types and holds no rule. The crate `polyspec-session-store` of
+  `packages/rust` is the library: it gives the items of the three crates again, the stores under the features `file` and
+  `redis`, which it builds by default, and its package holds the one interface contract of the bindings, so that every
+  language has one package of session-store. <a id="SE-1.4"></a> `polyspec-session-store-core` does no I/O: it reads no
+  file, no clock, no environment and no network. Its only outside source is the random source of the
   operating system (SE-5.3), because an identifier that another party can predict names another browser's session.
-  <a id="SE-1.5"></a> The three crates depend on `polyspec-php-serialize` and `polyspec-bindgen-core` and on no
+  <a id="SE-1.5"></a> The three crates depend on `polyspec-php-serialization` and `polyspec-bindgen-core` and on no
   library of another value type.
 
 ## The store interface
@@ -67,8 +67,8 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   PHP array whose keys are the keys of the session and whose values are their values. It is the form `php_serialize`
   of the PHP session module. <a id="SE-6.2"></a> A record without bytes is a session without values.
   <a id="SE-6.3"></a> Bytes that unserialize refuses fail with the kind `record`, whose source is the error of
-  php-serialize with its kind and offset. <a id="SE-6.4"></a> A record whose top value is no array fails with the kind
-  `record_not_array`; the message names the identifier: `the session of <id> holds no array of values`.
+  php-serialization with its kind and offset. <a id="SE-6.4"></a> A record whose top value is no array fails with the
+  kind `record_not_array`; the message names the identifier: `the session of <id> holds no array of values`.
   <a id="SE-6.5"></a> `get` of a key whose element is a reference gives the value that the reference holds, because a
   value of a store is no reference (SE-2.4). An object or a reference that the value shares with other elements of the
   record is a copy in the given value. <a id="SE-6.6"></a> A record that a request writes holds every key in the order of
@@ -76,8 +76,8 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   shares with other such keys, and a key that holds null is kept. A key of the record whose string is not UTF-8 is kept
   as it was, and no text names it (SE-2.5). <a id="SE-6.7"></a> A set key holds the value that the request gave, and
   the objects and references of that value are shared only within it. <a id="SE-6.8"></a> Values that have no record
-  that php-serialize writes, such as a value nested so deep that the record passes the depth of RQ-006, fail the
-  `finish` of the session with the kind `record_write`, whose source is the error of php-serialize.
+  that php-serialization writes, such as a value nested so deep that the record passes the depth of RQ-006, fail the
+  `finish` of the session with the kind `record_write`, whose source is the error of php-serialization.
 
 ## The session of a request
 
@@ -104,7 +104,7 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
 
 - **SE-9** <a id="SE-9.1"></a> Every failure of the library is an error of a crate's error enum with a kind; a caller
   tells failures apart by the kind, and a message is a rule only where a rule states it (SE-6.4). <a id="SE-9.2"></a>
-  The kinds of `polyspec-sessions-core`:
+  The kinds of `polyspec-session-store-core`:
 
   | Kind | Status | Category | Rule |
   |---|---|---|---|
@@ -114,10 +114,10 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   | `record_write` | 500 | `store` | SE-6.8 |
   | `internal` | 500 | `internal` | an invariant of the implementation fails; it is a defect |
 
-  The errors of `record` and `record_write` carry the offset of the error of php-serialize, or none (`offset`).
+  The errors of `record` and `record_write` carry the offset of the error of php-serialization, or none (`offset`).
   <a id="SE-9.3"></a> The status is that of the request whose session fails: a session that the server cannot read or
   write fails the request as an error of the server. <a id="SE-9.4"></a> The kinds of the stores (SF-9, SR-9) are
-  variants of the same error enum, `Error` of `polyspec-sessions-core`, so that one kind interface and one table of
+  variants of the same error enum, `Error` of `polyspec-session-store-core`, so that one kind interface and one table of
   classes hold every failure of the library, and a failure of the record that a store meets keeps its kind.
 
 ## The store of files
@@ -188,7 +188,7 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   value that is no integer of 0 or more before the store runs: a negative or fractional number with the kind
   `invalid_number` and a text or a boolean with the kind `invalid_argument_type` (bindgen design T-1, E-1a). Such cases
   of `contracts/file-sessions.json` carry `binding`, and the bindings run them; the Rust tests show them as ignored.
-- **SF-9** <a id="SF-9.1"></a> The kinds of `polyspec-sessions-file`:
+- **SF-9** <a id="SF-9.1"></a> The kinds of `polyspec-session-store-file`:
 
   | Kind | Status | Category | Rule |
   |---|---|---|---|
@@ -277,7 +277,7 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   opening took expires after `lock_expire`. <a id="SR-8.2"></a> `lifetime`, `lock_expire`, `lock_retries` and
   `lock_wait` are unsigned integers of the interface contract, which a binding judges as SF-8.2 states; the cases of
   `contracts/redis-sessions.json` that carry `binding` run on the bindings.
-- **SR-9** <a id="SR-9.1"></a> The kinds of `polyspec-sessions-redis`:
+- **SR-9** <a id="SR-9.1"></a> The kinds of `polyspec-session-store-redis`:
 
   | Kind | Status | Category | Rule |
   |---|---|---|---|

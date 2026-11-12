@@ -1,17 +1,17 @@
 # AGENTS.md
 
-Rules for every change of sessions. The rules of the library are in [docs/spec/sessions.md](docs/spec/sessions.md).
+Rules for every change of session-store. The rules of the library are in [docs/spec/sessions.md](docs/spec/sessions.md).
 
 ## Layout
 
-- `packages/rust/`: the crate `polyspec-sessions`, the library, which gives the items of the three crates again (the
-  stores under the features `file` and `redis`) and whose package holds the one interface contract of the bindings,
+- `packages/rust/`: the crate `polyspec-session-store`, the library, which gives the items of the three crates again
+  (the stores under the features `file` and `redis`) and whose package holds the one interface contract of the bindings,
   `interface.json` (`include` of its `Cargo.toml`), so that a repository that depends on the crate reads it through
   Cargo. No binding is written by hand.
-- `packages/core/rust/`: the crate `polyspec-sessions-core`, the store interface, identifiers, the record and the record
-  session of a request (SE-1 to SE-10). It does no I/O.
-- `packages/file/rust/`: the crate `polyspec-sessions-file`, the store of files (SF-1 to SF-9).
-- `packages/redis/rust/`: the crate `polyspec-sessions-redis`, the store of Redis: its protocol without I/O and its
+- `packages/core/rust/`: the crate `polyspec-session-store-core`, the store interface, identifiers, the record and the
+  record session of a request (SE-1 to SE-10). It does no I/O.
+- `packages/file/rust/`: the crate `polyspec-session-store-file`, the store of files (SF-1 to SF-9).
+- `packages/redis/rust/`: the crate `polyspec-session-store-redis`, the store of Redis: its protocol without I/O and its
   connection (SR-1 to SR-9).
 - `packages/php-ext/`, `packages/python/`, `packages/ts/`: the binding packages, whose tracked files `bindgen scaffold`
   writes and the contract check compares (bindgen CK-19). They are members of the workspace; `make bindings` writes
@@ -27,8 +27,8 @@ Rules for every change of sessions. The rules of the library are in [docs/spec/s
 
 - A change of a rule changes the specification first, then the cases, then the code. A test names the rule statement
   that it checks (`SE-n.m`, `SF-n.m`, `SR-n.m`).
-- A rule states what it requires and its basis: a rule id of this library, a rule of php-serialize (RQ-n), a section of
-  a standard or the behavior of a peer (PHP, phpredis). A tracked file does not record where a rule was taken from or
+- A rule states what it requires and its basis: a rule id of this library, a rule of php-serialization (RQ-n), a section
+  of a standard or the behavior of a peer (PHP, phpredis). A tracked file does not record where a rule was taken from or
   who asked for it.
 - The library does not know what a session holds: no rule of this repository names a key of a session or gives a value
   a meaning (SE-1.2).

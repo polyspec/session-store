@@ -33,11 +33,11 @@ pub enum Error {
     /// The random source of the operating system failed (SE-5.4).
     Random { detail: String },
     /// The record of a session cannot be decoded (SE-6.3); the source keeps its kind and offset.
-    Record { id: String, source: polyspec_php_serialize::Error },
+    Record { id: String, source: polyspec_php_serialization::Error },
     /// The record of a session holds no array (SE-6.4).
     RecordNotArray { id: String },
-    /// The values of a session have no record that php-serialize writes (SE-6.8); the source keeps its kind.
-    RecordWrite { source: polyspec_php_serialize::Error },
+    /// The values of a session have no record that php-serialization writes (SE-6.8); the source keeps its kind.
+    RecordWrite { source: polyspec_php_serialization::Error },
     /// The directory of the store of files is no absolute path of an existing directory (SF-1.2).
     InvalidDirectory { path: PathBuf, detail: String },
     /// The lifetime of a store is 0 (SF-1.3, SR-1.2).
@@ -212,7 +212,7 @@ impl std::error::Error for Error {
     }
 }
 
-/// The error of a broken invariant in place of an error of php-serialize that a valid value cannot give.
-pub(crate) fn internal(what: &'static str) -> impl Fn(polyspec_php_serialize::Error) -> Error {
+/// The error of a broken invariant in place of an error of php-serialization that a valid value cannot give.
+pub(crate) fn internal(what: &'static str) -> impl Fn(polyspec_php_serialization::Error) -> Error {
     move |_source| Error::Internal { what }
 }

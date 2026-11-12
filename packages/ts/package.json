@@ -1,5 +1,5 @@
 {
-  "name": "@polyspec/sessions",
+  "name": "@polyspec/session-store",
   "version": "0.0.0",
   "description": "The sessions library of polyspec for Node",
   "license": "MIT",

@@ -1,6 +1,6 @@
 //! The record session of one request (SE-7).
 
-use polyspec_php_serialize::PhpValue;
+use polyspec_php_serialization::PhpValue;
 
 use crate::error::Error;
 use crate::identifier::new_identifier;

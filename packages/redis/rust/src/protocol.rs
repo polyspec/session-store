@@ -3,10 +3,10 @@
 
 use std::time::Duration;
 
-use polyspec_php_serialize::PhpValue;
-use polyspec_sessions_core::{accept, random_hex, Failure, Found, Outcome, RecordSession, Store};
+use polyspec_php_serialization::PhpValue;
+use polyspec_session_store_core::{accept, random_hex, Failure, Found, Outcome, RecordSession, Store};
 
-use polyspec_sessions_core::Error;
+use polyspec_session_store_core::Error;
 
 /// The release script (SR-2.3).
 pub const RELEASE: &str =

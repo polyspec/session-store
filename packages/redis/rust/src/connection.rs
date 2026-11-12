@@ -8,9 +8,9 @@ use redis::sentinel::{Sentinel, SentinelNodeConnectionInfo};
 use redis::{RedisConnectionInfo, TlsMode};
 use tokio::sync::Mutex;
 
-use polyspec_php_serialize::PhpValue;
-use polyspec_sessions_core::Error;
-use polyspec_sessions_core::{Failure, Store};
+use polyspec_php_serialization::PhpValue;
+use polyspec_session_store_core::Error;
+use polyspec_session_store_core::{Failure, Store};
 
 use crate::protocol::{Closing, Command, Opening, Options, Reply, Session, Step, StoreOptions};
 use crate::turns::{Turn, Turns};

@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use polyspec_php_serialize::{Key, PhpValue};
+use polyspec_php_serialization::{Key, PhpValue};
 
 use crate::error::Error;
 use crate::store::{key_of, Store};

@@ -2,7 +2,7 @@ CARGO := cargo
 # Extra arguments of every cargo build, for example --ignore-rust-version on a machine without the pinned release.
 CARGOFLAGS ?=
 # The crates of the library; the binding crates of the workspace need make bindings first (bindgen design L-2).
-CORE := -p polyspec-sessions -p polyspec-sessions-core -p polyspec-sessions-file -p polyspec-sessions-redis
+CORE := -p polyspec-session-store -p polyspec-session-store-core -p polyspec-session-store-file -p polyspec-session-store-redis
 # bindgen at the commit of Cargo.lock (scripts/bindgen.mts).
 BINDGEN := node scripts/bindgen.mts
 # The real peers of the tests, each optional: PHP reads the records back (SE-10.3), redis-server, redis-cli and openssl

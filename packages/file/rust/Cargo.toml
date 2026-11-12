@@ -1,5 +1,5 @@
 [package]
-name = "polyspec-sessions-file"
+name = "polyspec-session-store-file"
 description = "The session store of files: one file of the form of the PHP files handler per session, under flock"
 version.workspace = true
 edition.workspace = true
@@ -10,14 +10,14 @@ publish.workspace = true
 include = ["/src/**/*.rs"]
 
 [lib]
-name = "polyspec_sessions_file"
+name = "polyspec_session_store_file"
 path = "src/lib.rs"
 
 [dependencies]
 # The wait tokens Io and ProcessWait and the cancellation of a waiting caller (bindgen design I-2 (4), SF-3.8, SF-8).
 polyspec-bindgen-core = { git = "https://github.com/polyspec/bindgen.git", branch = "v1/rust-core" }
-polyspec-php-serialize = { git = "https://github.com/polyspec/php-serialize.git", branch = "v1/rust-core" }
-polyspec-sessions-core = { path = "../../core/rust" }
+polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", branch = "v1/rust-core" }
+polyspec-session-store-core = { path = "../../core/rust" }
 # open with O_NOFOLLOW and O_CLOEXEC, flock, fstat and lstat, futimens (SF-2.4, SF-3, SF-4).
 rustix = { version = "1.1.6", default-features = false, features = ["fs", "std"] }
 

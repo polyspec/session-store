@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use polyspec_php_serialize::{serialize, unserialize, Key, Node, PhpValue};
+use polyspec_php_serialization::{serialize, unserialize, Key, Node, PhpValue};
 
 use crate::copy::{value_of, Copier};
 use crate::error::{internal, Error};
@@ -105,7 +105,7 @@ impl Values {
 #[cfg(test)]
 mod tests {
     use bindgen_core::Kinds;
-    use polyspec_php_serialize::{Key, Node, PhpValue};
+    use polyspec_php_serialization::{Key, Node, PhpValue};
 
     use super::Values;
 
@@ -138,7 +138,7 @@ mod tests {
 
     #[test]
     fn a_value_deeper_than_php_reads_has_no_record() {
-        // SE-6.1: the record adds one level to the value, and php-serialize writes no value deeper than its limit.
+        // SE-6.1: the record adds one level to the value, and php-serialization writes no value deeper than its limit.
         let mut values = Values::empty();
         values.set(Key::Int(1), &nested(5000));
         match values.encode() {

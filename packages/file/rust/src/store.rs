@@ -8,12 +8,12 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use bindgen_core::{Cancel, Io, ProcessWait};
-use polyspec_php_serialize::PhpValue;
-use polyspec_sessions_core::{accept, Failure, Found, Outcome, RecordSession, Store};
+use polyspec_php_serialization::PhpValue;
+use polyspec_session_store_core::{accept, Failure, Found, Outcome, RecordSession, Store};
 use rustix::fs::{FlockOperation, Mode, OFlags, Stat, Timespec, Timestamps};
 use rustix::io::Errno;
 
-use polyspec_sessions_core::Error;
+use polyspec_session_store_core::Error;
 
 use crate::error::{errno as errno_error, io as io_error};
 use crate::turns::{Turn, Turns};

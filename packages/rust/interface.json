@@ -1,8 +1,8 @@
 {
   "schema": "polyspec/interface@1",
-  "library": "sessions",
+  "library": "session-store",
   "core": {
-    "crate": "polyspec-sessions",
+    "crate": "polyspec-session-store",
     "path": "packages/rust"
   },
   "targets": [
@@ -12,15 +12,15 @@
   ],
   "packages": {
     "php": {
-      "package": "polyspec/sessions",
-      "namespace": "Polyspec\\Sessions"
+      "package": "polyspec/session-store",
+      "namespace": "Polyspec\\SessionStore"
     },
     "python": {
-      "package": "polyspec-sessions",
-      "module": "polyspec.sessions"
+      "package": "polyspec-session-store",
+      "module": "polyspec.session_store"
     },
     "node": {
-      "package": "@polyspec/sessions",
+      "package": "@polyspec/session-store",
       "entries": {
         ".": {
           "formats": [
@@ -36,41 +36,41 @@
   },
   "types": {
     "php_value": {
-      "library": "php-serialize",
+      "library": "php-serialization",
       "unit": "php_value"
     }
   },
   "errors": {
     "classes": {
       "value": {
-        "php": "Polyspec\\Sessions\\SessionsValueError",
-        "python": "SessionsValueError",
-        "node": "SessionsValueError"
+        "php": "Polyspec\\SessionStore\\SessionStoreValueError",
+        "python": "SessionStoreValueError",
+        "node": "SessionStoreValueError"
       },
       "type": {
-        "php": "Polyspec\\Sessions\\SessionsTypeError",
-        "python": "SessionsTypeError",
-        "node": "SessionsTypeError"
+        "php": "Polyspec\\SessionStore\\SessionStoreTypeError",
+        "python": "SessionStoreTypeError",
+        "node": "SessionStoreTypeError"
       },
       "io": {
-        "php": "Polyspec\\Sessions\\SessionsIoError",
-        "python": "SessionsIoError",
-        "node": "SessionsIoError"
+        "php": "Polyspec\\SessionStore\\SessionStoreIoError",
+        "python": "SessionStoreIoError",
+        "node": "SessionStoreIoError"
       },
       "store": {
-        "php": "Polyspec\\Sessions\\SessionsStoreError",
-        "python": "SessionsStoreError",
-        "node": "SessionsStoreError"
+        "php": "Polyspec\\SessionStore\\SessionStoreStoreError",
+        "python": "SessionStoreStoreError",
+        "node": "SessionStoreStoreError"
       },
       "busy": {
-        "php": "Polyspec\\Sessions\\SessionsBusyError",
-        "python": "SessionsBusyError",
-        "node": "SessionsBusyError"
+        "php": "Polyspec\\SessionStore\\SessionStoreBusyError",
+        "python": "SessionStoreBusyError",
+        "node": "SessionStoreBusyError"
       },
       "internal": {
-        "php": "Polyspec\\Sessions\\SessionsInternalError",
-        "python": "SessionsInternalError",
-        "node": "SessionsInternalError"
+        "php": "Polyspec\\SessionStore\\SessionStoreInternalError",
+        "python": "SessionStoreInternalError",
+        "node": "SessionStoreInternalError"
       }
     },
     "fixed": [
@@ -93,82 +93,82 @@
     ],
     "kinds": [
       {
-        "variant": "polyspec_sessions::Error::Random",
+        "variant": "polyspec_session_store::Error::Random",
         "category": "internal"
       },
       {
-        "variant": "polyspec_sessions::Error::Record",
+        "variant": "polyspec_session_store::Error::Record",
         "category": "store",
-        "source": "php-serialize",
+        "source": "php-serialization",
         "class": "record_error"
       },
       {
-        "variant": "polyspec_sessions::Error::RecordNotArray",
+        "variant": "polyspec_session_store::Error::RecordNotArray",
         "category": "store"
       },
       {
-        "variant": "polyspec_sessions::Error::RecordWrite",
+        "variant": "polyspec_session_store::Error::RecordWrite",
         "category": "store",
-        "source": "php-serialize",
+        "source": "php-serialization",
         "class": "record_error"
       },
       {
-        "variant": "polyspec_sessions::Error::InvalidDirectory",
+        "variant": "polyspec_session_store::Error::InvalidDirectory",
         "category": "value"
       },
       {
-        "variant": "polyspec_sessions::Error::InvalidLifetime",
+        "variant": "polyspec_session_store::Error::InvalidLifetime",
         "category": "value"
       },
       {
-        "variant": "polyspec_sessions::Error::Cancelled",
+        "variant": "polyspec_session_store::Error::Cancelled",
         "category": "io"
       },
       {
-        "variant": "polyspec_sessions::Error::IdentifierTaken",
+        "variant": "polyspec_session_store::Error::IdentifierTaken",
         "category": "internal"
       },
       {
-        "variant": "polyspec_sessions::Error::Io",
+        "variant": "polyspec_session_store::Error::Io",
         "category": "io"
       },
       {
-        "variant": "polyspec_sessions::Error::InvalidLockExpire",
+        "variant": "polyspec_session_store::Error::InvalidLockExpire",
         "category": "value"
       },
       {
-        "variant": "polyspec_sessions::Error::InvalidSetting",
+        "variant": "polyspec_session_store::Error::InvalidSetting",
         "category": "value"
       },
       {
-        "variant": "polyspec_sessions::Error::LockTimeout",
+        "variant": "polyspec_session_store::Error::LockTimeout",
         "category": "store"
       },
       {
-        "variant": "polyspec_sessions::Error::LockLost",
+        "variant": "polyspec_session_store::Error::LockLost",
         "category": "store"
       },
       {
-        "variant": "polyspec_sessions::Error::Reply",
+        "variant": "polyspec_session_store::Error::Reply",
         "category": "store"
       },
       {
-        "variant": "polyspec_sessions::Error::Redis",
+        "variant": "polyspec_session_store::Error::Redis",
         "category": "store"
       },
       {
-        "variant": "polyspec_sessions::Error::Connection",
+        "variant": "polyspec_session_store::Error::Connection",
         "category": "io"
       },
       {
-        "variant": "polyspec_sessions::Error::Internal",
+        "variant": "polyspec_session_store::Error::Internal",
         "category": "internal"
       }
     ],
     "binding": [],
     "wrapped": [
       {
-        "library": "php-serialize",
+        "library": "php-serialization",
         "unit": "format_error",
         "property": [
           "offset"
@@ -187,7 +187,7 @@
       "kind": "interface",
       "visibility": "public",
       "origin": "callback",
-      "core": "polyspec_sessions::Store",
+      "core": "polyspec_session_store::Store",
       "thread": "owner",
       "members": [
         {
@@ -280,7 +280,7 @@
       "kind": "class",
       "visibility": "public",
       "origin": "generated",
-      "core_type": "polyspec_sessions::MemoryStore",
+      "core_type": "polyspec_session_store::MemoryStore",
       "final": true,
       "implements": [
         {
@@ -300,7 +300,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::MemoryStore::new"
+            "path": "polyspec_session_store::MemoryStore::new"
           }
         },
         {
@@ -325,7 +325,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::get",
+            "path": "polyspec_session_store::Store::get",
             "receiver": "&mut self"
           },
           "optional_reason": "SE-2.1"
@@ -357,7 +357,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::set",
+            "path": "polyspec_session_store::Store::set",
             "receiver": "&mut self"
           }
         },
@@ -381,7 +381,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::remove",
+            "path": "polyspec_session_store::Store::remove",
             "receiver": "&mut self"
           }
         },
@@ -397,7 +397,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::renew",
+            "path": "polyspec_session_store::Store::renew",
             "receiver": "&mut self"
           }
         },
@@ -413,7 +413,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::MemoryStore::renewals",
+            "path": "polyspec_session_store::MemoryStore::renewals",
             "receiver": "&self"
           }
         }
@@ -451,7 +451,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::accept"
+            "path": "polyspec_session_store::accept"
           },
           "optional_reason": "SE-5.2"
         },
@@ -466,11 +466,11 @@
           "parameters": [],
           "returns": "text",
           "raises": [
-            "polyspec_sessions::Error::Random"
+            "polyspec_session_store::Error::Random"
           ],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::new_identifier"
+            "path": "polyspec_session_store::new_identifier"
           }
         }
       ]
@@ -502,7 +502,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Error::offset",
+            "path": "polyspec_session_store::Error::offset",
             "receiver": "&self"
           },
           "optional_reason": "SE-9.2"
@@ -519,7 +519,7 @@
       "kind": "class",
       "visibility": "public",
       "origin": "generated",
-      "core_type": "polyspec_sessions::FileSessions",
+      "core_type": "polyspec_session_store::FileSessions",
       "final": true,
       "members": [
         {
@@ -545,17 +545,17 @@
               "default": {
                 "literal": 1440
               },
-              "default_core": "polyspec_sessions::DEFAULT_LIFETIME"
+              "default_core": "polyspec_session_store::DEFAULT_LIFETIME"
             }
           ],
           "returns": "self",
           "raises": [
-            "polyspec_sessions::Error::InvalidDirectory",
-            "polyspec_sessions::Error::InvalidLifetime"
+            "polyspec_session_store::Error::InvalidDirectory",
+            "polyspec_session_store::Error::InvalidLifetime"
           ],
           "wait": "blocking_io",
           "core": {
-            "path": "polyspec_sessions::FileSessions::new"
+            "path": "polyspec_session_store::FileSessions::new"
           }
         },
         {
@@ -596,13 +596,13 @@
             "unit": "file_session"
           },
           "raises": [
-            "polyspec_sessions::Error::Cancelled",
-            "polyspec_sessions::Error::Io",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::Cancelled",
+            "polyspec_session_store::Error::Io",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "process_wait",
           "core": {
-            "path": "polyspec_sessions::FileSessions::open",
+            "path": "polyspec_session_store::FileSessions::open",
             "receiver": "&self"
           }
         },
@@ -616,12 +616,12 @@
           "parameters": [],
           "returns": "uint",
           "raises": [
-            "polyspec_sessions::Error::Io",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::Io",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "blocking_io",
           "core": {
-            "path": "polyspec_sessions::FileSessions::collect",
+            "path": "polyspec_session_store::FileSessions::collect",
             "receiver": "&self"
           }
         },
@@ -637,7 +637,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::FileSessions::lifetime",
+            "path": "polyspec_session_store::FileSessions::lifetime",
             "receiver": "&self"
           }
         },
@@ -653,7 +653,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::FileSessions::directory",
+            "path": "polyspec_session_store::FileSessions::directory",
             "receiver": "&self"
           }
         }
@@ -669,7 +669,7 @@
       "kind": "class",
       "visibility": "public",
       "origin": "generated",
-      "core_type": "polyspec_sessions::FileSession",
+      "core_type": "polyspec_session_store::FileSession",
       "final": true,
       "constructible": false,
       "cleanup": "file_session.close",
@@ -699,14 +699,14 @@
             "optional": "php_value"
           },
           "raises": [
-            "polyspec_sessions::Error::Random",
-            "polyspec_sessions::Error::Record",
-            "polyspec_sessions::Error::RecordNotArray",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::Random",
+            "polyspec_session_store::Error::Record",
+            "polyspec_session_store::Error::RecordNotArray",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::get",
+            "path": "polyspec_session_store::Store::get",
             "receiver": "&mut self"
           },
           "optional_reason": "SE-2.1"
@@ -736,14 +736,14 @@
           ],
           "returns": "none",
           "raises": [
-            "polyspec_sessions::Error::Random",
-            "polyspec_sessions::Error::Record",
-            "polyspec_sessions::Error::RecordNotArray",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::Random",
+            "polyspec_session_store::Error::Record",
+            "polyspec_session_store::Error::RecordNotArray",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::set",
+            "path": "polyspec_session_store::Store::set",
             "receiver": "&mut self"
           }
         },
@@ -765,14 +765,14 @@
           ],
           "returns": "none",
           "raises": [
-            "polyspec_sessions::Error::Random",
-            "polyspec_sessions::Error::Record",
-            "polyspec_sessions::Error::RecordNotArray",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::Random",
+            "polyspec_session_store::Error::Record",
+            "polyspec_session_store::Error::RecordNotArray",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::remove",
+            "path": "polyspec_session_store::Store::remove",
             "receiver": "&mut self"
           }
         },
@@ -786,14 +786,14 @@
           "parameters": [],
           "returns": "none",
           "raises": [
-            "polyspec_sessions::Error::Random",
-            "polyspec_sessions::Error::Record",
-            "polyspec_sessions::Error::RecordNotArray",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::Random",
+            "polyspec_session_store::Error::Record",
+            "polyspec_session_store::Error::RecordNotArray",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::renew",
+            "path": "polyspec_session_store::Store::renew",
             "receiver": "&mut self"
           }
         },
@@ -811,7 +811,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::FileSession::found",
+            "path": "polyspec_session_store::FileSession::found",
             "receiver": "&self"
           },
           "optional_reason": "SE-7.1"
@@ -828,14 +828,14 @@
             "optional": "text"
           },
           "raises": [
-            "polyspec_sessions::Error::Io",
-            "polyspec_sessions::Error::IdentifierTaken",
-            "polyspec_sessions::Error::RecordWrite",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::Io",
+            "polyspec_session_store::Error::IdentifierTaken",
+            "polyspec_session_store::Error::RecordWrite",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "blocking_io",
           "core": {
-            "path": "polyspec_sessions::FileSession::close",
+            "path": "polyspec_session_store::FileSession::close",
             "receiver": "self"
           },
           "optional_reason": "SE-7.6"
@@ -958,7 +958,7 @@
           "default": {
             "literal": 1440
           },
-          "default_core": "polyspec_sessions::Options::LIFETIME"
+          "default_core": "polyspec_session_store::Options::LIFETIME"
         },
         {
           "name": [
@@ -968,7 +968,7 @@
           "default": {
             "literal": "PHPREDIS_SESSION:"
           },
-          "default_core": "polyspec_sessions::Options::PREFIX"
+          "default_core": "polyspec_session_store::Options::PREFIX"
         },
         {
           "name": [
@@ -979,7 +979,7 @@
           "default": {
             "literal": 100
           },
-          "default_core": "polyspec_sessions::Options::LOCK_RETRIES"
+          "default_core": "polyspec_session_store::Options::LOCK_RETRIES"
         },
         {
           "name": [
@@ -990,7 +990,7 @@
           "default": {
             "literal": 20000
           },
-          "default_core": "polyspec_sessions::Options::LOCK_WAIT"
+          "default_core": "polyspec_session_store::Options::LOCK_WAIT"
         }
       ]
     },
@@ -1004,7 +1004,7 @@
       "kind": "class",
       "visibility": "public",
       "origin": "generated",
-      "core_type": "polyspec_sessions::RedisSessions",
+      "core_type": "polyspec_session_store::RedisSessions",
       "final": true,
       "members": [
         {
@@ -1036,13 +1036,13 @@
           ],
           "returns": "self",
           "raises": [
-            "polyspec_sessions::Error::InvalidLifetime",
-            "polyspec_sessions::Error::InvalidLockExpire",
-            "polyspec_sessions::Error::InvalidSetting"
+            "polyspec_session_store::Error::InvalidLifetime",
+            "polyspec_session_store::Error::InvalidLockExpire",
+            "polyspec_session_store::Error::InvalidSetting"
           ],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::RedisSessions::new"
+            "path": "polyspec_session_store::RedisSessions::new"
           }
         },
         {
@@ -1067,16 +1067,16 @@
             "unit": "redis_session"
           },
           "raises": [
-            "polyspec_sessions::Error::LockTimeout",
-            "polyspec_sessions::Error::Reply",
-            "polyspec_sessions::Error::Redis",
-            "polyspec_sessions::Error::Connection",
-            "polyspec_sessions::Error::Random",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::LockTimeout",
+            "polyspec_session_store::Error::Reply",
+            "polyspec_session_store::Error::Redis",
+            "polyspec_session_store::Error::Connection",
+            "polyspec_session_store::Error::Random",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "async_driver",
           "core": {
-            "path": "polyspec_sessions::RedisSessions::open",
+            "path": "polyspec_session_store::RedisSessions::open",
             "receiver": "&self"
           }
         }
@@ -1092,7 +1092,7 @@
       "kind": "class",
       "visibility": "public",
       "origin": "generated",
-      "core_type": "polyspec_sessions::RedisSession",
+      "core_type": "polyspec_session_store::RedisSession",
       "final": true,
       "constructible": false,
       "cleanup": "redis_session.close",
@@ -1122,14 +1122,14 @@
             "optional": "php_value"
           },
           "raises": [
-            "polyspec_sessions::Error::Random",
-            "polyspec_sessions::Error::Record",
-            "polyspec_sessions::Error::RecordNotArray",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::Random",
+            "polyspec_session_store::Error::Record",
+            "polyspec_session_store::Error::RecordNotArray",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::get",
+            "path": "polyspec_session_store::Store::get",
             "receiver": "&mut self"
           },
           "optional_reason": "SE-2.1"
@@ -1159,14 +1159,14 @@
           ],
           "returns": "none",
           "raises": [
-            "polyspec_sessions::Error::Random",
-            "polyspec_sessions::Error::Record",
-            "polyspec_sessions::Error::RecordNotArray",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::Random",
+            "polyspec_session_store::Error::Record",
+            "polyspec_session_store::Error::RecordNotArray",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::set",
+            "path": "polyspec_session_store::Store::set",
             "receiver": "&mut self"
           }
         },
@@ -1188,14 +1188,14 @@
           ],
           "returns": "none",
           "raises": [
-            "polyspec_sessions::Error::Random",
-            "polyspec_sessions::Error::Record",
-            "polyspec_sessions::Error::RecordNotArray",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::Random",
+            "polyspec_session_store::Error::Record",
+            "polyspec_session_store::Error::RecordNotArray",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::remove",
+            "path": "polyspec_session_store::Store::remove",
             "receiver": "&mut self"
           }
         },
@@ -1209,14 +1209,14 @@
           "parameters": [],
           "returns": "none",
           "raises": [
-            "polyspec_sessions::Error::Random",
-            "polyspec_sessions::Error::Record",
-            "polyspec_sessions::Error::RecordNotArray",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::Random",
+            "polyspec_session_store::Error::Record",
+            "polyspec_session_store::Error::RecordNotArray",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::Store::renew",
+            "path": "polyspec_session_store::Store::renew",
             "receiver": "&mut self"
           }
         },
@@ -1234,7 +1234,7 @@
           "raises": [],
           "wait": "none",
           "core": {
-            "path": "polyspec_sessions::RedisSession::found",
+            "path": "polyspec_session_store::RedisSession::found",
             "receiver": "&self"
           },
           "optional_reason": "SE-7.1"
@@ -1251,16 +1251,16 @@
             "optional": "text"
           },
           "raises": [
-            "polyspec_sessions::Error::LockLost",
-            "polyspec_sessions::Error::Reply",
-            "polyspec_sessions::Error::Redis",
-            "polyspec_sessions::Error::Connection",
-            "polyspec_sessions::Error::RecordWrite",
-            "polyspec_sessions::Error::Internal"
+            "polyspec_session_store::Error::LockLost",
+            "polyspec_session_store::Error::Reply",
+            "polyspec_session_store::Error::Redis",
+            "polyspec_session_store::Error::Connection",
+            "polyspec_session_store::Error::RecordWrite",
+            "polyspec_session_store::Error::Internal"
           ],
           "wait": "async_driver",
           "core": {
-            "path": "polyspec_sessions::RedisSession::close",
+            "path": "polyspec_session_store::RedisSession::close",
             "receiver": "self"
           },
           "optional_reason": "SE-7.6"
@@ -1268,7 +1268,20 @@
       ]
     }
   ],
-  "changes": [],
+  "changes": [
+    {
+      "id": "change-names",
+      "rule": "N-1",
+      "reason": "plan N-1: a repository is named after what it handles, a noun in the singular, and this library is a store of the values of sessions, so the repository is session-store; design P-1 and E-2 give its package, module and error class names: Composer polyspec/session-store, PHP Polyspec\\SessionStore, PyPI polyspec-session-store, Python polyspec.session_store, npm @polyspec/session-store, PHP extension polyspec_session_store, SessionStore<Category>Error; the crates are polyspec-session-store and polyspec-session-store-core, -file and -redis",
+      "symbol": "polyspec/sessions, Polyspec\\Sessions, polyspec-sessions, polyspec.sessions, @polyspec/sessions",
+      "from": {
+        "php": "Composer polyspec/sessions, namespace Polyspec\\Sessions, extension polyspec_sessions, Sessions<Category>Error",
+        "python": "PyPI polyspec-sessions, module polyspec.sessions, Sessions<Category>Error",
+        "node": "npm @polyspec/sessions, Sessions<Category>Error"
+      },
+      "to": "store"
+    }
+  ],
   "cases": [
     {
       "member": "accept",

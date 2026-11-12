@@ -1,6 +1,6 @@
 //! The store interface (SE-2, SE-3).
 
-use polyspec_php_serialize::{Key, PhpValue};
+use polyspec_php_serialization::{Key, PhpValue};
 
 use crate::Failure;
 

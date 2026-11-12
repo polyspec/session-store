@@ -7,10 +7,10 @@ use std::path::Path;
 use std::time::{Duration, SystemTime};
 
 use bindgen_core::{cancel_pair, Io, Kinds, ProcessWait};
-use polyspec_php_serialize::{serialize, unserialize, Node, PhpValue};
-use polyspec_sessions_core::Error;
-use polyspec_sessions_core::Store;
-use polyspec_sessions_file::FileSessions;
+use polyspec_php_serialization::{serialize, unserialize, Node, PhpValue};
+use polyspec_session_store_core::Error;
+use polyspec_session_store_core::Store;
+use polyspec_session_store_file::FileSessions;
 use rustix::fs::FlockOperation;
 
 const ID: &str = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";

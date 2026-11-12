@@ -4,7 +4,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
 
 use bindgen_core::Cancel;
-use polyspec_sessions_core::Error;
+use polyspec_session_store_core::Error;
 
 /// The tickets of one identifier in the order of their requests; the first holds the turn.
 #[derive(Debug, Default)]

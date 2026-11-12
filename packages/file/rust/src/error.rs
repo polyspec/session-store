@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use polyspec_sessions_core::{Error, IoKind};
+use polyspec_session_store_core::{Error, IoKind};
 
 /// The kind of an `errno` (SF-9.2).
 fn kind_of(errno: Option<i32>) -> IoKind {

@@ -10,11 +10,11 @@ use std::time::{Duration, Instant};
 
 use bindgen_core::{Failure, Kinds};
 use libtest_mimic::{Arguments, Failed, Trial};
-use polyspec_php_serialize::{serialize, unserialize};
-use polyspec_sessions_core::Error;
-use polyspec_sessions_core::Store;
-use polyspec_sessions_redis::protocol::{Closing, Opening, Step, RELEASE};
-use polyspec_sessions_redis::{Command, Options, RedisSessions, Reply, Setting, StoreOptions};
+use polyspec_php_serialization::{serialize, unserialize};
+use polyspec_session_store_core::Error;
+use polyspec_session_store_core::Store;
+use polyspec_session_store_redis::protocol::{Closing, Opening, Step, RELEASE};
+use polyspec_session_store_redis::{Command, Options, RedisSessions, Reply, Setting, StoreOptions};
 use serde_json::Value;
 
 const CONTRACT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../contracts/redis-sessions.json"));

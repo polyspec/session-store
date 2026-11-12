@@ -1,5 +1,5 @@
 {
-  "name": "polyspec/sessions",
+  "name": "polyspec/session-store",
   "description": "The sessions library of polyspec as a PHP extension",
   "type": "php-ext",
   "license": "MIT",
@@ -7,6 +7,6 @@
     "php": ">=8.4"
   },
   "php-ext": {
-    "extension-name": "polyspec_sessions"
+    "extension-name": "polyspec_session_store"
   }
 }

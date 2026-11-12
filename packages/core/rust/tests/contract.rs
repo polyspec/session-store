@@ -5,8 +5,8 @@ use std::process::Command;
 
 use bindgen_core::{Failure, Kinds};
 use libtest_mimic::{Arguments, Failed, Trial};
-use polyspec_php_serialize::{serialize, unserialize, PhpValue};
-use polyspec_sessions_core::{accept, Found, MemoryStore, Outcome, RecordSession, Store};
+use polyspec_php_serialization::{serialize, unserialize, PhpValue};
+use polyspec_session_store_core::{accept, Found, MemoryStore, Outcome, RecordSession, Store};
 use serde_json::Value;
 
 const CONTRACT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../contracts/sessions.json"));
@@ -63,7 +63,7 @@ fn run(
     store: &mut dyn Store,
     name: &str,
     arguments: &[String],
-) -> Result<Result<Value, polyspec_sessions_core::Error>, Failed> {
+) -> Result<Result<Value, polyspec_session_store_core::Error>, Failed> {
     let result = match (name, arguments) {
         ("get", [key]) => store.get(key).map(|value| value.map(|value| written(&value))),
         ("set", [key, value]) => store.set(key, &value_of(value)?).map(|()| None),
@@ -203,7 +203,7 @@ fn record(case: &Value) -> Result<(), Failed> {
     }
 }
 
-fn expect_raises(error: &polyspec_sessions_core::Error, raises: &Value) -> Result<(), Failed> {
+fn expect_raises(error: &polyspec_session_store_core::Error, raises: &Value) -> Result<(), Failed> {
     expect_eq("kind", &error.kind(), &str_of(raises, "kind")?)?;
     expect_eq("status", &error.status().map(u64::from), &raises.get("status").and_then(Value::as_u64))?;
     expect_eq("category", &"store", &str_of(raises, "category")?)?;

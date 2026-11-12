@@ -97,7 +97,7 @@ fn call(session: &mut FileSession, call: &Value) -> Result<Result<Value, polyspe
         Ok(Some(bytes)) => Ok(Ok(Value::String(text_of(&bytes.map_err(failed)?)))),
         Ok(None) => Ok(Ok(Value::Null)),
         Err(Failure::Kind(error)) => Ok(Err(error)),
-        Err(Failure::Raised(_)) => Err("the store raised a language exception".into()),
+        Err(Failure::Raised(_) | Failure::Callback(_)) => Err("the store raised an exception of its caller".into()),
     }
 }
 

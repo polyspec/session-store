@@ -117,7 +117,7 @@ fn the_requests_of_one_session_in_one_process_lose_no_write() -> Result<(), Fail
                     },
                     Ok(None) => return Err("n is gone".to_owned()),
                     Err(Failure::Kind(error)) => return Err(error.to_string()),
-                    Err(Failure::Raised(_)) => return Err("raised".to_owned()),
+                    Err(Failure::Raised(_) | Failure::Callback(_)) => return Err("raised".to_owned()),
                 };
                 tokio::time::sleep(Duration::from_millis(2)).await;
                 if let Err(error) = opened.set("n", &integer(number + 1)) {

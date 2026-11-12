@@ -6,7 +6,7 @@ use crate::Failure;
 
 /// The store of the values of one session for one request (SE-2). A store of another language implements it through
 /// its binding (SE-3.1); an exception of that store is [`bindgen_core::Failure::Raised`] and goes back to the caller
-/// unchanged (SE-3.2).
+/// unchanged (SE-3.2), and an error of a store that Rust code implements is [`bindgen_core::Failure::Callback`].
 pub trait Store {
     /// The value that a key holds, or `None` when it holds none (SE-2.1). The caller owns the value (SE-2.4).
     fn get(&mut self, key: &str) -> Result<Option<PhpValue>, Failure>;

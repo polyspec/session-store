@@ -125,7 +125,9 @@ fn calls(session: &mut dyn Store, step: &Value) -> Result<Vec<Value>, Failed> {
             Ok(Some(bytes)) => Value::String(text_of(&bytes.map_err(failed)?)),
             Ok(None) => Value::Null,
             Err(Failure::Kind(error)) => return Err(format!("a call fails: {error}").into()),
-            Err(Failure::Raised(_)) => return Err("the store raised a language exception".into()),
+            Err(Failure::Raised(_) | Failure::Callback(_)) => {
+                return Err("the store raised an exception of its caller".into())
+            }
         });
     }
     Ok(results)

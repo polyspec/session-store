@@ -39,7 +39,8 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   language. A binding wraps such a store as an implementation of the Rust trait `Store` and calls its four members
   (bindgen design U-3). <a id="SE-3.2"></a> An exception that such a store raises is not an error of this library: it
   stops the operation, goes through the core unchanged and reaches the caller as the same object; the library neither
-  wraps it nor changes it. <a id="SE-3.3"></a> Such a store must follow SE-2. Its locking (SE-8), its sharing with other
+  wraps it nor changes it. A store that Rust code implements returns its own error the same way
+  (`Failure::Callback` of bindgen-core), and the operation gives it back to that Rust caller unchanged. <a id="SE-3.3"></a> Such a store must follow SE-2. Its locking (SE-8), its sharing with other
   processes and its interoperation with other servers are the responsibility of the application, and the library checks
   none of them. <a id="SE-3.4"></a> In a language whose null is both the absence of a value and the PHP value null (PHP,
   Python, Node), `get` of a key that holds no value and of a key that holds null give the same language value; the Rust

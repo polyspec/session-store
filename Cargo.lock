@@ -578,7 +578,7 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 [[package]]
 name = "polyspec-bindgen-core"
 version = "0.0.1"
-source = "git+https://github.com/polyspec/bindgen.git?branch=v1%2Frust-core#1da44b339b740fab1b2af1da1b730d7aaf2290c9"
+source = "git+https://github.com/polyspec/bindgen.git?branch=v1%2Frust-core#3b49afd0b72dbafe917bced9adaae41f89fb48e6"
 dependencies = [
  "indexmap",
  "tokio-util",
@@ -587,8 +587,9 @@ dependencies = [
 [[package]]
 name = "polyspec-php-serialize"
 version = "0.0.6"
-source = "git+https://github.com/polyspec/php-serialize.git?branch=v1%2Frust-core#389b573573e52a474a07114238d98a95592fa121"
+source = "git+https://github.com/polyspec/php-serialize.git?branch=v1%2Frust-core#948de5850c20bd4a28956571ae482964f2ebc6bd"
 dependencies = [
+ "polyspec-bindgen-core",
  "ryu",
 ]
 

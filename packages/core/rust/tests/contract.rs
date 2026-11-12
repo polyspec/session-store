@@ -75,7 +75,9 @@ fn run(
         Ok(Some(text)) => Ok(Ok(Value::String(text?))),
         Ok(None) => Ok(Ok(Value::Null)),
         Err(Failure::Kind(error)) => Ok(Err(error)),
-        Err(Failure::Raised(_)) => Err("a store of this crate raised a language exception".into()),
+        Err(Failure::Raised(_) | Failure::Callback(_)) => {
+            Err("a store of this crate raised an exception of its caller".into())
+        }
     }
 }
 

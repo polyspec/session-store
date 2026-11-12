@@ -11,7 +11,7 @@ mod record;
 mod session;
 mod store;
 
-pub use error::Error;
+pub use error::{Error, IoKind};
 pub use identifier::{accept, new_identifier, random_hex};
 pub use memory::MemoryStore;
 pub use session::{Found, Outcome, RecordSession};

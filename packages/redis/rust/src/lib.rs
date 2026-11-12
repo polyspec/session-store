@@ -5,12 +5,10 @@
 #![forbid(unsafe_code)]
 
 mod connection;
-mod error;
 pub mod protocol;
 mod turns;
 
 pub use connection::{RedisSession, RedisSessions, Setting};
-pub use error::Error;
 pub use protocol::{Command, Options, Reply, Session, StoreOptions};
 
 #[cfg(test)]
@@ -21,5 +19,4 @@ mod tests {
     const fn send_sync<T: Send + Sync>() {}
     const _: () = send_sync::<super::RedisSessions>();
     const _: () = send_sync::<super::RedisSession>();
-    const _: () = send_sync::<super::Error>();
 }

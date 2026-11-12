@@ -112,8 +112,9 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
 
   The errors of `record` and `record_write` carry the offset of the error of php-serialize, or none (`offset`).
   <a id="SE-9.3"></a> The status is that of the request whose session fails: a session that the server cannot read or
-  write fails the request as an error of the server. <a id="SE-9.4"></a> The crates of the stores add their kinds
-  (SF-9, SR-9); an error of the core that their operations meet keeps its kind.
+  write fails the request as an error of the server. <a id="SE-9.4"></a> The kinds of the stores (SF-9, SR-9) are
+  variants of the same error enum, `Error` of `polyspec-sessions-core`, so that one kind interface and one table of
+  classes hold every failure of the library, and a failure of the record that a store meets keeps its kind.
 
 ## The store of files
 

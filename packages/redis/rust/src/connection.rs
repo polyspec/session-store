@@ -8,8 +8,8 @@ use redis::sentinel::{Sentinel, SentinelNodeConnectionInfo};
 use redis::{RedisConnectionInfo, TlsMode};
 use tokio::sync::Mutex;
 
-use crate::error::Error;
 use polyspec_php_serialize::PhpValue;
+use polyspec_sessions_core::Error;
 use polyspec_sessions_core::{Failure, Store};
 
 use crate::protocol::{Closing, Command, Opening, Options, Reply, Session, Step, StoreOptions};
@@ -180,9 +180,7 @@ impl Link {
             }
             Self::Sentinel { primary, .. } => match primary {
                 Some((_, connection)) => Ok(Connection::Server(connection.clone())),
-                None => Err(Error::Core(polyspec_sessions_core::Error::Internal {
-                    what: "a command is sent before Sentinel named the primary",
-                })),
+                None => Err(Error::Internal { what: "a command is sent before Sentinel named the primary" }),
             },
             Self::Cluster { client, connection } => {
                 let connection = match connection {

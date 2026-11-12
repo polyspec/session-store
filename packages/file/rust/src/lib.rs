@@ -7,7 +7,6 @@ mod error;
 mod store;
 mod turns;
 
-pub use error::{Error, IoKind};
 pub use store::{FileSession, FileSessions, DEFAULT_LIFETIME};
 
 #[cfg(test)]
@@ -18,5 +17,4 @@ mod tests {
     const fn send_sync<T: Send + Sync>() {}
     const _: () = send_sync::<super::FileSessions>();
     const _: () = send_sync::<super::FileSession>();
-    const _: () = send_sync::<super::Error>();
 }

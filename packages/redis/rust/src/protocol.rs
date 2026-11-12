@@ -6,7 +6,7 @@ use std::time::Duration;
 use polyspec_php_serialize::PhpValue;
 use polyspec_sessions_core::{accept, random_hex, Failure, Found, Outcome, RecordSession, Store};
 
-use crate::error::Error;
+use polyspec_sessions_core::Error;
 
 /// The release script (SR-2.3).
 pub const RELEASE: &str =
@@ -332,9 +332,7 @@ impl Opening {
             (OpeningState::Get, Some(Reply::Nil)) => Ok(self.release(After::Ok(Session::without_session()))),
             (OpeningState::Get, Some(reply)) => Ok(self.release(After::Err(unexpected("GET", &reply)))),
             (OpeningState::Release(then), Some(reply)) => finish_release(*then, &reply),
-            (_, _) => Err(Error::Core(polyspec_sessions_core::Error::Internal {
-                what: "the opening is given a reply that it did not ask for",
-            })),
+            (_, _) => Err(Error::Internal { what: "the opening is given a reply that it did not ask for" }),
         }
     }
 }
@@ -371,7 +369,7 @@ impl Closing {
     #[must_use]
     pub fn new(options: &Options, session: Session) -> Self {
         let Session { record, lock } = session;
-        Self { options: options.clone(), lock, state: ClosingState::Start(record.finish().map_err(Error::Core)) }
+        Self { options: options.clone(), lock, state: ClosingState::Start(record.finish()) }
     }
 
     /// Releases a held lock and then ends with `then`, or ends at once without a lock (SR-4.5).
@@ -419,9 +417,7 @@ impl Closing {
             (ClosingState::Expire, Some(reply)) => self.release(After::Err(unexpected("EXPIRE", &reply))),
             (ClosingState::CompareLock { id, record, new, removes }, Some(reply)) => {
                 let Some(lock) = &self.lock else {
-                    return Err(Error::Core(polyspec_sessions_core::Error::Internal {
-                        what: "a closing without a lock compares a lock",
-                    }));
+                    return Err(Error::Internal { what: "a closing without a lock compares a lock" });
                 };
                 match reply {
                     Reply::Bulk(held) if held == lock.secret.as_bytes() => Ok(self.write(id, &record, new, removes)),
@@ -447,9 +443,7 @@ impl Closing {
             (ClosingState::Delete { result }, Some(Reply::Integer(_))) => self.release(After::Ok(result)),
             (ClosingState::Delete { .. }, Some(reply)) => self.release(After::Err(unexpected("DEL", &reply))),
             (ClosingState::Release(then), Some(reply)) => finish_release(then, &reply),
-            (_, _) => Err(Error::Core(polyspec_sessions_core::Error::Internal {
-                what: "the closing is given a reply that it did not ask for",
-            })),
+            (_, _) => Err(Error::Internal { what: "the closing is given a reply that it did not ask for" }),
         }
     }
 }

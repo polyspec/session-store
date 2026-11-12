@@ -13,7 +13,9 @@ use polyspec_sessions_core::{accept, Failure, Found, Outcome, RecordSession, Sto
 use rustix::fs::{FlockOperation, Mode, OFlags, Stat, Timespec, Timestamps};
 use rustix::io::Errno;
 
-use crate::error::Error;
+use polyspec_sessions_core::Error;
+
+use crate::error::{errno as errno_error, io as io_error};
 use crate::turns::{Turn, Turns};
 
 /// The lifetime of a session when the caller states none: `session.gc_maxlifetime` of PHP (SF-1.3).
@@ -85,7 +87,7 @@ fn same_file(locked: &Stat, path: &Path) -> Result<bool, Error> {
     match rustix::fs::lstat(path) {
         Ok(current) => Ok(current.st_dev == locked.st_dev && current.st_ino == locked.st_ino),
         Err(Errno::NOENT) => Ok(false),
-        Err(errno) => Err(Error::errno("lstat", path, errno)),
+        Err(errno) => Err(errno_error("lstat", path, errno)),
     }
 }
 
@@ -153,13 +155,13 @@ impl FileSessions {
             let file = match rustix::fs::open(&path, OPEN, Mode::empty()) {
                 Ok(descriptor) => File::from(descriptor),
                 Err(Errno::NOENT) => return Ok(self.without_session()),
-                Err(errno) => return Err(Error::errno("open", &path, errno)),
+                Err(errno) => return Err(errno_error("open", &path, errno)),
             };
-            flock(&file, FlockOperation::LockExclusive).map_err(|errno| Error::errno("flock", &path, errno))?;
+            flock(&file, FlockOperation::LockExclusive).map_err(|errno| errno_error("flock", &path, errno))?;
             if cancelled() {
                 return Err(Error::Cancelled);
             }
-            let locked = rustix::fs::fstat(&file).map_err(|errno| Error::errno("fstat", &path, errno))?;
+            let locked = rustix::fs::fstat(&file).map_err(|errno| errno_error("fstat", &path, errno))?;
             if same_file(&locked, &path)? {
                 break (file, locked);
             }
@@ -168,7 +170,7 @@ impl FileSessions {
             return Ok(self.without_session());
         }
         let mut record = Vec::new();
-        (&file).read_to_end(&mut record).map_err(|error| Error::io("read", &path, &error))?;
+        (&file).read_to_end(&mut record).map_err(|error| io_error("read", &path, &error))?;
         Ok(FileSession {
             shared: Arc::clone(&self.shared),
             record: RecordSession::new(Some(Found { id, record })),
@@ -179,10 +181,10 @@ impl FileSessions {
     /// Removes the files of ended sessions whose lock no request holds, and gives how many it removed (SF-5).
     pub fn collect(&self, _io: Io) -> Result<u64, Error> {
         let directory = &self.shared.directory;
-        let entries = std::fs::read_dir(directory).map_err(|error| Error::io("read_dir", directory, &error))?;
+        let entries = std::fs::read_dir(directory).map_err(|error| io_error("read_dir", directory, &error))?;
         let mut removed: u64 = 0;
         for entry in entries {
-            let entry = entry.map_err(|error| Error::io("read_dir", directory, &error))?;
+            let entry = entry.map_err(|error| io_error("read_dir", directory, &error))?;
             let name = entry.file_name();
             let Some(id) =
                 name.to_str().and_then(|name| name.strip_prefix(PREFIX)).and_then(|id| accept(id.as_bytes()))
@@ -193,21 +195,20 @@ impl FileSessions {
             let file = match rustix::fs::open(&path, OPEN, Mode::empty()) {
                 Ok(descriptor) => File::from(descriptor),
                 Err(Errno::NOENT) => continue,
-                Err(errno) => return Err(Error::errno("open", &path, errno)),
+                Err(errno) => return Err(errno_error("open", &path, errno)),
             };
             match flock(&file, FlockOperation::NonBlockingLockExclusive) {
                 Ok(()) => {}
                 Err(Errno::WOULDBLOCK) => continue,
-                Err(errno) => return Err(Error::errno("flock", &path, errno)),
+                Err(errno) => return Err(errno_error("flock", &path, errno)),
             }
-            let locked = rustix::fs::fstat(&file).map_err(|errno| Error::errno("fstat", &path, errno))?;
+            let locked = rustix::fs::fstat(&file).map_err(|errno| errno_error("fstat", &path, errno))?;
             if !self.shared.ended(&locked) || !same_file(&locked, &path)? {
                 continue;
             }
-            rustix::fs::unlink(&path).map_err(|errno| Error::errno("unlink", &path, errno))?;
-            removed = removed
-                .checked_add(1)
-                .ok_or(polyspec_sessions_core::Error::Internal { what: "the count of removed sessions passes u64" })?;
+            rustix::fs::unlink(&path).map_err(|errno| errno_error("unlink", &path, errno))?;
+            removed =
+                removed.checked_add(1).ok_or(Error::Internal { what: "the count of removed sessions passes u64" })?;
         }
         Ok(removed)
     }
@@ -228,13 +229,11 @@ impl FileSession {
             Outcome::Unused => Ok(None),
             Outcome::Unchanged { id } => {
                 let Some(held) = held else {
-                    return Err(
-                        polyspec_sessions_core::Error::Internal { what: "an unchanged session holds no file" }.into()
-                    );
+                    return Err(Error::Internal { what: "an unchanged session holds no file" });
                 };
                 let now = Timespec { tv_sec: 0, tv_nsec: rustix::fs::UTIME_NOW };
                 rustix::fs::futimens(&held.file, &Timestamps { last_access: now, last_modification: now })
-                    .map_err(|errno| Error::errno("futimens", shared.file(&id), errno))?;
+                    .map_err(|errno| errno_error("futimens", shared.file(&id), errno))?;
                 Ok(None)
             }
             Outcome::Write { id, record, new, removes } => {
@@ -243,18 +242,16 @@ impl FileSession {
                     create(&path, &id, &record)?;
                 } else {
                     let Some(held) = &held else {
-                        return Err(
-                            polyspec_sessions_core::Error::Internal { what: "a found session holds no file" }.into()
-                        );
+                        return Err(Error::Internal { what: "a found session holds no file" });
                     };
-                    held.file.write_all_at(&record, 0).map_err(|error| Error::io("write", &path, &error))?;
+                    held.file.write_all_at(&record, 0).map_err(|error| io_error("write", &path, &error))?;
                     let length = u64::try_from(record.len())
-                        .map_err(|_error| polyspec_sessions_core::Error::Internal { what: "a record passes u64" })?;
-                    held.file.set_len(length).map_err(|error| Error::io("ftruncate", &path, &error))?;
+                        .map_err(|_error| Error::Internal { what: "a record passes u64" })?;
+                    held.file.set_len(length).map_err(|error| io_error("ftruncate", &path, &error))?;
                 }
                 if let Some(old) = removes {
                     let old = shared.file(&old);
-                    rustix::fs::unlink(&old).map_err(|errno| Error::errno("unlink", &old, errno))?;
+                    rustix::fs::unlink(&old).map_err(|errno| errno_error("unlink", &old, errno))?;
                 }
                 drop(held);
                 Ok(if new { Some(id) } else { None })
@@ -269,9 +266,9 @@ fn create(path: &Path, id: &str, record: &[u8]) -> Result<(), Error> {
     let file = match rustix::fs::open(path, flags, Mode::RUSR.union(Mode::WUSR)) {
         Ok(descriptor) => File::from(descriptor),
         Err(Errno::EXIST) => return Err(Error::IdentifierTaken { id: id.to_owned() }),
-        Err(errno) => return Err(Error::errno("open", path, errno)),
+        Err(errno) => return Err(errno_error("open", path, errno)),
     };
-    file.write_all_at(record, 0).map_err(|error| Error::io("write", path, &error))
+    file.write_all_at(record, 0).map_err(|error| io_error("write", path, &error))
 }
 
 // B-10: a session that holds a lock has the cleanup call close.

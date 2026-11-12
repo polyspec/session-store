@@ -65,13 +65,26 @@ fn options(case: &Value) -> Result<Options, Failed> {
     options_of(case).map_err(failed)
 }
 
+/// The lock expiry of a case. A case without one is one that the binding refuses (SR-1.2), and its 0 is refused here.
+#[allow(
+    clippy::manual_unwrap_or_default,
+    clippy::manual_unwrap_or,
+    reason = "SR-1.2: the 0 of a missing expiry is refused, not taken"
+)]
+fn lock_expire(case: &Value) -> u64 {
+    match case.get("options").and_then(|options| options.get("lock_expire")).and_then(Value::as_u64) {
+        Some(seconds) => seconds,
+        None => 0,
+    }
+}
+
 fn store_options(case: &Value) -> StoreOptions {
     let options = case.get("options");
     let number = |name: &str| options.and_then(|options| options.get(name)).and_then(Value::as_u64);
     StoreOptions {
         lifetime: number("lifetime"),
         prefix: options.and_then(|options| options.get("prefix")).and_then(Value::as_str).map(str::to_owned),
-        lock_expire: number("lock_expire"),
+        lock_expire: lock_expire(case),
         lock_retries: number("lock_retries"),
         lock_wait: number("lock_wait"),
     }
@@ -83,7 +96,7 @@ fn options_of(case: &Value) -> Result<Options, Error> {
     Options::new(
         number("lifetime"),
         options.and_then(|options| options.get("prefix")).and_then(Value::as_str).map(str::to_owned),
-        number("lock_expire"),
+        lock_expire(case),
         number("lock_retries"),
         number("lock_wait"),
     )

@@ -823,17 +823,16 @@
    ]
   },
   {
-   "id": "a_cookie_value_of_129_characters_starts_a_new_session",
-   "label": "a cookie value of 129 characters is no identifier and starts a new session",
+   "id": "a_cookie_value_of_257_characters_starts_a_new_session",
+   "label": "a cookie value of 257 characters is no identifier and starts a new session",
    "rules": [
     "SE-5.1",
-    "SF-3.1",
-    "SF-3.3"
+    "SF-3.1"
    ],
    "files": [],
    "steps": [
     {
-     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
      "calls": [
       [
        "get",

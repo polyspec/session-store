@@ -65,13 +65,18 @@ fn integer(value: i64) -> PhpValue {
     }
 }
 
+/// The options of every test: the lock expiry, which has no default (SR-1.2), and the defaults.
+fn options() -> StoreOptions {
+    StoreOptions { lifetime: None, prefix: None, lock_expire: 30, lock_retries: None, lock_wait: None }
+}
+
 fn runtime() -> Result<tokio::runtime::Runtime, Failed> {
     tokio::runtime::Builder::new_multi_thread().worker_threads(4).enable_all().build().map_err(failed)
 }
 
 /// Writes a session with `n` = 1 and reads it back through a store of the setting.
 async fn round_trip(setting: Setting) -> Result<(), Failed> {
-    let store = RedisSessions::new(setting, StoreOptions::default()).map_err(failed)?;
+    let store = RedisSessions::new(setting, options()).map_err(failed)?;
     let mut opened = store.open(None).await.map_err(failed)?;
     opened.set("n", &integer(1)).map_err(|error| failed(format!("{error:?}")))?;
     let Some(id) = opened.close().await.map_err(failed)? else {
@@ -93,7 +98,7 @@ fn the_requests_of_one_session_in_one_process_lose_no_write() -> Result<(), Fail
     let _server = start(&["--port", &port.to_string()], port, directory.path())?;
     runtime()?.block_on(async {
         let setting = Setting::Server { url: format!("redis://127.0.0.1:{port}/") };
-        let store = Arc::new(RedisSessions::new(setting, StoreOptions::default()).map_err(failed)?);
+        let store = Arc::new(RedisSessions::new(setting, options()).map_err(failed)?);
         let mut opened = store.open(None).await.map_err(failed)?;
         opened.set("n", &integer(0)).map_err(|error| failed(format!("{error:?}")))?;
         let Some(id) = opened.close().await.map_err(failed)? else {
@@ -148,7 +153,7 @@ fn an_acl_user_connects_and_a_wrong_password_tells_nothing() -> Result<(), Faile
     let wrong = runtime.block_on(async {
         let store = RedisSessions::new(
             Setting::Server { url: format!("redis://alice:wrongword@127.0.0.1:{port}/") },
-            StoreOptions::default(),
+            options(),
         )
         .map_err(failed)?;
         Ok::<_, Failed>(store.open(Some(&[b'a'; 32])).await)

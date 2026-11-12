@@ -4,7 +4,7 @@ use crate::error::Error;
 
 /// The least and the greatest length of an identifier (SE-5.1).
 const SHORTEST: usize = 22;
-const LONGEST: usize = 128;
+const LONGEST: usize = 256;
 
 /// Gives the identifier of the bytes of a session cookie value, or `None` when the bytes are not an identifier, the
 /// only reason of the absence (SE-5.1, SE-5.2).

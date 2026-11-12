@@ -18,7 +18,8 @@
    ],
    "options": {
     "lock_retries": 2,
-    "lock_wait": 0
+    "lock_wait": 0,
+    "lock_expire": 30
    },
    "steps": [
     {
@@ -154,7 +155,10 @@
      "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
      "another holder"
     ]
-   ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
   },
   {
    "id": "a_request_that_changed_nothing_sets_only_a_new_expiry",
@@ -224,7 +228,10 @@
      "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
      "a:1:{s:1:\"n\";i:0;}"
     ]
-   ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
   },
   {
    "id": "a_reply_that_is_not_bytes_fails_and_releases_the_lock",
@@ -284,7 +291,10 @@
      "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
      "a:1:{s:1:\"n\";i:0;}"
     ]
-   ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
   },
   {
    "id": "a_request_that_writes_compares_the_lock_first",
@@ -361,7 +371,10 @@
      "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
      "a:1:{s:1:\"n\";i:1;}"
     ]
-   ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
   },
   {
    "id": "a_new_session_is_written_without_a_lock",
@@ -405,7 +418,10 @@
      "PHPREDIS_SESSION:#0",
      "a:1:{s:1:\"a\";i:1;}"
     ]
-   ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
   },
   {
    "id": "an_identifier_without_a_key_starts_a_new_session",
@@ -452,7 +468,10 @@
      "PHPREDIS_SESSION:#0",
      "a:0:{}"
     ]
-   ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
   },
   {
    "id": "a_session_that_is_not_used_releases_its_lock",
@@ -508,7 +527,10 @@
      "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
      "a:0:{}"
     ]
-   ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
   },
   {
    "id": "a_renewal_writes_the_new_key_before_it_deletes_the_old",
@@ -585,7 +607,10 @@
      "PHPREDIS_SESSION:#0",
      "a:1:{s:1:\"a\";i:1;}"
     ]
-   ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
   },
   {
    "id": "a_short_cookie_value_sends_nothing_at_opening",
@@ -607,7 +632,10 @@
     null
    ],
    "commands": [],
-   "stored": []
+   "stored": [],
+   "options": {
+    "lock_expire": 30
+   }
   },
   {
    "id": "the_options_name_the_keys_and_times",
@@ -694,7 +722,8 @@
     "SR-1.2"
    ],
    "options": {
-    "lifetime": 0
+    "lifetime": 0,
+    "lock_expire": 30
    },
    "raises": {
     "kind": "invalid_lifetime",
@@ -720,16 +749,18 @@
    }
   },
   {
-   "id": "the_defaults_are_those_of_phpredis_and_php",
-   "label": "the defaults of the options",
+   "id": "without_options_the_defaults_are_taken",
+   "label": "the options that the caller leaves out take their defaults; the lock expiry has none and is stated",
    "rules": [
     "SR-1.2"
    ],
-   "options": {},
+   "options": {
+    "lock_expire": 45
+   },
    "defaults": {
     "lifetime": 1440,
     "prefix": "PHPREDIS_SESSION:",
-    "lock_expire": 30,
+    "lock_expire": 45,
     "lock_retries": 100,
     "lock_wait": 20000
    }
@@ -742,7 +773,8 @@
     "SR-8.2"
    ],
    "options": {
-    "lifetime": -1
+    "lifetime": -1,
+    "lock_expire": 30
    },
    "binding": true,
    "raises": {
@@ -760,7 +792,8 @@
     "SR-8.2"
    ],
    "options": {
-    "lifetime": 1.5
+    "lifetime": 1.5,
+    "lock_expire": 30
    },
    "binding": true,
    "raises": {
@@ -778,7 +811,8 @@
     "SR-8.2"
    ],
    "options": {
-    "lifetime": "60"
+    "lifetime": "60",
+    "lock_expire": 30
    },
    "binding": true,
    "raises": {
@@ -796,7 +830,8 @@
     "SR-8.2"
    ],
    "options": {
-    "lifetime": true
+    "lifetime": true,
+    "lock_expire": 30
    },
    "binding": true,
    "raises": {
@@ -870,6 +905,21 @@
    "options": {
     "lock_expire": true
    },
+   "binding": true,
+   "raises": {
+    "kind": "invalid_argument_type",
+    "status": null,
+    "category": "type",
+    "message": null
+   }
+  },
+  {
+   "id": "a_missing_lock_expiry_fails",
+   "label": "a store without a lock expiry is refused, because the expiry has no default",
+   "rules": [
+    "SR-1.2"
+   ],
+   "options": {},
    "binding": true,
    "raises": {
     "kind": "invalid_argument_type",

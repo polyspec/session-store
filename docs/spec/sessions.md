@@ -48,9 +48,9 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
 
 ## Identifiers
 
-- **SE-5** <a id="SE-5.1"></a> A session identifier is a text of 22 to 128 characters, each of `A`–`Z`, `a`–`z`, `0`–`9`,
-  `,` and `-`. The characters are those of an identifier that PHP accepts for its session handlers, so an identifier
-  that PHP created is accepted; 22 is the least length of a PHP identifier (`session.sid_length`). <a id="SE-5.2"></a>
+- **SE-5** <a id="SE-5.1"></a> A session identifier is a text of 22 to 256 characters, each of `A`–`Z`, `a`–`z`, `0`–`9`,
+  `,` and `-`. The characters and the lengths are those of an identifier that PHP creates for its session handlers
+  (`session.sid_length` from 22 to 256), so every identifier that PHP created is accepted. <a id="SE-5.2"></a>
   `accept` takes the bytes of a session cookie value and gives the identifier, or nothing for any bytes that are not an
   identifier, which is the only reason of its absence. A value that is not an identifier names no session and fails
   nothing, because a cookie is input of the browser. <a id="SE-5.3"></a> A new identifier is 32 bytes of the random
@@ -210,12 +210,13 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   |---|---|---|---|
   | `lifetime` | seconds after the last request of a session until it ends | 1440 (`session.gc_maxlifetime`) | 0, kind `invalid_lifetime` |
   | `prefix` | the prefix of the keys, the `prefix` of `session.save_path` of phpredis | `PHPREDIS_SESSION:` | none |
-  | `lock_expire` | seconds until a lock expires, `redis.session.lock_expire` | 30 | 0 and a number of seconds whose milliseconds pass 2^64 − 1, kind `invalid_lock_expire` |
+  | `lock_expire` | seconds until a lock expires, `redis.session.lock_expire` | none: the caller states it | 0 and a number of seconds whose milliseconds pass 2^64 − 1, kind `invalid_lock_expire` |
   | `lock_retries` | how many more times a request tries a taken lock, `redis.session.lock_retries` | 100 | none |
   | `lock_wait` | microseconds between two tries, `redis.session.lock_wait_time` | 20000 | none |
 
   <a id="SR-1.3"></a> Every process of one Redis server gives the options the same values, and `lock_expire` is longer
-  than any request.
+  than any request. `lock_expire` has no default, because no value is longer than every request of every application
+  and phpredis has none either (its 0 takes `max_execution_time`); the caller states it.
 - **SR-2** <a id="SR-2.1"></a> A session is the key `<prefix><id>`, whose bytes are its record (SE-6) and which expires
   after the lifetime. Its lock is the key `<prefix><id>_LOCK`. <a id="SR-2.2"></a> A request takes the lock with a
   secret of its own: 16 bytes of the random source of the operating system as 32 lowercase hexadecimal digits, so that

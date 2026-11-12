@@ -12,12 +12,13 @@ use crate::error::Error;
 pub const RELEASE: &str =
     r#"if redis.call("get",KEYS[1]) == ARGV[1] then return redis.call("del",KEYS[1]) else return 0 end"#;
 
-/// The options that the caller states, each `None` for its default (SR-1.2): the record of the interface contract.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+/// The options that the caller states, each `None` for its default, and the lock expiry, which has none (SR-1.2): the
+/// record of the interface contract.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoreOptions {
     pub lifetime: Option<u64>,
     pub prefix: Option<String>,
-    pub lock_expire: Option<u64>,
+    pub lock_expire: u64,
     pub lock_retries: Option<u64>,
     pub lock_wait: Option<u64>,
 }
@@ -38,18 +39,17 @@ impl Options {
     pub const LIFETIME: u64 = 1440;
     /// The default prefix of phpredis (SR-1.2).
     pub const PREFIX: &'static str = "PHPREDIS_SESSION:";
-    /// The default lock expiry in seconds (SR-1.2).
-    pub const LOCK_EXPIRE: u64 = 30;
     /// The default number of further tries, `redis.session.lock_retries` of phpredis (SR-1.2).
     pub const LOCK_RETRIES: u64 = 100;
     /// The default microseconds between two tries, `redis.session.lock_wait_time` of phpredis (SR-1.2).
     pub const LOCK_WAIT: u64 = 20_000;
 
-    /// The options, each the default when it is `None`; a lifetime or a lock expiry of 0 fails (SR-1.2).
+    /// The options, each the default when it is `None`; the lock expiry has none. A lifetime or a lock expiry of 0 fails
+    /// (SR-1.2).
     pub fn new(
         lifetime: Option<u64>,
         prefix: Option<String>,
-        lock_expire: Option<u64>,
+        lock_expire: u64,
         lock_retries: Option<u64>,
         lock_wait: Option<u64>,
     ) -> Result<Self, Error> {
@@ -58,11 +58,10 @@ impl Options {
             Some(0) => return Err(Error::InvalidLifetime),
             Some(seconds) => seconds,
         };
-        let lock_expire = match lock_expire {
-            None => Self::LOCK_EXPIRE,
-            Some(0) => return Err(Error::InvalidLockExpire),
-            Some(seconds) => seconds,
-        };
+        // SR-1.2: the lock expiry has no default.
+        if lock_expire == 0 {
+            return Err(Error::InvalidLockExpire);
+        }
         let lock_expire_milliseconds = lock_expire.checked_mul(1000).ok_or(Error::InvalidLockExpire)?;
         Ok(Self {
             lifetime,
@@ -466,9 +465,7 @@ mod tests {
     #[test]
     fn a_taken_lock_is_tried_again_after_the_wait_of_the_options() {
         // SR-3.3: one try and then lock_retries more, each after lock_wait microseconds, and then lock_timeout.
-        let Ok(options) = Options::new(None, None, None, Some(3), Some(1500)) else {
-            panic!("the options are refused")
-        };
+        let Ok(options) = Options::new(None, None, 30, Some(3), Some(1500)) else { panic!("the options are refused") };
         let Ok(Ok(mut opening)) = Opening::new(&options, Some(&[b'a'; 32])) else { panic!("no opening") };
         assert!(matches!(opening.next(None), Ok(Step::Send(command)) if command.name == "EXISTS"));
         let mut reply = Some(Reply::Integer(1));
@@ -497,8 +494,8 @@ mod tests {
     fn a_lock_expiry_whose_milliseconds_pass_u64_is_refused() {
         // SR-1.2
         assert!(
-            matches!(Options::new(None, None, Some(u64::MAX / 1000 + 1), None, None), Err(error) if error.kind() == "invalid_lock_expire")
+            matches!(Options::new(None, None, u64::MAX / 1000 + 1, None, None), Err(error) if error.kind() == "invalid_lock_expire")
         );
-        assert!(Options::new(None, None, Some(u64::MAX / 1000), None, None).is_ok());
+        assert!(Options::new(None, None, u64::MAX / 1000, None, None).is_ok());
     }
 }

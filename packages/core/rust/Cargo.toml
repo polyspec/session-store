@@ -7,9 +7,7 @@ rust-version.workspace = true
 repository.workspace = true
 license.workspace = true
 publish.workspace = true
-# The package holds the interface contract of the bindings beside the source, so that a repository that depends on the
-# crate reads it from the package that Cargo resolved (bindgen design I-1, T-3).
-include = ["/src/**/*.rs", "/interface.json"]
+include = ["/src/**/*.rs"]
 
 [lib]
 name = "polyspec_sessions_core"

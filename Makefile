@@ -7,7 +7,7 @@ PHP ?= $(shell command -v php)
 REDIS_SERVER ?= $(shell command -v redis-server)
 REDIS_CLI ?= $(shell command -v redis-cli)
 OPENSSL ?= $(shell command -v openssl)
-CONTRACTS := packages/core/rust/interface.json packages/file/rust/interface.json packages/redis/rust/interface.json
+CONTRACTS := packages/rust/interface.json
 
 .PHONY: check test lint-rust fmt-check contract-check
 

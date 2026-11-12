@@ -593,6 +593,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "polyspec-sessions"
+version = "0.0.0"
+dependencies = [
+ "polyspec-sessions-core",
+ "polyspec-sessions-file",
+ "polyspec-sessions-redis",
+]
+
+[[package]]
 name = "polyspec-sessions-core"
 version = "0.0.0"
 dependencies = [

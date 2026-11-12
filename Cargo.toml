@@ -1,8 +1,9 @@
-# The workspace of the three crates of sessions (SE-1.3): the store interface and the record (packages/core/rust), the
+# The workspace of sessions (SE-1.3): the crate of the library (packages/rust), which the bindings wrap, and its three
+# components: the store interface and the record (packages/core/rust), the
 # store of files (packages/file/rust) and the store of Redis (packages/redis/rust). One Cargo.lock pins them.
 [workspace]
 resolver = "2"
-members = ["packages/core/rust", "packages/file/rust", "packages/redis/rust"]
+members = ["packages/rust", "packages/core/rust", "packages/file/rust", "packages/redis/rust"]
 
 [workspace.package]
 version = "0.0.0"

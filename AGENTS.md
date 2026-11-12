@@ -4,14 +4,16 @@ Rules for every change of sessions. The rules of the library are in [docs/spec/s
 
 ## Layout
 
+- `packages/rust/`: the crate `polyspec-sessions`, the library, which gives the items of the three crates again (the
+  stores under the features `file` and `redis`) and whose package holds the one interface contract of the bindings,
+  `interface.json` (`include` of its `Cargo.toml`), so that a repository that depends on the crate reads it through
+  Cargo. No binding is written by hand.
 - `packages/core/rust/`: the crate `polyspec-sessions-core`, the store interface, identifiers, the record and the record
   session of a request (SE-1 to SE-10). It does no I/O.
 - `packages/file/rust/`: the crate `polyspec-sessions-file`, the store of files (SF-1 to SF-9).
 - `packages/redis/rust/`: the crate `polyspec-sessions-redis`, the store of Redis: its protocol without I/O and its
   connection (SR-1 to SR-9).
-- Each crate holds the interface contract of its bindings, `interface.json`, in its package (`include` of its
-  `Cargo.toml`), so that a repository that depends on the crate reads it through Cargo. No binding is written by hand.
-- `Cargo.toml` of the root is the workspace of the three crates with one `Cargo.lock`.
+- `Cargo.toml` of the root is the workspace of the four crates with one `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
 - `docs/spec/`: the specification. Root: `AGENTS.md`, `README.md`, `CHANGELOG.md` and their Korean translations
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`.

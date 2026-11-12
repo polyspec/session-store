@@ -17,8 +17,7 @@ Redis. 라이브러리는 세션에 무엇이 담기는지 모른다: key는 텍
 
 ```rust
 use bindgen_core::{Io, ProcessWait};
-use polyspec_sessions_core::Store;
-use polyspec_sessions_file::FileSessions;
+use polyspec_sessions::{FileSessions, Store};
 
 let store = FileSessions::new(io, "/var/lib/sessions".as_ref(), None)?;
 let mut session = store.open(wait, cookie.as_deref(), None)?;
@@ -29,8 +28,8 @@ let created = session.close(io)?; // 새 식별자. 호출자가 세션 쿠키�
 기다림 토큰 `Io`와 `ProcessWait`는 생성된 바인딩이 만든다. 블로킹 함수를 부르는 Rust 호출자는 그것을 실행하는 바인딩 층에서
 토큰을 받는다.
 
-PHP, Python, Node 바인딩은 crate 패키지가 담은 인터페이스 계약 `packages/*/rust/interface.json`에서 생성할 예정이며, 아직
-바인딩은 없다.
+crate `polyspec-sessions`(`packages/rust`)가 세 crate의 항목을 한 라이브러리로 내보낸다. PHP, Python, Node 바인딩은 그 패키지가
+담은 인터페이스 계약 `packages/rust/interface.json`에서 생성할 예정이며, 아직 바인딩은 없다.
 
 ## 검사
 

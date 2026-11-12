@@ -15,7 +15,10 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   the library. Which keys an application uses, what their values mean and how the values relate to other value types
   (such as the data model of a template language) are rules of the application, not of this library.
   <a id="SE-1.3"></a> Every rule is in the Rust crates of `packages/core/rust`, `packages/file/rust` and
-  `packages/redis/rust`; a binding converts types and holds no rule. <a id="SE-1.4"></a> `polyspec-sessions-core` does no
+  `packages/redis/rust`; a binding converts types and holds no rule. The crate `polyspec-sessions` of `packages/rust` is
+  the library: it gives the items of the three crates again, the stores under the features `file` and `redis`, which
+  it builds by default, and its package holds the one interface contract of the bindings, so that every language has
+  one package of sessions. <a id="SE-1.4"></a> `polyspec-sessions-core` does no
   I/O: it reads no file, no clock, no environment and no network. Its only outside source is the random source of the
   operating system (SE-5.3), because an identifier that another party can predict names another browser's session.
   <a id="SE-1.5"></a> The three crates depend on `polyspec-php-serialize` and `polyspec-bindgen-core` and on no

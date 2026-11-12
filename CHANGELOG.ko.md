@@ -16,6 +16,8 @@
 - crate `polyspec-sessions-redis`를 더했다: 상태기계인 phpredis 프로토콜과 redis-rs로 서버 하나, Sentinel, Cluster에 TLS와
   ACL 사용자로 연결하는 `RedisSessions`. kind는 `invalid_lifetime`, `invalid_lock_expire`, `invalid_setting`,
   `lock_timeout`, `lock_lost`, `reply`, `redis`, `connection`이다.
-- 클래스 `Sessions<Category>Error`를 쓰는 인터페이스 계약 `packages/*/rust/interface.json`을 더했다. 아직 생성한 바인딩은
-  없다.
+- 라이브러리 crate `polyspec-sessions`를 더했다. 세 crate의 항목을 다시 내보내고(저장소는 feature `file`, `redis`), 클래스
+  `Sessions<Category>Error`를 쓰는 인터페이스 계약 `packages/rust/interface.json` 하나를 담는다. 모든 kind는 enum `Error` 하나의
+  변형이다. 아직 생성한 바인딩은 없다.
+- 세션 식별자는 22~256자이고, Redis 저장소의 잠금 만료에는 기본값이 없다.
 - Windows는 지원하지 않는다.

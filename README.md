@@ -21,8 +21,7 @@ holds: a key is a text and a value is a PHP value of php-serialize. The rules ar
 
 ```rust
 use bindgen_core::{Io, ProcessWait};
-use polyspec_sessions_core::Store;
-use polyspec_sessions_file::FileSessions;
+use polyspec_sessions::{FileSessions, Store};
 
 let store = FileSessions::new(io, "/var/lib/sessions".as_ref(), None)?;
 let mut session = store.open(wait, cookie.as_deref(), None)?;
@@ -33,8 +32,9 @@ let created = session.close(io)?; // the new identifier, which the caller sets a
 The wait tokens `Io` and `ProcessWait` are made by the generated bindings; a Rust caller of a blocking function gets them
 from the binding layer that runs it.
 
-PHP, Python and Node bindings will be generated from the interface contracts `packages/*/rust/interface.json`, which the
-crate packages hold; there is no binding yet.
+The crate `polyspec-sessions` (`packages/rust`) gives the items of the three crates as one library; PHP, Python and Node
+bindings will be generated from its interface contract `packages/rust/interface.json`, which its package holds; there is
+no binding yet.
 
 ## Checks
 

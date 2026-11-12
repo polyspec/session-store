@@ -17,6 +17,8 @@
 - Added the crate `polyspec-sessions-redis`: the protocol of phpredis as a state machine and `RedisSessions` with
   redis-rs to one server, Sentinel or Cluster with TLS and an ACL user, with the kinds `invalid_lifetime`,
   `invalid_lock_expire`, `invalid_setting`, `lock_timeout`, `lock_lost`, `reply`, `redis` and `connection`.
-- Added the interface contracts `packages/*/rust/interface.json` with the classes `Sessions<Category>Error`. No binding
-  is generated yet.
+- Added the crate `polyspec-sessions`, the library, which gives the items of the three crates again (the stores under
+  the features `file` and `redis`) and holds the one interface contract `packages/rust/interface.json`, with the
+  classes `Sessions<Category>Error`. Every kind is a variant of the one enum `Error`. No binding is generated yet.
+- A session identifier is 22 to 256 characters, and the lock expiry of the store of Redis has no default.
 - Windows is not supported.

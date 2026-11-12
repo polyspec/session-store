@@ -14,7 +14,7 @@ name = "polyspec_sessions_redis"
 path = "src/lib.rs"
 
 [dependencies]
-polyspec-php-serialize = { path = "../../../../php-serialize/packages/rust" }
+polyspec-php-serialize = { git = "https://github.com/polyspec/php-serialize.git", rev = "389b573573e52a474a07114238d98a95592fa121" }
 polyspec-sessions-core = { path = "../../core/rust" }
 polyspec-bindgen-core = { git = "https://github.com/polyspec/bindgen.git", rev = "04f5ed595a40710f81cc0c3242142491fb3d7619" }
 # The connection (SR-6): a server, Sentinel or Cluster, TLS with rustls, an ACL user and password in the URL.

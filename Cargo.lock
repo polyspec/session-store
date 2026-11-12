@@ -587,6 +587,7 @@ dependencies = [
 [[package]]
 name = "polyspec-php-serialize"
 version = "0.0.6"
+source = "git+https://github.com/polyspec/php-serialize.git?rev=389b573573e52a474a07114238d98a95592fa121#389b573573e52a474a07114238d98a95592fa121"
 dependencies = [
  "ryu",
 ]

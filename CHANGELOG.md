@@ -5,3 +5,5 @@
   `polyspec-session-store` depends on `polyspec-php-serialization`, whose `php_value` its contract names, and
   `Cargo.lock` takes the commit of `polyspec-php-serialization` on the same `binding_core`. The error classes stay
   `SessionStore<Category>Error` in every language: the repository name has no acronym word (design N-2).
+- The contract lists `Internal` in the raises of `memory_store.renew`: the count of renewals that passes u64 is the kind
+  `internal` (`MemoryStore::renew` in `packages/core/rust/src/memory.rs`), and an internal kind stays in raises (X-1).

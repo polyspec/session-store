@@ -394,7 +394,9 @@
           "visibility": "public",
           "parameters": [],
           "returns": "none",
-          "raises": [],
+          "raises": [
+            "polyspec_session_store::Error::Internal"
+          ],
           "wait": "none",
           "core": {
             "path": "polyspec_session_store::Store::renew",

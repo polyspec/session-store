@@ -71,7 +71,9 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   the array: a key that the request did not set holds its value as it was read, with the objects and references that it
   shares with other such keys, and a key that holds null is kept. A key of the record whose string is not UTF-8 is kept
   as it was, and no text names it (SE-2.5). <a id="SE-6.7"></a> A set key holds the value that the request gave, and
-  the objects and references of that value are shared only within it.
+  the objects and references of that value are shared only within it. <a id="SE-6.8"></a> Values that have no record
+  that php-serialize writes, such as a value nested so deep that the record passes the depth of RQ-006, fail the
+  `finish` of the session with the kind `record_write`, whose source is the error of php-serialize.
 
 ## The session of a request
 
@@ -105,6 +107,7 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   | `random` | 500 | `internal` | SE-5.4 |
   | `record` | 500 | `store` | SE-6.3 |
   | `record_not_array` | 500 | `store` | SE-6.4 |
+  | `record_write` | 500 | `value` | SE-6.8 |
   | `internal` | 500 | `internal` | an invariant of the implementation fails; it is a defect |
 
   <a id="SE-9.3"></a> The status is that of the request whose session fails: a session that the server cannot read or

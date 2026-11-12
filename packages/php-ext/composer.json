@@ -1,6 +1,6 @@
 {
   "name": "polyspec/session-store",
-  "description": "The sessions library of polyspec as a PHP extension",
+  "description": "The session-store library of polyspec as a PHP extension",
   "type": "php-ext",
   "license": "MIT",
   "require": {

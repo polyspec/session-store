@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bindgen_core::{Cancel, Io, ProcessWait};
+use binding_core::{Cancel, Io, ProcessWait};
 use polyspec_php_serialization::PhpValue;
 use polyspec_session_store_core::{accept, Failure, Found, Outcome, RecordSession, Store};
 use rustix::fs::{FlockOperation, Mode, OFlags, Stat, Timespec, Timestamps};
@@ -269,7 +269,7 @@ fn create(path: &Path, id: &str, record: &[u8]) -> Result<(), Error> {
 }
 
 // B-10: a session that holds a lock has the cleanup call close.
-impl bindgen_core::Cleanup for FileSession {}
+impl binding_core::Cleanup for FileSession {}
 
 impl Store for FileSession {
     fn get(&mut self, key: &str) -> Result<Option<PhpValue>, Failure> {

@@ -16,8 +16,8 @@ path = "src/lib.rs"
 [dependencies]
 # The random source of the operating system (SE-5.3).
 getrandom = "0.3"
-# The failure of a call into a store of another language (bindgen design E-1c, SE-3.2) and the kind interface (F-2).
-polyspec-bindgen-core = { git = "https://github.com/polyspec/bindgen.git", branch = "v1/rust-core" }
+# The failure of a call into a store of another language (binding design E-1c, SE-3.2) and the kind interface (F-2).
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", branch = "v1/rust-core" }
 # PHP values and their serialize form (SE-1.5, SE-6).
 polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", branch = "v1/rust-core" }
 

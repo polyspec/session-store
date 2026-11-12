@@ -16,7 +16,7 @@ path = "src/lib.rs"
 [dependencies]
 polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", branch = "v1/rust-core" }
 polyspec-session-store-core = { path = "../../core/rust" }
-polyspec-bindgen-core = { git = "https://github.com/polyspec/bindgen.git", branch = "v1/rust-core" }
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", branch = "v1/rust-core" }
 # The connection (SR-6): a server, Sentinel or Cluster, TLS with rustls, an ACL user and password in the URL.
 redis = { version = "=1.8.1", default-features = false, features = ["tokio-comp", "tokio-rustls-comp", "sentinel", "cluster-async"] }
 # The cryptography of rustls for TLS (SR-6.1): one provider, ring, so that rustls selects it for the process.

@@ -306,7 +306,7 @@ impl RedisSession {
 }
 
 // B-10: a session that holds a lock has the cleanup call close.
-impl bindgen_core::Cleanup for RedisSession {}
+impl binding_core::Cleanup for RedisSession {}
 
 impl Store for RedisSession {
     fn get(&mut self, key: &str) -> Result<Option<PhpValue>, Failure> {

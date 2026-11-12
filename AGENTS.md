@@ -13,11 +13,11 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 - `packages/file/rust/`: the crate `polyspec-session-store-file`, the store of files (SF-1 to SF-9).
 - `packages/redis/rust/`: the crate `polyspec-session-store-redis`, the store of Redis: its protocol without I/O and its
   connection (SR-1 to SR-9).
-- `packages/php-ext/`, `packages/python/`, `packages/ts/`: the binding packages, whose tracked files `bindgen scaffold`
-  writes and the contract check compares (bindgen CK-19). They are members of the workspace; `make bindings` writes
+- `packages/php-ext/`, `packages/python/`, `packages/ts/`: the binding packages, whose tracked files `binding scaffold`
+  writes and the contract check compares (binding CK-19). They are members of the workspace; `make bindings` writes
   their `generated/`, which is not tracked, and builds of them come after it. The targets of the core name the core
   crates with `-p`, so they need no generated source.
-- `scripts/bindgen.mts`: runs bindgen at the commit of `polyspec-bindgen-core` that `Cargo.lock` pins.
+- `scripts/binding.mts`: runs binding at the commit of `polyspec-binding-core` that `Cargo.lock` pins.
 - `Cargo.toml` of the root is the workspace of the four crates and the three binding crates with one `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
 - `docs/spec/`: the specification. Root: `AGENTS.md`, `README.md`, `CHANGELOG.md` and their Korean translations
@@ -33,7 +33,7 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 - The library does not know what a session holds: no rule of this repository names a key of a session or gives a value
   a meaning (SE-1.2).
 - A failure has a kind; the library never turns it into a plausible value. A blocking Rust function takes the wait
-  token of bindgen-core (`Io`, `ProcessWait`) as its first argument.
+  token of binding-core (`Io`, `ProcessWait`) as its first argument.
 - The specification, the cases, the README, this file and the change log (English and Korean) change in the same
   change as the code.
 

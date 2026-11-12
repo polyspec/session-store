@@ -452,7 +452,7 @@ impl Closing {
 mod tests {
     use std::time::Duration;
 
-    use bindgen_core::Kinds;
+    use binding_core::Kinds;
 
     use super::{Opening, Options, Reply, Step};
 

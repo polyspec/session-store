@@ -3,7 +3,7 @@
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 
-use bindgen_core::{Failure, Io, Kinds, ProcessWait};
+use binding_core::{Failure, Io, Kinds, ProcessWait};
 use libtest_mimic::{Arguments, Failed, Trial};
 use polyspec_php_serialization::{serialize, unserialize};
 use polyspec_session_store_file::{FileSession, FileSessions};

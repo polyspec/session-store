@@ -20,7 +20,7 @@ holds: a key is a text and a value is a PHP value of php-serialization. The rule
 ## Rust
 
 ```rust
-use bindgen_core::{Io, ProcessWait};
+use binding_core::{Io, ProcessWait};
 use polyspec_session_store::{FileSessions, Store};
 
 let store = FileSessions::new(io, "/var/lib/sessions".as_ref(), None)?;

@@ -21,7 +21,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   language has one package of session-store. <a id="SE-1.4"></a> `polyspec-session-store-core` does no I/O: it reads no
   file, no clock, no environment and no network. Its only outside source is the random source of the
   operating system (SE-5.3), because an identifier that another party can predict names another browser's session.
-  <a id="SE-1.5"></a> The three crates depend on `polyspec-php-serialization` and `polyspec-bindgen-core` and on no
+  <a id="SE-1.5"></a> The three crates depend on `polyspec-php-serialization` and `polyspec-binding-core` and on no
   library of another value type.
 
 ## The store interface
@@ -37,10 +37,10 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   integer names that integer (RQ-004), so `"5"` and the integer key 5 of a record are one key.
 - **SE-3** <a id="SE-3.1"></a> The store interface is a public API, so an application may implement a store in its own
   language. A binding wraps such a store as an implementation of the Rust trait `Store` and calls its four members
-  (bindgen design U-3). <a id="SE-3.2"></a> An exception that such a store raises is not an error of this library: it
+  (binding design U-3). <a id="SE-3.2"></a> An exception that such a store raises is not an error of this library: it
   stops the operation, goes through the core unchanged and reaches the caller as the same object; the library neither
   wraps it nor changes it. A store that Rust code implements returns its own error the same way
-  (`Failure::Callback` of bindgen-core), and the operation gives it back to that Rust caller unchanged. <a id="SE-3.3"></a> Such a store must follow SE-2. Its locking (SE-8), its sharing with other
+  (`Failure::Callback` of binding-core), and the operation gives it back to that Rust caller unchanged. <a id="SE-3.3"></a> Such a store must follow SE-2. Its locking (SE-8), its sharing with other
   processes and its interoperation with other servers are the responsibility of the application, and the library checks
   none of them. <a id="SE-3.4"></a> In a language whose null is both the absence of a value and the PHP value null (PHP,
   Python, Node), `get` of a key that holds no value and of a key that holds null give the same language value; the Rust
@@ -93,7 +93,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   never started; `unchanged` with the identifier for an existing session whose record of the values equals the record
   that was read, byte for byte, and whose identifier did not change; and `write` with the identifier, the record, whether
   the identifier is new and the identifier to remove (for a renewal) otherwise. <a id="SE-7.5"></a> After `finish` the
-  record session is gone; a binding refuses another call with the kind `consumed` (bindgen design E-1a).
+  record session is gone; a binding refuses another call with the kind `consumed` (binding design E-1a).
   <a id="SE-7.6"></a> A store that writes a new identifier gives it to its caller, which sets it as the session cookie;
   the name and the attributes of that cookie are rules of the application.
 - **SE-8** <a id="SE-8.1"></a> The requests of one session run one after another: a store that keeps records holds a
@@ -186,7 +186,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   `close` and `collect` do short blocking I/O (`Io`). A Rust function that blocks takes its token as its first argument.
   <a id="SF-8.2"></a> The lifetime is an unsigned integer of the interface contract (`uint`), so a binding refuses a
   value that is no integer of 0 or more before the store runs: a negative or fractional number with the kind
-  `invalid_number` and a text or a boolean with the kind `invalid_argument_type` (bindgen design T-1, E-1a). Such cases
+  `invalid_number` and a text or a boolean with the kind `invalid_argument_type` (binding design T-1, E-1a). Such cases
   of `contracts/file-sessions.json` carry `binding`, and the bindings run them; the Rust tests show them as ignored.
 - **SF-9** <a id="SF-9.1"></a> The kinds of `polyspec-session-store-file`:
 

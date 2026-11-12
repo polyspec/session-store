@@ -3,7 +3,7 @@
 
 use std::process::Command;
 
-use bindgen_core::{Failure, Kinds};
+use binding_core::{Failure, Kinds};
 use libtest_mimic::{Arguments, Failed, Trial};
 use polyspec_php_serialization::{serialize, unserialize, PhpValue};
 use polyspec_session_store_core::{accept, Found, MemoryStore, Outcome, RecordSession, Store};

@@ -87,7 +87,7 @@ impl Store for MemoryStore {
         self.renewals = self
             .renewals
             .checked_add(1)
-            .ok_or(bindgen_core::Failure::Kind(Error::Internal { what: "the count of renewals passes u64" }))?;
+            .ok_or(binding_core::Failure::Kind(Error::Internal { what: "the count of renewals passes u64" }))?;
         Ok(())
     }
 }

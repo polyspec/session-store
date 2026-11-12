@@ -26,7 +26,7 @@ impl IoKind {
     }
 }
 
-/// A failure of the library. A caller tells failures apart by its kind ([`bindgen_core::Kinds`]), never by the
+/// A failure of the library. A caller tells failures apart by its kind ([`binding_core::Kinds`]), never by the
 /// message, apart from the message that SE-6.4 states.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
@@ -91,7 +91,7 @@ impl Error {
     }
 }
 
-impl bindgen_core::Kinds for Error {
+impl binding_core::Kinds for Error {
     fn kind(&self) -> &'static str {
         match self {
             Self::Random { .. } => "random",

@@ -6,7 +6,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 
-use bindgen_core::{cancel_pair, Io, Kinds, ProcessWait};
+use binding_core::{cancel_pair, Io, Kinds, ProcessWait};
 use polyspec_php_serialization::{serialize, unserialize, Node, PhpValue};
 use polyspec_session_store_core::Error;
 use polyspec_session_store_core::Store;

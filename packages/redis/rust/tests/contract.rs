@@ -8,7 +8,7 @@ use std::process::{Child, Command as Process, Stdio};
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
-use bindgen_core::{Failure, Kinds};
+use binding_core::{Failure, Kinds};
 use libtest_mimic::{Arguments, Failed, Trial};
 use polyspec_php_serialization::{serialize, unserialize};
 use polyspec_session_store_core::Error;

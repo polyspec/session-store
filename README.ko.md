@@ -16,7 +16,7 @@ Redis. 라이브러리는 세션에 무엇이 담기는지 모른다: key는 텍
 ## Rust
 
 ```rust
-use bindgen_core::{Io, ProcessWait};
+use binding_core::{Io, ProcessWait};
 use polyspec_session_store::{FileSessions, Store};
 
 let store = FileSessions::new(io, "/var/lib/sessions".as_ref(), None)?;

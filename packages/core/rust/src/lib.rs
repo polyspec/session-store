@@ -18,8 +18,8 @@ pub use session::{Found, Outcome, RecordSession};
 pub use store::{key_of, Store};
 
 /// The failure of a store operation: a kind of this library or the exception of a store of another language, which goes
-/// back unchanged (SE-3.2, bindgen design E-1c).
-pub type Failure = bindgen_core::Failure<Error>;
+/// back unchanged (SE-3.2, binding design E-1c).
+pub type Failure = binding_core::Failure<Error>;
 
 #[cfg(test)]
 mod tests {

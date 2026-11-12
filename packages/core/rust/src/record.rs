@@ -104,7 +104,7 @@ impl Values {
 
 #[cfg(test)]
 mod tests {
-    use bindgen_core::Kinds;
+    use binding_core::Kinds;
     use polyspec_php_serialization::{Key, Node, PhpValue};
 
     use super::Values;

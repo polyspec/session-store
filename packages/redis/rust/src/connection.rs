@@ -9,7 +9,10 @@ use redis::{RedisConnectionInfo, TlsMode};
 use tokio::sync::Mutex;
 
 use crate::error::Error;
-use crate::protocol::{Closing, Command, Opening, Options, RedisSession, Reply, Step};
+use polyspec_php_serialize::PhpValue;
+use polyspec_sessions_core::{Failure, Store};
+
+use crate::protocol::{Closing, Command, Opening, Options, Reply, Session, Step, StoreOptions};
 use crate::turns::{Turn, Turns};
 
 /// The connection setting that the application gives (SR-6.1). An address is a URL of redis-rs: `redis://` or
@@ -48,26 +51,39 @@ struct Links {
     link: Link,
 }
 
-/// The store of Redis of a process (SR-1).
-pub struct RedisSessions {
+/// The state of a store of Redis that its sessions share.
+struct Inner {
     options: Options,
     setting: Setting,
     links: Mutex<Option<Links>>,
     turns: Turns,
 }
 
+/// The store of Redis of a process (SR-1).
+#[derive(Clone)]
+pub struct RedisSessions {
+    inner: Arc<Inner>,
+}
+
 impl std::fmt::Debug for RedisSessions {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // The setting holds passwords, which no message tells (SR-6.4).
-        formatter.debug_struct("RedisSessions").field("options", &self.options).finish_non_exhaustive()
+        formatter.debug_struct("RedisSessions").field("options", &self.inner.options).finish_non_exhaustive()
     }
 }
 
-/// The session of a request with the turn of its identifier, which the closing ends (SR-3.2).
-#[derive(Debug)]
-pub struct Opened {
-    session: RedisSession,
-    turn: Option<Arc<Turn>>,
+/// The session of one request of the store of Redis: its store (SE-2), its lock and the turn of its identifier, which
+/// [`RedisSession::close`] ends (SR-3.2, SR-4).
+pub struct RedisSession {
+    inner: Arc<Inner>,
+    session: Session,
+    turn: Option<Turn>,
+}
+
+impl std::fmt::Debug for RedisSession {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.debug_struct("RedisSession").field("session", &self.session).finish_non_exhaustive()
+    }
 }
 
 fn connection_error(error: &redis::RedisError) -> Error {
@@ -206,19 +222,7 @@ impl Connection {
     }
 }
 
-impl RedisSessions {
-    /// The store of a connection setting with its options (SR-1.2, SR-6.1). It connects at its first request.
-    pub fn new(setting: Setting, options: Options) -> Result<Self, Error> {
-        Link::new(&setting)?;
-        Ok(Self { options, setting, links: Mutex::new(None), turns: Turns::default() })
-    }
-
-    /// The options (SR-1.2).
-    #[must_use]
-    pub const fn options(&self) -> &Options {
-        &self.options
-    }
-
+impl Inner {
     /// Runs the steps of the protocol on the connection of this process; a link that another process made is left
     /// unused and unclosed (SR-6.5).
     async fn run<T>(
@@ -253,41 +257,73 @@ impl RedisSessions {
             }
         }
     }
+}
+
+impl RedisSessions {
+    /// The store of a connection setting with its options (SR-1.2, SR-6.1). It connects at its first request.
+    pub fn new(setting: Setting, options: StoreOptions) -> Result<Self, Error> {
+        let options = Options::of(&options)?;
+        Link::new(&setting)?;
+        Ok(Self { inner: Arc::new(Inner { options, setting, links: Mutex::new(None), turns: Turns::default() }) })
+    }
+
+    /// The options (SR-1.2).
+    #[must_use]
+    pub fn options(&self) -> &Options {
+        &self.inner.options
+    }
 
     /// Opens the session of a request from the bytes of its session cookie (SR-3). The turn of the identifier lasts until
-    /// [`RedisSessions::close`].
-    pub async fn open(&self, cookie: Option<&[u8]>) -> Result<Opened, Error> {
-        let mut opening = match Opening::new(&self.options, cookie)? {
+    /// [`RedisSession::close`].
+    pub async fn open(&self, cookie: Option<&[u8]>) -> Result<RedisSession, Error> {
+        let inner = Arc::clone(&self.inner);
+        let mut opening = match Opening::new(&inner.options, cookie)? {
             Ok(opening) => opening,
-            Err(session) => return Ok(Opened { session, turn: None }),
+            Err(session) => return Ok(RedisSession { inner, session, turn: None }),
         };
-        let turn = Arc::new(self.turns.enter(opening.id()).await?);
-        let session = self.run(|reply| opening.next(reply), true).await?;
+        let turn = inner.turns.enter(opening.id()).await?;
+        let session = inner.run(|reply| opening.next(reply), true).await?;
         // A request without a found session holds no lock; it keeps its turn only while it holds one.
         let turn = session.found().map(|_| turn);
-        Ok(Opened { session, turn })
+        Ok(RedisSession { inner, session, turn })
+    }
+}
+
+impl RedisSession {
+    /// The identifier of the existing session that the request found, or `None`.
+    #[must_use]
+    pub fn found(&self) -> Option<&str> {
+        self.session.found()
     }
 
     /// Writes what the session gives, releases its lock and ends its turn (SR-4), and gives the new identifier, or
     /// `None`.
-    pub async fn close(&self, opened: Opened) -> Result<Option<String>, Error> {
-        let Opened { session, turn } = opened;
-        let mut closing = Closing::new(&self.options, session);
-        let result = self.run(|reply| closing.next(reply), turn.is_none()).await;
+    pub async fn close(self) -> Result<Option<String>, Error> {
+        let Self { inner, session, turn } = self;
+        let mut closing = Closing::new(&inner.options, session);
+        let result = inner.run(|reply| closing.next(reply), turn.is_none()).await;
         drop(turn);
         result
     }
 }
 
-impl Opened {
-    /// The store of the request (SE-2).
-    pub fn session(&mut self) -> &mut RedisSession {
-        &mut self.session
+// B-10: a session that holds a lock has the cleanup call close.
+impl bindgen_core::Cleanup for RedisSession {}
+
+impl Store for RedisSession {
+    fn get(&mut self, key: &str) -> Result<Option<PhpValue>, Failure> {
+        self.session.get(key)
     }
 
-    /// The identifier of the existing session that the request found, or `None`.
-    #[must_use]
-    pub fn found(&self) -> Option<&str> {
-        self.session.found()
+    fn set(&mut self, key: &str, value: &PhpValue) -> Result<(), Failure> {
+        self.session.set(key, value)
+    }
+
+    fn remove(&mut self, key: &str) -> Result<(), Failure> {
+        self.session.remove(key)
+    }
+
+    fn renew(&mut self) -> Result<(), Failure> {
+        self.session.renew()
     }
 }

@@ -107,9 +107,10 @@ phpredis is the PHP extension phpredis 6.3.0; "PHP" is PHP 8.4.
   | `random` | 500 | `internal` | SE-5.4 |
   | `record` | 500 | `store` | SE-6.3 |
   | `record_not_array` | 500 | `store` | SE-6.4 |
-  | `record_write` | 500 | `value` | SE-6.8 |
+  | `record_write` | 500 | `store` | SE-6.8 |
   | `internal` | 500 | `internal` | an invariant of the implementation fails; it is a defect |
 
+  The errors of `record` and `record_write` carry the offset of the error of php-serialize, or none (`offset`).
   <a id="SE-9.3"></a> The status is that of the request whose session fails: a session that the server cannot read or
   write fails the request as an error of the server. <a id="SE-9.4"></a> The crates of the stores add their kinds
   (SF-9, SR-9); an error of the core that their operations meet keeps its kind.

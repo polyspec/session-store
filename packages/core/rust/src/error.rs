@@ -19,6 +19,17 @@ pub enum Error {
     Internal { what: &'static str },
 }
 
+impl Error {
+    /// The offset in the record of a failure of decoding, counted in bytes from 0 (SE-6.3, RQ-010), or `None`.
+    #[must_use]
+    pub const fn offset(&self) -> Option<u64> {
+        match self {
+            Self::Record { source, .. } | Self::RecordWrite { source } => source.offset(),
+            Self::Random { .. } | Self::RecordNotArray { .. } | Self::Internal { .. } => None,
+        }
+    }
+}
+
 impl bindgen_core::Kinds for Error {
     fn kind(&self) -> &'static str {
         match self {

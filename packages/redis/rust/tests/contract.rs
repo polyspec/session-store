@@ -13,7 +13,7 @@ use libtest_mimic::{Arguments, Failed, Trial};
 use polyspec_php_serialize::{serialize, unserialize};
 use polyspec_sessions_core::Store;
 use polyspec_sessions_redis::protocol::{Closing, Opening, Step, RELEASE};
-use polyspec_sessions_redis::{Command, Error, Options, RedisSession, RedisSessions, Reply, Setting};
+use polyspec_sessions_redis::{Command, Error, Options, RedisSessions, Reply, Setting, StoreOptions};
 use serde_json::Value;
 
 const CONTRACT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../contracts/redis-sessions.json"));
@@ -65,6 +65,18 @@ fn options(case: &Value) -> Result<Options, Failed> {
     options_of(case).map_err(failed)
 }
 
+fn store_options(case: &Value) -> StoreOptions {
+    let options = case.get("options");
+    let number = |name: &str| options.and_then(|options| options.get(name)).and_then(Value::as_u64);
+    StoreOptions {
+        lifetime: number("lifetime"),
+        prefix: options.and_then(|options| options.get("prefix")).and_then(Value::as_str).map(str::to_owned),
+        lock_expire: number("lock_expire"),
+        lock_retries: number("lock_retries"),
+        lock_wait: number("lock_wait"),
+    }
+}
+
 fn options_of(case: &Value) -> Result<Options, Error> {
     let options = case.get("options");
     let number = |name: &str| options.and_then(|options| options.get(name)).and_then(Value::as_u64);
@@ -78,7 +90,7 @@ fn options_of(case: &Value) -> Result<Options, Error> {
 }
 
 /// The calls of a step on the session of a request, each as the serialize form of a value or null.
-fn calls(session: &mut RedisSession, step: &Value) -> Result<Vec<Value>, Failed> {
+fn calls(session: &mut dyn Store, step: &Value) -> Result<Vec<Value>, Failed> {
     let mut results = Vec::new();
     for call in array_of(step, "calls")? {
         let (name, arguments) = match call.as_array().map(Vec::as_slice) {
@@ -356,7 +368,7 @@ async fn server_case(case: &Value, database: usize) -> Result<(), Failed> {
             .await
             .map_err(failed)?;
     }
-    let store = RedisSessions::new(Setting::Server { url: address }, options(case)?).map_err(failed)?;
+    let store = RedisSessions::new(Setting::Server { url: address }, store_options(case)).map_err(failed)?;
     let raises = case.get("raises");
     let mut created = Vec::new();
     let mut results = Vec::new();
@@ -369,7 +381,7 @@ async fn server_case(case: &Value, database: usize) -> Result<(), Failed> {
                 break;
             }
         };
-        results.push(Value::Array(calls(opened.session(), step)?));
+        results.push(Value::Array(calls(&mut opened, step)?));
         if let Some(meanwhile) = step.get("meanwhile").and_then(Value::as_array) {
             for (key, value) in pairs(meanwhile)? {
                 redis::cmd("SET")
@@ -380,7 +392,7 @@ async fn server_case(case: &Value, database: usize) -> Result<(), Failed> {
                     .map_err(failed)?;
             }
         }
-        match store.close(opened).await {
+        match opened.close().await {
             Ok(Some(id)) => {
                 created_steps.push(Value::String(format!("#{}", created.len())));
                 created.push(id);

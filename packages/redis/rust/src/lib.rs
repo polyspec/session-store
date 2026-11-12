@@ -9,9 +9,9 @@ mod error;
 pub mod protocol;
 mod turns;
 
-pub use connection::{Opened, RedisSessions, Setting};
+pub use connection::{RedisSession, RedisSessions, Setting};
 pub use error::Error;
-pub use protocol::{Command, Options, RedisSession, Reply};
+pub use protocol::{Command, Options, Reply, Session, StoreOptions};
 
 #[cfg(test)]
 mod tests {

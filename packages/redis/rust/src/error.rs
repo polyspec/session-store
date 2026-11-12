@@ -25,6 +25,24 @@ pub enum Error {
     Core(polyspec_sessions_core::Error),
 }
 
+impl Error {
+    /// The offset of a failure of the record (SE-9.2), or `None`.
+    #[must_use]
+    pub const fn offset(&self) -> Option<u64> {
+        match self {
+            Self::Core(error) => error.offset(),
+            Self::InvalidLifetime
+            | Self::InvalidLockExpire
+            | Self::InvalidSetting { .. }
+            | Self::LockTimeout { .. }
+            | Self::LockLost { .. }
+            | Self::Reply { .. }
+            | Self::Redis { .. }
+            | Self::Connection { .. } => None,
+        }
+    }
+}
+
 impl From<polyspec_sessions_core::Error> for Error {
     fn from(error: polyspec_sessions_core::Error) -> Self {
         Self::Core(error)

@@ -274,6 +274,9 @@ fn create(path: &Path, id: &str, record: &[u8]) -> Result<(), Error> {
     file.write_all_at(record, 0).map_err(|error| Error::io("write", path, &error))
 }
 
+// B-10: a session that holds a lock has the cleanup call close.
+impl bindgen_core::Cleanup for FileSession {}
+
 impl Store for FileSession {
     fn get(&mut self, key: &str) -> Result<Option<PhpValue>, Failure> {
         self.record.get(key)

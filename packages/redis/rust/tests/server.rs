@@ -12,7 +12,7 @@ use bindgen_core::{Failure, Kinds};
 use libtest_mimic::{Arguments, Failed, Trial};
 use polyspec_php_serialize::{Node, PhpValue};
 use polyspec_sessions_core::Store;
-use polyspec_sessions_redis::{Options, RedisSessions, Setting};
+use polyspec_sessions_redis::{RedisSessions, Setting, StoreOptions};
 
 fn failed(error: impl std::fmt::Display) -> Failed {
     Failed::from(error.to_string())
@@ -71,16 +71,15 @@ fn runtime() -> Result<tokio::runtime::Runtime, Failed> {
 
 /// Writes a session with `n` = 1 and reads it back through a store of the setting.
 async fn round_trip(setting: Setting) -> Result<(), Failed> {
-    let store =
-        RedisSessions::new(setting, Options::new(None, None, None, None, None).map_err(failed)?).map_err(failed)?;
+    let store = RedisSessions::new(setting, StoreOptions::default()).map_err(failed)?;
     let mut opened = store.open(None).await.map_err(failed)?;
-    opened.session().set("n", &integer(1)).map_err(|error| failed(format!("{error:?}")))?;
-    let Some(id) = store.close(opened).await.map_err(failed)? else {
+    opened.set("n", &integer(1)).map_err(|error| failed(format!("{error:?}")))?;
+    let Some(id) = opened.close().await.map_err(failed)? else {
         return Err("no identifier is created".into());
     };
     let mut opened = store.open(Some(id.as_bytes())).await.map_err(failed)?;
-    let value = opened.session().get("n").map_err(|error| failed(format!("{error:?}")))?;
-    store.close(opened).await.map_err(failed)?;
+    let value = opened.get("n").map_err(|error| failed(format!("{error:?}")))?;
+    opened.close().await.map_err(failed)?;
     match value.as_ref().map(PhpValue::root) {
         Some(Node::Int(1)) => Ok(()),
         other => Err(format!("n is {other:?}").into()),
@@ -94,12 +93,10 @@ fn the_requests_of_one_session_in_one_process_lose_no_write() -> Result<(), Fail
     let _server = start(&["--port", &port.to_string()], port, directory.path())?;
     runtime()?.block_on(async {
         let setting = Setting::Server { url: format!("redis://127.0.0.1:{port}/") };
-        let store = Arc::new(
-            RedisSessions::new(setting, Options::new(None, None, None, None, None).map_err(failed)?).map_err(failed)?,
-        );
+        let store = Arc::new(RedisSessions::new(setting, StoreOptions::default()).map_err(failed)?);
         let mut opened = store.open(None).await.map_err(failed)?;
-        opened.session().set("n", &integer(0)).map_err(|error| failed(format!("{error:?}")))?;
-        let Some(id) = store.close(opened).await.map_err(failed)? else {
+        opened.set("n", &integer(0)).map_err(|error| failed(format!("{error:?}")))?;
+        let Some(id) = opened.close().await.map_err(failed)? else {
             return Err(Failed::from("no identifier is created"));
         };
         let mut tasks = Vec::new();
@@ -108,7 +105,7 @@ fn the_requests_of_one_session_in_one_process_lose_no_write() -> Result<(), Fail
             let id = id.clone();
             tasks.push(tokio::spawn(async move {
                 let mut opened = store.open(Some(id.as_bytes())).await.map_err(|error| error.to_string())?;
-                let number = match opened.session().get("n") {
+                let number = match opened.get("n") {
                     Ok(Some(value)) => match value.root() {
                         Node::Int(number) => *number,
                         other => return Err(format!("n is {other:?}")),
@@ -118,18 +115,18 @@ fn the_requests_of_one_session_in_one_process_lose_no_write() -> Result<(), Fail
                     Err(Failure::Raised(_)) => return Err("raised".to_owned()),
                 };
                 tokio::time::sleep(Duration::from_millis(2)).await;
-                if let Err(error) = opened.session().set("n", &integer(number + 1)) {
+                if let Err(error) = opened.set("n", &integer(number + 1)) {
                     return Err(format!("{error:?}"));
                 }
-                store.close(opened).await.map(|_created| ()).map_err(|error| error.to_string())
+                opened.close().await.map(|_created| ()).map_err(|error| error.to_string())
             }));
         }
         for task in tasks {
             task.await.map_err(failed)?.map_err(Failed::from)?;
         }
         let mut opened = store.open(Some(id.as_bytes())).await.map_err(failed)?;
-        let value = opened.session().get("n").map_err(|error| failed(format!("{error:?}")))?;
-        store.close(opened).await.map_err(failed)?;
+        let value = opened.get("n").map_err(|error| failed(format!("{error:?}")))?;
+        opened.close().await.map_err(failed)?;
         match value.as_ref().map(PhpValue::root) {
             Some(Node::Int(16)) => Ok(()),
             other => Err(format!("n is {other:?}").into()),
@@ -151,7 +148,7 @@ fn an_acl_user_connects_and_a_wrong_password_tells_nothing() -> Result<(), Faile
     let wrong = runtime.block_on(async {
         let store = RedisSessions::new(
             Setting::Server { url: format!("redis://alice:wrongword@127.0.0.1:{port}/") },
-            Options::new(None, None, None, None, None).map_err(failed)?,
+            StoreOptions::default(),
         )
         .map_err(failed)?;
         Ok::<_, Failed>(store.open(Some(&[b'a'; 32])).await)

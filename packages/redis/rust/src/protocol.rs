@@ -12,7 +12,17 @@ use crate::error::Error;
 pub const RELEASE: &str =
     r#"if redis.call("get",KEYS[1]) == ARGV[1] then return redis.call("del",KEYS[1]) else return 0 end"#;
 
-/// The options of the store (SR-1.2).
+/// The options that the caller states, each `None` for its default (SR-1.2): the record of the interface contract.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct StoreOptions {
+    pub lifetime: Option<u64>,
+    pub prefix: Option<String>,
+    pub lock_expire: Option<u64>,
+    pub lock_retries: Option<u64>,
+    pub lock_wait: Option<u64>,
+}
+
+/// The options of the store, checked (SR-1.2).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
     lifetime: u64,
@@ -71,6 +81,17 @@ impl Options {
                 Some(wait) => wait,
             },
         })
+    }
+
+    /// The options of a record of the interface contract (SR-1.2).
+    pub fn of(options: &StoreOptions) -> Result<Self, Error> {
+        Self::new(
+            options.lifetime,
+            options.prefix.clone(),
+            options.lock_expire,
+            options.lock_retries,
+            options.lock_wait,
+        )
     }
 
     #[must_use]
@@ -161,14 +182,14 @@ impl Lock {
     }
 }
 
-/// The session of one request of the store of Redis: the record session (SE-7) and the lock that it holds.
+/// The state of the session of one request in the protocol: the record session (SE-7) and the lock that it holds.
 #[derive(Debug)]
-pub struct RedisSession {
+pub struct Session {
     record: RecordSession,
     lock: Option<Lock>,
 }
 
-impl RedisSession {
+impl Session {
     /// The identifier of the existing session that the request found, or `None`.
     #[must_use]
     pub fn found(&self) -> Option<&str> {
@@ -180,7 +201,7 @@ impl RedisSession {
     }
 }
 
-impl Store for RedisSession {
+impl Store for Session {
     fn get(&mut self, key: &str) -> Result<Option<PhpValue>, Failure> {
         self.record.get(key)
     }
@@ -242,16 +263,16 @@ enum OpeningState {
     Lock,
     Waited,
     Get,
-    Release(Box<After<RedisSession>>),
+    Release(Box<After<Session>>),
     Ended,
 }
 
 impl Opening {
     /// The opening of the session that the bytes of a session cookie name; bytes that are not an identifier give the
     /// session of a request without an existing session at once (SR-3.2).
-    pub fn new(options: &Options, cookie: Option<&[u8]>) -> Result<Result<Self, RedisSession>, Error> {
+    pub fn new(options: &Options, cookie: Option<&[u8]>) -> Result<Result<Self, Session>, Error> {
         let Some(id) = cookie.and_then(accept) else {
-            return Ok(Err(RedisSession::without_session()));
+            return Ok(Err(Session::without_session()));
         };
         let key = options.key(&id);
         let lock = Lock { key: format!("{key}_LOCK"), secret: random_hex(16)? };
@@ -272,20 +293,20 @@ impl Opening {
         )
     }
 
-    fn release(&mut self, then: After<RedisSession>) -> Step<RedisSession> {
+    fn release(&mut self, then: After<Session>) -> Step<Session> {
         self.state = OpeningState::Release(Box::new(then));
         Step::Send(self.lock.release())
     }
 
     /// The next step, given the reply of the command of the last step (`None` at the start and after a wait).
-    pub fn next(&mut self, reply: Option<Reply>) -> Result<Step<RedisSession>, Error> {
+    pub fn next(&mut self, reply: Option<Reply>) -> Result<Step<Session>, Error> {
         let state = std::mem::replace(&mut self.state, OpeningState::Ended);
         match (state, reply) {
             (OpeningState::Start, None) => {
                 self.state = OpeningState::Exists;
                 Ok(Step::Send(Command::new("EXISTS", &[self.key.as_bytes()])))
             }
-            (OpeningState::Exists, Some(Reply::Integer(0))) => Ok(Step::Done(RedisSession::without_session())),
+            (OpeningState::Exists, Some(Reply::Integer(0))) => Ok(Step::Done(Session::without_session())),
             (OpeningState::Exists, Some(Reply::Integer(_))) | (OpeningState::Waited, None) => {
                 self.state = OpeningState::Lock;
                 Ok(Step::Send(self.set_lock()))
@@ -305,11 +326,11 @@ impl Opening {
             }
             // The lock may be held after a reply of another type, so the release follows (SR-5.1).
             (OpeningState::Lock, Some(reply)) => Ok(self.release(After::Err(unexpected("SET", &reply)))),
-            (OpeningState::Get, Some(Reply::Bulk(record))) => Ok(Step::Done(RedisSession {
+            (OpeningState::Get, Some(Reply::Bulk(record))) => Ok(Step::Done(Session {
                 record: RecordSession::new(Some(Found { id: self.id.clone(), record })),
                 lock: Some(self.lock.clone()),
             })),
-            (OpeningState::Get, Some(Reply::Nil)) => Ok(self.release(After::Ok(RedisSession::without_session()))),
+            (OpeningState::Get, Some(Reply::Nil)) => Ok(self.release(After::Ok(Session::without_session()))),
             (OpeningState::Get, Some(reply)) => Ok(self.release(After::Err(unexpected("GET", &reply)))),
             (OpeningState::Release(then), Some(reply)) => finish_release(*then, &reply),
             (_, _) => Err(Error::Core(polyspec_sessions_core::Error::Internal {
@@ -349,8 +370,8 @@ enum ClosingState {
 impl Closing {
     /// The closing of a session; it writes what `finish` gives (SR-4.1).
     #[must_use]
-    pub fn new(options: &Options, session: RedisSession) -> Self {
-        let RedisSession { record, lock } = session;
+    pub fn new(options: &Options, session: Session) -> Self {
+        let Session { record, lock } = session;
         Self { options: options.clone(), lock, state: ClosingState::Start(record.finish().map_err(Error::Core)) }
     }
 

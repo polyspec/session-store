@@ -210,6 +210,10 @@
             "optional": "php_value"
           },
           "async_allowed": false,
+          "core": {
+            "path": "polyspec_session_store::Store::get",
+            "receiver": "&mut self"
+          },
           "optional_reason": "SE-2.1"
         },
         {
@@ -236,7 +240,11 @@
             }
           ],
           "returns": "none",
-          "async_allowed": false
+          "async_allowed": false,
+          "core": {
+            "path": "polyspec_session_store::Store::set",
+            "receiver": "&mut self"
+          }
         },
         {
           "id": "store.remove",
@@ -255,7 +263,11 @@
             }
           ],
           "returns": "none",
-          "async_allowed": false
+          "async_allowed": false,
+          "core": {
+            "path": "polyspec_session_store::Store::remove",
+            "receiver": "&mut self"
+          }
         },
         {
           "id": "store.renew",
@@ -266,7 +278,11 @@
           "visibility": "public",
           "parameters": [],
           "returns": "none",
-          "async_allowed": false
+          "async_allowed": false,
+          "core": {
+            "path": "polyspec_session_store::Store::renew",
+            "receiver": "&mut self"
+          }
         }
       ]
     },

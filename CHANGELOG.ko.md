@@ -1,7 +1,16 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: abfa7cc796e15d972ba71b12f43931e9f715beb279182d9d14ba51f698ded5f4 -->
+<!-- source-sha256: 22437adad9ba3b977f68d586fdaba400b2d834a4b943d6de1385d89ad16a7585 -->
 
 ## Unreleased
+
+- 저장소의 manifest를 릴리스에 대해 분류하는 파일이 없었고, `Makefile`에는 릴리스 target이 없었다.
+  `config/release.json`은 변경 기록을 적고 manifest 15개를 각각 이유와 함께 릴리스하지 않는 것으로 분류한다. 바인딩
+  package는 platform asset을 만드는 kit 0.0.111과 Go module의 tag 형식, 곧 release commit과 `packages/go/vX.Y.Z`를
+  기다린다. `make release-coverage`는 kit의 릴리스 유틸리티의 coverage를 실행하고 통과한다. 파일에서
+  `packages/go/go.mod`와 `packages/ts/package.json`을 빼면 실패하고 둘을 적는다. `make release-tag`,
+  `make release-checkout`, `make release-tools`, `make release-assets`, `make release-publish`, `make release-undraft`는
+  kit의 릴리스 유틸리티를 실행한다. `RUN` 없는 `make release-tag`는 실패하고 `RUN`을 적는다. `make check`는
+  `make workflows-test`와 `make release-coverage`도 실행한다.
 
 - checklist `docs/plans/rust-core/checklist.md`에는 릴리스의 구조에 대한 행이 없었다. 행 T1.10부터 T1.14는 GitHub
   workflow와 그 규칙의 시험, manifest의 릴리스 분류, 추적되는 경로의 소유자, 라이선스 본문, 0.0.1 릴리스를 적고, 계획은

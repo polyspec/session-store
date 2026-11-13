@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- No file classified the manifests of the repository for a release, and the `Makefile` had no release target.
+  `config/release.json` names the change logs and classifies the 15 manifests as not released, each with its reason: the
+  binding packages wait for kit 0.0.111, which makes the platform assets, and for the tag form of the Go module, the
+  release commit and `packages/go/vX.Y.Z`. `make release-coverage` runs the coverage of the release utility of kit and
+  passes; with `packages/go/go.mod` and `packages/ts/package.json` taken out of the file it fails and names both.
+  `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`, `make release-publish`
+  and `make release-undraft` run the release utilities of kit; `make release-tag` without `RUN` fails and names it.
+  `make check` runs `make workflows-test` and `make release-coverage` too.
+
 - The checklist `docs/plans/rust-core/checklist.md` had no row for the structure of a release. The rows T1.10 to T1.14
   name the GitHub workflows and the test of their rules, the classification of the manifests for the release, the owners
   of the tracked paths, the text of the license and the release 0.0.1, and the plan names them as its sixth step. T1.13

@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 8fe3c69ee7dbcbae97100fa089a71e2a5566cdbdbd6e8d4fa897da981cd42941 -->
+<!-- source-sha256: d6e86da71044813483006e6b5bb29368ca9e3d6aa9065ee3b7f8b4d2dd687a53 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -24,6 +24,7 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 - `scripts/test-run.sh`: `make test`의 시험을 자기 container와 임시 디렉터리를 가진 run으로 실행한다(SE-10.4).
 - 루트의 `Cargo.toml`은 crate 넷과 다섯 target의 바인딩 crate의 workspace이며 `Cargo.lock`은 하나다.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: case다(SE-10).
+- `config/release.json`: 모든 manifest의 릴리스 분류이며, kit의 릴리스 유틸리티가 읽는다.
 - `docs/spec/`: 명세다. 루트: `AGENTS.md`, `README.md`, `CHANGELOG.md`와 그 한국어 번역
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`, `.cargo/config.toml`.
 
@@ -96,6 +97,19 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 
 Linux x64와 arm64(glibc), macOS arm64다. polyspec의 Rust 코어와 바인딩이 안정되고 ext-php-rs가 고정된 stable
 toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는다.
+
+## CI와 릴리스
+
+- `config/release.json`은 저장소의 모든 manifest를 분류하고, `make release-coverage`는 분류되지 않은 manifest를
+  실패시킨다. 이 파일은 package를 적지 않는다. 바인딩 package는 kit 0.0.111이 platform asset을 만들고 Go module이
+  tag 형식, 곧 release commit과 `packages/go/vX.Y.Z`를 갖춘 뒤에 릴리스한다. 그때까지 릴리스는 tag `vX.Y.Z`와, 변경
+  기록의 `## X.Y.Z` 절을 notes로 가진 GitHub Release다.
+- 버전은 릴리스 때 만드는 commit `chore(release): Release X.Y.Z`에서만 바뀐다. 이 commit은 `Cargo.toml`의
+  `[workspace.package]`와, `binding scaffold`가 그것에서 다시 쓰는 바인딩 manifest에 버전을 적고, `Cargo.lock`을
+  다시 쓰고, 두 변경 기록의 `## Unreleased`를 `## X.Y.Z`로 바꾸고 그 위에 빈 `## Unreleased`를 새로 둔다. tag는
+  손으로 만들지 않는다. `make release-tag RUN=<id>`가 `main`에서 성공한 workflow `ci`의 run `<id>`의 commit에, 그
+  commit의 변경 기록의 첫 `## X.Y.Z` 절의 버전으로 tag를 단다. `make release-assets`, `make release-publish`,
+  `make release-undraft`는 `config/release.json`의 package의 archive를 만들고 그 tag의 GitHub Release를 공개한다.
 
 ## Commit
 

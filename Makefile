@@ -47,9 +47,10 @@ export PHP PHP_CONFIG
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
 .PHONY: bootstrap docs-check documents-stamp workflows-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
-	test-python node-package test-node test-wasm test-php test-go
+	test-python node-package test-node test-wasm test-php test-go \
+	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
 
-check: lint-rust fmt-check test binding-check docs-check
+check: lint-rust fmt-check test binding-check docs-check workflows-test release-coverage
 
 # The npm that devEngines of package.json names installs the lock, @polyspec/kit included. It runs outside the checkout with
 # --prefix, since an npm of another release refuses a folder whose devEngines names npm 12.2.0 (EBADDEVENGINES); npm reads
@@ -176,3 +177,38 @@ test-go: bindings-go
 	test -z "$$(cd packages/go && $(GOFMT) -l .)"
 	cd packages/go && $(GO_ENV) $(GO) vet ./...
 	cd packages/go && $(GO_ENV) SESSION_STORE_CASES=$(CASES) $(GO) test -count=1 -v ./...
+
+# ---- Release (.github/workflows/release.yml) ----
+# Every manifest of the checkout is classified in config/release.json: released by a tag or not released, with its reason.
+release-coverage:
+	$(NODE) $(KIT)/release.mjs coverage
+
+# Tags the commit of the successful run RUN of the workflow ci on main with the version of the first section ## X.Y.Z of
+# its change log and writes TAG and VERSION for the steps that follow; AUTO for a run that the workflow ci started.
+release-tag:
+	@test -n "$$RUN" || { echo "release-tag: RUN is required, for example make release-tag RUN=123"; exit 1; }
+	RELEASE_MAIN=origin/main $(NODE) $(KIT)/release-run.mjs tag "$$RUN"$(if $(AUTO), --auto)
+
+# Checks out the tag TAG, so that the release builds the tagged commit with its own kit.
+release-checkout:
+	@test -n "$$TAG" || { echo "release-checkout: TAG is required, for example make release-checkout TAG=v0.0.1"; exit 1; }
+	git checkout --quiet "$$TAG"
+
+# The tools that the packages of config/release.json need; none while it names no package.
+release-tools:
+	$(NODE) $(KIT)/release-tools.mjs
+
+# The archive of every package of config/release.json at TAG, into var/release/assets.
+release-assets:
+	@test -n "$$TAG" || { echo "release-assets: TAG is required, for example make release-assets TAG=v0.0.1"; exit 1; }
+	RELEASE_ASSETS=var/release/assets $(NODE) $(KIT)/release.mjs assets "$$TAG"
+
+# The GitHub Release of TAG as a draft, with its notes and the files of release-assets.
+release-publish:
+	@test -n "$$TAG" || { echo "release-publish: TAG is required, for example make release-publish TAG=v0.0.1"; exit 1; }
+	RELEASE_ASSETS=var/release/assets RELEASE_RECORDS=var/release $(NODE) $(KIT)/release.mjs publish "$$TAG"
+
+# Makes the draft release of TAG public.
+release-undraft:
+	@test -n "$$TAG" || { echo "release-undraft: TAG is required, for example make release-undraft TAG=v0.0.1"; exit 1; }
+	RELEASE_RECORDS=var/release $(NODE) $(KIT)/release.mjs undraft "$$TAG"

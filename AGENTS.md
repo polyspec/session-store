@@ -24,6 +24,7 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 - `Cargo.toml` of the root is the workspace of the four crates and the binding crates of the five targets with one
   `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
+- `config/release.json`: the classification of every manifest for the release, which the release utilities of kit read.
 - `docs/spec/`: the specification. Root: `AGENTS.md`, `README.md`, `CHANGELOG.md` and their Korean translations
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`, `.cargo/config.toml`.
 
@@ -98,6 +99,20 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 
 Linux x64 and arm64 (glibc) and macOS arm64. Windows is not supported until the Rust cores and the bindings of polyspec
 are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
+
+## CI and release
+
+- `config/release.json` classifies every manifest of the repository, and `make release-coverage` fails a manifest that
+  it does not classify. It names no package: the binding packages are released once kit 0.0.111 makes the platform
+  assets and the Go module has its tag form, the release commit and `packages/go/vX.Y.Z`. Until then a release is the
+  tag `vX.Y.Z` and the GitHub Release with the notes of the section `## X.Y.Z` of the change log.
+- A version changes only in the commit `chore(release): Release X.Y.Z`, which is made at the release. It sets the
+  version in `[workspace.package]` of `Cargo.toml` and in the binding manifests that `binding scaffold` writes again
+  from it, writes `Cargo.lock` again, and renames `## Unreleased` of both change logs to `## X.Y.Z` with a new empty
+  `## Unreleased` above it. No tag is created by hand: `make release-tag RUN=<id>` tags the commit of the successful
+  run `<id>` of the workflow `ci` on `main` with the version of the first section `## X.Y.Z` of its change log, and
+  `make release-assets`, `make release-publish` and `make release-undraft` build the archives of the packages of
+  `config/release.json` and publish the GitHub Release of the tag.
 
 ## Commits
 

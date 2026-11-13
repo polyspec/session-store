@@ -1,5 +1,9 @@
 <!-- doc-id: changelog -->
 
+- `scripts/binding.mts` clones the checkout that Cargo made of the pinned binding commit into `var/binding/<commit>`
+  and no longer copies the files of its `packages/ts`. `binding check` reads its own commit from its Git checkout and
+  compares it with the commit of `Cargo.lock` (CK-20); a copy of the files has no commit, which the check reports once
+  the contract has no other finding.
 - `Cargo.lock` pins the binding whose generator holds the value aliases, the fault injection and the error units in one
   line of development, and the binding packages are those that its scaffold writes: each binding crate takes
   `polyspec-binding-core` with the features `construct` and `lock`, and the lock gains `tokio` as a dependency of

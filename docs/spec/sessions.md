@@ -175,6 +175,11 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   has no WASM binding: a browser has no directory that server processes share, and the store waits on file I/O and on
   a lock of another process, which WebAssembly in a browser cannot do (binding Q-4). The classes `FileSessions` and
   `FileSession` are classes of PHP, Python, Node and Go.
+  <a id="SF-1.5"></a> The store is made by the static function `FileSessions::in_directory` of Rust and by the static
+  member `file_sessions.in_directory` of the interface contract, which takes the directory and the lifetime and
+  returns the store; the class `FileSessions` has no constructor. The making reads the directory (SF-1.2), so it waits
+  on file I/O, and a language whose constructor cannot be awaited has no form of a constructor that waits, which
+  binding refuses for every target (binding GN-6m).
 - **SF-2** <a id="SF-2.1"></a> A session is the file `sess_<id>` of the directory, whose bytes are its record (SE-6)
   and whose mode is 0600 when the store creates it: the file name, the record and the mode of the files handler of the
   PHP session module. <a id="SF-2.2"></a> A file without bytes is a session without values (SE-6.2). <a id="SF-2.3"></a>
@@ -385,14 +390,16 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   `openFaults`
   (`file_sessions.open`) and `collectFaults` (`file_sessions.collect`) of `contracts/file-sessions.json`, and the group
   `openFaults` (`redis_sessions.open`) of `contracts/redis-sessions.json`. A case of one call makes its receiver with
-  the constructor of its unit from the keys of the case (binding T-5): the store of files of the directory `/`, which
+  the constructor of its unit, or with `file_sessions.in_directory` for the store of files (SF-1.5), from the keys of
+  the case (binding T-5): the store of files of the directory `/`, which
   exists on every platform of the library and whose read the armed point fails before the call reads it, and the store
   of Redis of a socket under `/dev/null`, which no file can be. The group `opening` of `contracts/redis-sessions.json`
   holds the input case of one call whose connection fails with that setting (SR-6.4); no injection imitates a failure
   that this input reaches. <a id="SE-10.6"></a> A session of a request (`file_session`, `redis_session`) is made by
   `open` of its store, a method of another unit, so a case of one of its calls gives its receiver under the key
   `receiver` as an instance value that earlier calls make (binding GN-13f): `open` without a cookie of a store made by
-  its constructor, the store of files of the directory `/` with a cancellation that does not fire and the store of
+  its constructor or by `file_sessions.in_directory` (SF-1.5), the store of files of the directory `/` with a
+  cancellation that does not fire and the store of
   Redis of a socket under `/dev/null`, and the calls of `then`. The groups `file_session.<member>.made` and
   `redis_session.<member>.made` of `get`, `set`, `remove` and `renew` arm `session_store.random`, which the start of the
   new session reaches (SE-5.4, SE-7.2); `redis_session.close.made` closes a session that set a value, whose close

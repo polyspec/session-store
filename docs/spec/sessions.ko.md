@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: c46955dccfa761aac2a7ec1c11e46c1b311acfad78cadbceea4a949c6a9a7671 -->
+<!-- source-sha256: 1bf9f09da5e79d7eb26a910d077bf9af7371d3936b5c318be6ecc1483eb36831 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -174,6 +174,10 @@
   없다: 브라우저에는 서버 프로세스가 함께 쓰는 디렉터리가 없고, 저장소는 파일 I/O와 다른 프로세스의 lock을 기다리는데
   브라우저의 WebAssembly는 그것을 할 수 없다(binding Q-4). 클래스 `FileSessions`와 `FileSession`은 PHP, Python,
   Node, Go의 클래스다.
+  <a id="SF-1.5"></a> 저장소는 Rust의 static 함수 `FileSessions::in_directory`와 인터페이스 계약의 static member
+  `file_sessions.in_directory`가 만든다. 이 member는 디렉터리와 수명을 받아 저장소를 돌려주며, 클래스 `FileSessions`에는
+  생성자가 없다. 저장소를 만드는 일은 디렉터리를 읽으므로(SF-1.2) 파일 I/O를 기다리는데, 생성자를 await할 수 없는
+  언어에는 기다리는 생성자의 꼴이 없고 binding은 그것을 모든 target에서 거부한다(binding GN-6m).
 - **SF-2** <a id="SF-2.1"></a> 세션은 디렉터리의 파일 `sess_<id>`이고, 그 바이트는 세션의 레코드이며(SE-6),
   저장소가 파일을 만들 때 그 mode는 0600이다: PHP 세션 모듈 files handler의 파일 이름, 레코드,
   mode다. <a id="SF-2.2"></a> 바이트가 없는 파일은 값이 없는 세션이다(SE-6.2). <a id="SF-2.3"></a>
@@ -380,13 +384,13 @@
   record session의 한 호출이며, Rust 시험만 읽고, 같은 호출을 먼저 장전 없이 실행해 입력만으로는 실패가 없음을
   확인한다), `contracts/file-sessions.json`의 group `openFaults`(`file_sessions.open`)와
   `collectFaults`(`file_sessions.collect`), `contracts/redis-sessions.json`의 group
-  `openFaults`(`redis_sessions.open`)다. 한 호출 case는 자기 unit의 생성자로 case의 key에서 receiver를
+  `openFaults`(`redis_sessions.open`)다. 한 호출 case는 자기 unit의 생성자로, 파일 저장소는 `file_sessions.in_directory`로(SF-1.5) case의 key에서 receiver를
   만든다(binding T-5): 라이브러리의 모든 플랫폼에 있고 그 읽기를 장전된 주입점이 호출이 읽기 전에 실패시키는
   디렉터리 `/`의 파일 저장소, 그리고 어떤 파일도 될 수 없는 `/dev/null` 아래 socket의 Redis 저장소다.
   `contracts/redis-sessions.json`의 group `opening`은 그 설정으로 연결이 실패하는 한 호출의 입력 case를
   담는다(SR-6.4). 이 입력이 닿는 실패를 흉내 내는 주입은 없다. <a id="SE-10.6"></a> 요청의 세션(`file_session`, `redis_session`)은 다른 unit의 메서드인 그 저장소의
   `open`이 만든다. 그래서 그 호출 하나의 case는 앞선 호출이 만드는 instance 값으로 키 `receiver` 아래에 receiver를
-  준다(binding GN-13f). 그 값은 생성자로 만든 저장소의 쿠키 없는 `open`과 `then`의 호출이다. 저장소는 디렉터리 `/`의
+  준다(binding GN-13f). 그 값은 생성자나 `file_sessions.in_directory`(SF-1.5)로 만든 저장소의 쿠키 없는 `open`과 `then`의 호출이다. 저장소는 디렉터리 `/`의
   파일 저장소(발동하지 않는 취소와 함께)와 `/dev/null` 아래 socket의 Redis 저장소다. `get`, `set`, `remove`,
   `renew`의 group `file_session.<member>.made`와 `redis_session.<member>.made`는 새 세션의 시작이 닿는
   `session_store.random`을 장전한다(SE-5.4, SE-7.2). `redis_session.close.made`는 값을 set한 세션을 닫는다. 그 close는

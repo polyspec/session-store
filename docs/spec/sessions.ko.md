@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: a882e832257a69401d703af4c47ecbe25fa0ef9ab30c2e8b2319b7d2973d3248 -->
+<!-- source-sha256: c46955dccfa761aac2a7ec1c11e46c1b311acfad78cadbceea4a949c6a9a7671 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -359,9 +359,14 @@
   않으면(`PHP`) 그 시험은 실패하므로, 그 레코드는 PHP의 레코드다. <a id="SE-10.4"></a> Redis case의 명령은
   프로토콜이 보내는 Redis 명령의 모델에 대해 실행되고, 같은 요청이 실제 Redis 서버에 대해 실행된다.
   시험의 모든 실제 서버(case의 서버, 그리고 SR-6의 ACL 사용자, TLS, Sentinel, Cluster)는 Makefile이 digest로 고정한
-  image(`REDIS_IMAGE`, `make redis-image`가 받는다)로 Apple `container`(`CONTAINER`)의 container 안에서 도는 Redis
-  8.10.3의 `redis-server`다. container나 image가 주어지지 않은 시험은 실패하고 그 대상을 적는다. 그런 시험은 무시된
-  시험으로 보고되지 않는다. 시험은 자기 container의 주소에 연결하고, 서버가 연결을 받는다고 알리는 줄(Sentinel은
+  image(`REDIS_IMAGE`, `make redis-image`가 받는다)의 container 안에서 도는 Redis 8.10.3의 `redis-server`다.
+  container 프로그램은 플랫폼이 정한다. Darwin은 Apple `container`를, Linux는 `docker`를 실행한다. image와 그
+  digest는 하나다. 그래서 두 플랫폼의 시험이 같은 bytes의 서버에 연결하고, 어떤 시험도 장비에 설치된 서버를
+  실행하지 않는다. `scripts/container.sh`가 두 프로그램의 명령(받기, image의 존재, 실행, 삭제, run의 container
+  목록)을 갖고, 프로그램을 플랫폼만으로 정한다. 어떤 변수도 프로그램을 고르지 않는다. 프로그램을 찾지 못하면 run은
+  시작할 때 그 프로그램의 이름과 설치 방법을 적고 실패한다. image가 주어지지 않은 시험은 실패하고 그 target을
+  적는다. 그런 시험은 무시된 시험으로 보고되지 않는다. container는 두 프로그램 모두에서 자기 주소를 첫 줄로 쓴다.
+  시험은 자기 container의 주소에 연결하고, 서버가 연결을 받는다고 알리는 줄(Sentinel은
   감시하는 primary, Cluster는 각 node의 state ok)을 기다리며, 시간을 기다리지 않는다. `make test`는 시험을
   `scripts/test-run.sh`로 실행하고, 이 script는 run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때 그 run의
   container와 임시 디렉터리를 지운다. `text_replies`를 가진 case(모델이 각 레코드를 status 응답으로 준다, SR-5.1)나

@@ -360,9 +360,15 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   when no PHP binary is given (`PHP`), so the records are those of PHP. <a id="SE-10.4"></a> The commands of the Redis cases run
   against a model of the Redis commands that the protocol sends, and the same requests run against a real Redis server.
   Every real server of the tests (the server of the cases, and the ACL user, TLS, Sentinel and Cluster of SR-6) is
-  `redis-server` of Redis 8.10.3 in a container of Apple `container` (`CONTAINER`) from the image that the Makefile
-  pins by its digest (`REDIS_IMAGE`, pulled by `make redis-image`), and a test whose container or image is not given
-  fails and names that target; no such test is reported as ignored. A test connects to the address of its container,
+  `redis-server` of Redis 8.10.3 in a container from the image that the Makefile pins by its digest (`REDIS_IMAGE`,
+  pulled by `make redis-image`). The platform names the container program: Darwin runs Apple `container` and Linux
+  runs `docker`. The image and its digest are one, so that the tests of both platforms connect to the same bytes of
+  the server, and no test runs a server that is installed on the machine. `scripts/container.sh` holds the commands of
+  both programs (pull, the presence of an image, run, delete, the list of the containers of a run) and takes the
+  program from the platform alone; no variable selects it. A program that is not found fails the run at its start,
+  with the name of the program and what installs it, and a test whose image is not given fails and names that
+  target; no such test is reported as ignored. A container writes its own address as its first line, on both
+  programs. A test connects to the address of its container,
   waits for the line in which the server reports that it accepts connections (Sentinel: the primary that it monitors,
   Cluster: the state ok of each node) and never for a time. `make test` runs the tests through `scripts/test-run.sh`,
   which deletes the containers and the temporary directory of the run when it ends, fails or is stopped by SIGINT or

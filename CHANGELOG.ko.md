@@ -1,7 +1,14 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 2a1913e92a1cd3c66121be9c4e1bbb361e65c9fb772cf56ead1e75fb323a46a7 -->
+<!-- source-sha256: a242974a1fc6a4271343e06f9f0d3bd193e886906379e0e90aea85111af88ec2 -->
 
 ## Unreleased
+
+- 추적되는 경로를 소유하는 검사를 적은 파일이 없었다. `config/owner-checks.json`은 추적되는 경로 82개 각각에 make
+  target을 준다. 문서는 `make docs-check`, 라이브러리의 crate와 case는 `make lint-rust`, `make fmt-check`,
+  `make test`, 바인딩 package는 `make binding-check`, workflow는 `make workflows-test`, manifest는
+  `make release-coverage`다. `make owner-validate`는 kit의 owner-check를 실행하고 통과한다. `.node-version`의 규칙을
+  빼고 Makefile이 정의하지 않는 target을 적으면 두 오류로 실패한다. 이 target은 target 4개를 통과하는
+  `make ci-shared`와 `make check`의 target이다. `make owner-check`는 `PATHS`가 지정하는 경로의 소유자를 실행한다.
 
 - 저장소에 GitHub workflow가 없어서 `make workflows-test`가 실패했다. `.github/workflows/ci.yml`이 추적되지 않았다
   (4 passed, 1 failed). workflow `ci`는 `main`의 push와 `workflow_dispatch`에서 실행한다. job `shared`는

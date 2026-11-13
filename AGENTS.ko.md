@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 9c13f687fedd1739ec14251e3489c6d1851739ef17b32011eb243d84253d3c7c -->
+<!-- source-sha256: 068242c51a7e84adc107826fe0fc5ed1d4ec460296058b913e1a52e284981cec -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -28,6 +28,9 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 - `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/actions/bootstrap`: CI, 릴리스, 그 job의
   bootstrap이다. `.node-version`은 bootstrap이 설치하는 Node.js를 적는다. 개발 장비는 kit의 `engines` 안에서 자기
   Node.js를 쓴다.
+- `config/owner-checks.json`: 추적되는 각 경로를 소유하는 make target이다. `make owner-validate`는 어떤 규칙도 소유하지
+  않는 추적 경로와 Makefile이 정의하지 않는 target을 실패시킨다. 경로를 더하는 변경은 그 소유자를 더한다.
+  `make owner-check PATHS="<paths>"`는 지정한 경로의 소유자를 실행한다.
 - `config/release.json`: 모든 manifest의 릴리스 분류이며, kit의 릴리스 유틸리티가 읽는다.
 - `docs/spec/`: 명세다. 루트: `AGENTS.md`, `README.md`, `CHANGELOG.md`와 그 한국어 번역
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`, `.cargo/config.toml`.
@@ -110,7 +113,7 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
   workflow와 action을 실패시킨다.
 - workflow `ci`는 `main`의 push와 `workflow_dispatch`에서만 시작한다. job `shared`는 `make ci-shared`(Makefile의
-  `CI_SHARED`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
+  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make release-coverage`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
   보고서 `var/report/ci-targets`를 올린다.
 - `make test`는 CI의 target이 아니다. Redis 저장소의 시험은 Apple container에서 Redis 서버를 시작하는데(SE-10.4),

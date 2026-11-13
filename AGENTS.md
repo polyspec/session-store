@@ -28,6 +28,9 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 - `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/actions/bootstrap`: CI, the release and the
   bootstrap of their jobs. `.node-version` names the Node.js that the bootstrap sets up; a development machine runs its
   own Node.js within the `engines` of kit.
+- `config/owner-checks.json`: the make targets that own each tracked path. `make owner-validate` fails a tracked path
+  that no rule owns and a target that the Makefile does not define; a change that adds a path adds its owner.
+  `make owner-check PATHS="<paths>"` runs the owners of the named paths.
 - `config/release.json`: the classification of every manifest for the release, which the release utilities of kit read.
 - `docs/spec/`: the specification. Root: `AGENTS.md`, `README.md`, `CHANGELOG.md` and their Korean translations
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`, `.cargo/config.toml`.
@@ -112,7 +115,8 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   `Makefile` defines, so that the settings of the Makefile apply to every command of CI. `make workflows-test` fails a
   workflow or an action that breaks one of these rules.
 - The workflow `ci` starts on a push of `main` and on `workflow_dispatch` alone. Its job `shared` runs
-  `make ci-shared` (`CI_SHARED` of the Makefile) and its job `rust` runs `make install-rust` and `make ci-rust`
+  `make ci-shared` (`CI_SHARED` of the Makefile: `make docs-check`, `make owner-validate`, `make workflows-test` and
+  `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
   (`CI_RUST`: `make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
 - `make test` is no target of CI. Its tests of the store of Redis start Redis servers in Apple container (SE-10.4),

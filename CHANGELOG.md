@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- No file named the checks that own the tracked paths. `config/owner-checks.json` gives each of the 82 tracked paths its
+  make targets: the documents `make docs-check`, the crates of the library and the cases `make lint-rust`,
+  `make fmt-check` and `make test`, the binding packages `make binding-check`, the workflows `make workflows-test`
+  and the manifests `make release-coverage`. `make owner-validate` runs owner-check of kit and passes; without the rule
+  of `.node-version` and with a target that the Makefile does not define it fails with both errors. It is a target of
+  `make ci-shared`, which passes its 4 targets, and of `make check`. `make owner-check` runs the owners of the paths
+  that `PATHS` names.
+
 - The repository had no GitHub workflow, so `make workflows-test` failed: `.github/workflows/ci.yml` was not tracked
   (4 passed, 1 failed). The workflow `ci` runs on a push of `main` and on `workflow_dispatch`: its job `shared` runs
   `make ci-shared` (`make docs-check`, `make workflows-test`, `make release-coverage`) and its job `rust` runs

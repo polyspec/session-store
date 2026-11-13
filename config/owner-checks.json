@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "comment": "The checks that own each tracked path, read by owner-check of @polyspec/kit.",
+  "fullSuite": [
+    "check"
+  ],
+  "owners": [
+    {
+      "paths": [
+        "**/*.md",
+        "config/documents.json",
+        "config/checklist.json"
+      ],
+      "targets": [
+        "docs-check"
+      ]
+    },
+    {
+      "paths": [
+        "packages/core/rust/**",
+        "packages/file/rust/**",
+        "packages/redis/rust/**",
+        "packages/rust/**",
+        "contracts/*.json",
+        "scripts/test-run.sh",
+        "Cargo.toml",
+        "Cargo.lock",
+        "clippy.toml",
+        "rustfmt.toml",
+        "rust-toolchain.toml",
+        ".cargo/config.toml"
+      ],
+      "targets": [
+        "lint-rust",
+        "fmt-check",
+        "test"
+      ]
+    },
+    {
+      "paths": [
+        "packages/python/**",
+        "packages/ts/**",
+        "packages/php-ext/**",
+        "packages/go/**",
+        "packages/rust/interface.json",
+        "scripts/binding.mts",
+        "Cargo.toml",
+        "Cargo.lock"
+      ],
+      "targets": [
+        "binding-check"
+      ]
+    },
+    {
+      "paths": [
+        "Makefile",
+        ".github/workflows/*.yml",
+        ".github/actions/**",
+        "scripts/workflows.test.mts"
+      ],
+      "targets": [
+        "workflows-test"
+      ]
+    },
+    {
+      "paths": [
+        "config/release.json",
+        "CHANGELOG.md",
+        "CHANGELOG.ko.md",
+        "package.json",
+        "Cargo.toml",
+        "packages/**/Cargo.toml",
+        "packages/go/go.mod",
+        "packages/php-ext/composer.json",
+        "packages/python/pyproject.toml",
+        "packages/ts/package.json"
+      ],
+      "targets": [
+        "release-coverage"
+      ]
+    },
+    {
+      "paths": [
+        "config/owner-checks.json",
+        "Makefile"
+      ],
+      "targets": [
+        "owner-validate"
+      ]
+    },
+    {
+      "paths": [
+        ".gitignore",
+        ".npmrc",
+        ".node-version",
+        "package-lock.json"
+      ],
+      "targets": []
+    }
+  ]
+}

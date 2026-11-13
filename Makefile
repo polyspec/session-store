@@ -46,17 +46,17 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-rust ci-shared ci-rust docs-check documents-stamp workflows-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-rust ci-shared ci-rust owner-check owner-validate docs-check documents-stamp workflows-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
 
 # The targets of each job of .github/workflows/ci.yml, which ci-targets of kit runs past failures into CI_REPORT. make
 # test is in neither list: its tests of the store of Redis need Apple container, which a Linux runner does not have.
-CI_SHARED := docs-check workflows-test release-coverage
+CI_SHARED := docs-check owner-validate workflows-test release-coverage
 CI_RUST := lint-rust fmt-check binding-check
 CI_REPORT ?= var/report/ci-targets
 
-check: lint-rust fmt-check test binding-check docs-check workflows-test release-coverage
+check: lint-rust fmt-check test binding-check docs-check owner-validate workflows-test release-coverage
 
 # The npm that devEngines of package.json names installs the lock, @polyspec/kit included. It runs outside the checkout with
 # --prefix, since an npm of another release refuses a folder whose devEngines names npm 12.2.0 (EBADDEVENGINES); npm reads
@@ -86,6 +86,14 @@ docs-check:
 # again; with no PATHS it lists each twin whose source moved.
 documents-stamp:
 	$(NODE) $(KIT)/documents-stamp.mjs $(PATHS)
+
+# The checks that own the changed paths (config/owner-checks.json): PATHS="a b" or BASE=<revision>.
+owner-check:
+	$(NODE) $(KIT)/owner-check.mjs --every-path $(if $(PATHS),--paths "$(PATHS)") $(if $(BASE),--base $(BASE))
+
+# config/owner-checks.json owns every tracked path and names only targets that the Makefile defines.
+owner-validate:
+	$(NODE) $(KIT)/owner-check.mjs --every-path --validate
 
 # The rules of the GitHub workflows (AGENTS.md, "CI and release"), on the installed test runner of kit.
 workflows-test:

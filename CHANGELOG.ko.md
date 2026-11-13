@@ -1,21 +1,24 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 1968424982e1b08cc96d0be7763f0ad449b1021d25686ef061a28bd576b07020 -->
+<!-- source-sha256: 308c43837a7419503fe3a358f6092a6a80b653eb9e88e267af64bf4471cccb59 -->
 
 ## Unreleased
+
+- `docs/plans/rust-core/checklist.md`의 행과 이 변경 기록의 두 항목이 Git commit을 적고 있었다. 추적되는 파일은 Git commit을
+  적지 않는다(AGENTS.md, "Commits"). 이제 행은 자기 task만 적고, 두 항목은 commit을 적지 않는다.
 
 - `contracts/redis-sessions.json`의 group `requests`의 case 키 `textReplies`와 `errorReplies`는 snake_case가 아니었다.
   그래서 binding의 end-to-end 검사가 모든 target에서 case 파일을 거부했다(G-5). 이제 그것은 Redis 저장소의 시험이 읽는
   `text_replies`와 `error_replies`이고, 코어 시험의 trial `convention::case_keys`는 인터페이스 계약의 `cases`가 가리키는
   group의 case 키가 모두 snake_case이기를 요구한다.
 
-- `Cargo.lock`은 binding 3b4bc6b를 고정하고, `binding scaffold`가 바인딩 패키지를 다시 쓴다. 바인딩 crate의 allow는
+- `Cargo.lock`은 binding의 더 새로운 commit을 고정하고, `binding scaffold`가 바인딩 패키지를 다시 쓴다. 바인딩 crate의 allow는
   자기 규칙 id를 이유로 주고, Go crate의 manifest에는 새 줄이 있다. 그 binding의 검사는 fault 주입점을 가지면서 자기
   시험이 feature `fault-test`로 그것을 받지 않는 코어를 실패시킨다(CK-65, GN-5). 그래서 코어, 파일 저장소, Redis
   저장소처럼 `packages/rust/Cargo.toml`이 라이브러리 자신을 `fault-test`와 함께 dev-dependency로 적는다.
   `make binding-check`는 통과하고, `make test`는 통과 154, 실패 0, 무시 13을 낸다.
 
 - 저장소에는 계획도 checklist도 문서 검사도 없었다. `docs/plans/rust-core`가 계획과 checklist를 한국어 쌍과 함께
-  담는다. 끝난 단계는 자기 commit을 적고, 바인딩과 그 end-to-end 검사와 Go 바인딩은 binding을 기다린다. binding이 모든
+  담는다. 바인딩과 그 end-to-end 검사와 Go 바인딩은 binding을 기다린다. binding이 모든
   target에서 계약의 생성을 거부하기 때문이다. `make docs-check`는 @polyspec/kit의 check-documents를
   `config/documents.json`의 문서와 `config/checklist.json`의 checklist에 실행하고, `make check`가 그것을 실행한다.
   @polyspec/kit은 `package.json`이 release의 URL로, `package-lock.json`이 integrity로 고정하며 `make bootstrap`이

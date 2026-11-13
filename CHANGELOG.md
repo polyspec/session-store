@@ -2,13 +2,16 @@
 
 ## Unreleased
 
+- The rows of `docs/plans/rust-core/checklist.md` and two entries of this change log named Git commits, which no
+  tracked file does (AGENTS.md, "Commits"). The rows state their tasks alone, and the entries name no commit.
+
 - The keys `textReplies` and `errorReplies` of the cases of the group `requests` of `contracts/redis-sessions.json`
   were not in snake_case, so the end-to-end check of binding refused the case files for every target (G-5). They are
   `text_replies` and `error_replies`, which the tests of the store of Redis read, and the trial
   `convention::case_keys` of the tests of the core requires every key of a case of a group that the `cases` of the
   interface contract name to be in snake_case.
 
-- `Cargo.lock` pins binding 3b4bc6b, and `binding scaffold` writes the binding packages again: the allow of a binding
+- `Cargo.lock` pins a newer commit of binding, and `binding scaffold` writes the binding packages again: the allow of a binding
   crate gives its rule id as its reason, and the Go crate holds a new line of its manifest. The check of that binding
   fails a core that has fault injection points and whose tests do not take it with the feature `fault-test` (CK-65,
   GN-5), so `packages/rust/Cargo.toml` names the library itself as a dev-dependency with `fault-test`, as the core,
@@ -16,7 +19,7 @@
   failed and 13 ignored.
 
 - The repository had no plan, no checklist and no check of its documents. `docs/plans/rust-core` holds the plan and
-  the checklist with their Korean twins: the done steps name their commits, and the bindings, their end-to-end check
+  the checklist with their Korean twins: the bindings, their end-to-end check
   and the Go binding wait for binding, which refuses to generate the contract for every target. `make docs-check` runs
   check-documents of @polyspec/kit, which `package.json` pins by the URL of its release and `package-lock.json` by its
   integrity and `make bootstrap` installs, on the documents of `config/documents.json` and the checklist of

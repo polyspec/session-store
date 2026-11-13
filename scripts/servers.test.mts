@@ -1,8 +1,7 @@
 // The commands of scripts/servers.sh and the run of scripts/test-run.sh (SE-10.4): bay starts and removes the servers
-// of the tests, and the engine of the platform, Apple container on Darwin and docker on Linux, pulls and finds the
-// image. The test runs the scripts with stand-ins that it writes into a directory of its own, the only programs of
-// PATH besides /usr/bin and /bin: a uname that names the platform, and a bay and an engine that record their
-// arguments, so it needs neither bay nor a container runtime.
+// of the tests, gives their names and addresses, and pulls and finds the image. The test runs the scripts with a
+// stand-in of bay that it writes into a directory of its own, the only program of PATH besides /usr/bin and /bin, which
+// records its arguments, so it needs neither bay nor a container runtime.
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -15,46 +14,54 @@ const scripts = dirname(fileURLToPath(import.meta.url));
 const servers = join(scripts, 'servers.sh');
 const testRun = join(scripts, 'test-run.sh');
 const IMAGE = 'docker.io/library/redis:1.2.3@sha256:00';
+const FILE = '/run/p/compose.yaml';
 
-/** What the stand-ins of one test do. */
+/** What the stand-in of one test does. */
 interface Machine {
-  /** The platform that the stand-in uname names. */
-  system: string;
-  /** The engine that PATH holds, none when it is undefined. */
-  engine?: string;
   /** Whether PATH holds bay. */
   bay: boolean;
   /** The exit status of the stand-in bay for each command that is named; 0 for the others. */
   status?: Record<string, number>;
 }
 
-/** The directory of the stand-ins, with the commands that they received. */
+/** The directory of the stand-in, with the commands that it received. */
 interface Stand {
   directory: string;
   env: Record<string, string>;
-  /** The commands that bay and the engine received so far, each as its words. */
+  /** The commands that bay received so far, each as its words. */
   calls: () => string[][];
 }
 
-/** Writes the stand-ins of `machine` into a directory that the test removes. */
+/** Writes the stand-in of `machine` into a directory that the test removes. */
 function stand(t: TestContext, machine: Machine): Stand {
   const directory = mkdtempSync(join(tmpdir(), 'session-store-servers-'));
   t.after(() => { rmSync(directory, { recursive: true, force: true }); });
   const bin = join(directory, 'bin');
   mkdirSync(bin);
-  const write = (name: string, text: string): void => {
-    writeFileSync(join(bin, name), text);
-    chmodSync(join(bin, name), 0o755);
-  };
-  write('uname', `#!/bin/sh\necho ${machine.system}\n`);
   const calls = join(directory, 'calls');
-  // Each command is one line of the file calls, its words joined by a tab.
-  const record = `line=$(basename "$0")\nfor word in "$@"; do line="$line\t$word"; done\nprintf '%s\\n' "$line" >> '${calls}'\n`;
-  if (machine.engine !== undefined) write(machine.engine, `#!/bin/sh\n${record}`);
   if (machine.bay) {
-    // The command of bay is its first word that is not the option -f or the value of that option.
+    // Each command is one line of the file calls, its words joined by a tab. The command of bay is its first word
+    // after the option -f and its value. pull keeps the Compose file that it received, exec keeps its standard input,
+    // and the commands that print JSON print a document that names the command.
     const cases = Object.entries(machine.status ?? {}).map(([command, status]) => `${command}) echo "bay: ${command} fails" >&2; exit ${status} ;;`).join('\n');
-    write('bay', `#!/bin/sh\n${record}if [ "$1" = -f ]; then shift 2; fi\ncase "$1" in\n${cases}\nstatus) echo '{"groups":[]}' ;;\ncheck) echo 'ok       dns agent' ;;\nesac\nexit 0\n`);
+    writeFileSync(join(bin, 'bay'), [
+      '#!/bin/sh',
+      'line=bay',
+      'for word in "$@"; do line="$line\t$word"; done',
+      `printf '%s\\n' "$line" >> '${calls}'`,
+      'file=',
+      'if [ "$1" = -f ]; then file=$2; shift 2; fi',
+      'case "$1" in',
+      cases,
+      `pull) cat "$file" > '${join(directory, 'pulled')}' ;;`,
+      `exec) cat > '${join(directory, 'input')}' ;;`,
+      `plan | up) echo "{\\"command\\":\\"$1\\"}" ;;`,
+      `check) echo 'ok       dns agent' ;;`,
+      'esac',
+      'exit 0',
+      '',
+    ].join('\n'));
+    chmodSync(join(bin, 'bay'), 0o755);
   }
   return {
     directory,
@@ -71,79 +78,82 @@ interface Run {
   calls: string[][];
 }
 
-/** Runs scripts/servers.sh with `args` on `machine`. */
-function run(t: TestContext, machine: Machine, args: string[]): Run {
-  const made = stand(t, machine);
+/** Runs scripts/servers.sh with `args` on `machine`; `made` are the stand-ins when the test reads their files. */
+function run(t: TestContext, machine: Machine, args: string[], made: Stand = stand(t, machine)): Run {
   const result = spawnSync('/bin/sh', [servers, ...args], { encoding: 'utf8', env: made.env });
   return { status: result.status, stdout: result.stdout, stderr: result.stderr, calls: made.calls() };
 }
 
-const darwin: Machine = { system: 'Darwin', engine: 'container', bay: true };
-const linux: Machine = { system: 'Linux', engine: 'docker', bay: true };
+const present: Machine = { bay: true };
 
-test('the servers start, stop and report through bay, with the Compose file of the project', (t) => {
-  for (const machine of [darwin, linux]) {
-    assert.deepEqual(run(t, machine, ['up', '/run/p/compose.yaml']).calls, [['bay', '-f', '/run/p/compose.yaml', 'up']]);
-    assert.deepEqual(run(t, machine, ['down', '/run/p/compose.yaml']).calls, [['bay', '-f', '/run/p/compose.yaml', 'down']]);
-    assert.deepEqual(run(t, machine, ['logs', '/run/p/compose.yaml', 'node-0']).calls, [['bay', '-f', '/run/p/compose.yaml', 'logs', '-f', 'node-0']]);
-    const status = run(t, machine, ['status']);
-    assert.deepEqual(status.calls, [['bay', 'status', '--json']]);
-    assert.deepEqual([status.status, status.stdout], [0, '{"groups":[]}\n']);
-  }
+test('each verb of a project is one command of bay with the Compose file of the project', (t) => {
+  const plan = run(t, present, ['plan', FILE]);
+  assert.deepEqual(plan.calls, [['bay', '-f', FILE, 'plan', '--json']]);
+  assert.deepEqual([plan.status, plan.stdout], [0, '{"command":"plan"}\n']);
+  // No start pulls an image: up fails before it creates anything when the image is not installed.
+  const up = run(t, present, ['up', FILE]);
+  assert.deepEqual(up.calls, [['bay', '-f', FILE, 'up', '-no-pull', '--json']]);
+  assert.deepEqual([up.status, up.stdout], [0, '{"command":"up"}\n']);
+  assert.deepEqual(run(t, present, ['images', FILE]).calls, [['bay', '-f', FILE, 'images']]);
+  assert.deepEqual(run(t, present, ['logs', FILE, 'node-0']).calls, [['bay', '-f', FILE, 'logs', '-f', 'node-0']]);
+  assert.deepEqual(run(t, present, ['down', FILE]).calls, [['bay', '-f', FILE, 'down']]);
 });
 
 test('a command of bay that fails fails its verb with the status and the words of bay', (t) => {
-  const failed = run(t, { ...darwin, status: { up: 1 } }, ['up', '/run/p/compose.yaml']);
-  assert.deepEqual([failed.status, failed.stderr], [1, 'bay: up fails\n']);
-});
-
-test('the engine of the platform pulls the image and finds it', (t) => {
-  assert.deepEqual(run(t, darwin, ['pull', IMAGE]).calls, [['container', 'image', 'pull', IMAGE]]);
-  assert.deepEqual(run(t, darwin, ['present', IMAGE]).calls, [['container', 'image', 'inspect', IMAGE]]);
-  assert.deepEqual(run(t, linux, ['pull', IMAGE]).calls, [['docker', 'image', 'pull', IMAGE]]);
-  assert.deepEqual(run(t, linux, ['present', IMAGE]).calls, [['docker', 'image', 'inspect', IMAGE]]);
-});
-
-test('check passes when bay, the engine and the machine setup of bay are in place, and changes nothing', (t) => {
-  for (const machine of [darwin, linux]) {
-    const checked = run(t, machine, ['check']);
-    assert.deepEqual([checked.status, checked.stdout, checked.stderr], [0, '', '']);
-    assert.deepEqual(checked.calls, [['bay', 'check']]);
+  for (const verb of ['plan', 'up', 'images', 'down']) {
+    const failed = run(t, { bay: true, status: { [verb]: 1 } }, [verb, FILE]);
+    assert.deepEqual([failed.status, failed.stderr], [1, `bay: ${verb} fails\n`], verb);
   }
 });
 
+test('exec runs a command in the container of a service, with an empty standard input, and ends with its status', (t) => {
+  const made = stand(t, present);
+  const ran = run(t, present, ['exec', FILE, 'node-0', 'redis-cli', '--cluster', 'create', '192.0.2.1:6379', '--cluster-yes'], made);
+  assert.deepEqual(ran.calls, [['bay', '-f', FILE, 'exec', 'node-0', 'redis-cli', '--cluster', 'create', '192.0.2.1:6379', '--cluster-yes']]);
+  assert.equal(ran.status, 0);
+  assert.equal(readFileSync(join(made.directory, 'input'), 'utf8'), '');
+  assert.equal(run(t, { bay: true, status: { exec: 7 } }, ['exec', FILE, 'node-0', 'false']).status, 7);
+});
+
+test('pull fetches the image through bay, as the image of a project that the script writes and removes', (t) => {
+  const made = stand(t, present);
+  const pulled = run(t, present, ['pull', IMAGE], made);
+  assert.equal(pulled.status, 0);
+  assert.equal(pulled.calls.length, 1);
+  const [program, option, file, command, ...rest] = pulled.calls[0] ?? [];
+  assert.deepEqual([program, option, command, rest], ['bay', '-f', 'pull', []]);
+  assert.match(file ?? '', /\/compose\.yaml$/);
+  assert.equal(readFileSync(join(made.directory, 'pulled'), 'utf8'), `services:\n  redis:\n    image: "${IMAGE}"\n`);
+  assert.equal(existsSync(dirname(file ?? '')), false);
+  assert.equal(run(t, { bay: true, status: { pull: 1 } }, ['pull', IMAGE]).status, 1);
+});
+
+test('check passes when bay and the machine setup that a run needs are in place, and changes nothing', (t) => {
+  const checked = run(t, present, ['check']);
+  assert.deepEqual([checked.status, checked.stdout, checked.stderr], [0, '', '']);
+  assert.deepEqual(checked.calls, [['bay', 'check', '-scope', 'run']]);
+});
+
 test('a machine setup of bay that is not in place fails check and names bay install', (t) => {
-  const missing = run(t, { ...darwin, status: { check: 1 } }, ['check']);
+  const missing = run(t, { bay: true, status: { check: 1 } }, ['check']);
   assert.equal(missing.status, 1);
   assert.match(missing.stderr, /^scripts\/servers\.sh: the machine setup of bay is not in place: `bay install` applies it\n/);
   assert.match(missing.stderr, /bay: check fails\n$/);
-  assert.deepEqual(missing.calls, [['bay', 'check']]);
+  assert.deepEqual(missing.calls, [['bay', 'check', '-scope', 'run']]);
 });
 
-test('a program that PATH does not hold fails the verbs that need it, with its name and what installs it', (t) => {
-  for (const args of [['check'], ['up', '/run/p/compose.yaml'], ['down', '/run/p/compose.yaml'], ['status'], ['logs', '/run/p/compose.yaml', 'a']]) {
-    const missing = run(t, { ...darwin, bay: false }, args);
+test('bay that PATH does not hold fails every verb, with its name and what installs it', (t) => {
+  for (const args of [['check'], ['pull', IMAGE], ['plan', FILE], ['up', FILE], ['images', FILE], ['exec', FILE, 'a', 'true'], ['logs', FILE, 'a'], ['down', FILE]]) {
+    const missing = run(t, { bay: false }, args);
     assert.equal(missing.status, 1, args.join(' '));
     assert.match(missing.stderr, /^scripts\/servers\.sh: bay is not found on PATH: install bay, /);
     assert.deepEqual([missing.stdout, missing.calls], ['', []]);
   }
-  for (const [system, engine, install] of [['Linux', 'docker', 'Docker Engine'], ['Darwin', 'container', 'Apple container']] as const) {
-    for (const args of [['check'], ['pull', IMAGE], ['present', IMAGE]]) {
-      const missing = run(t, { system, bay: true }, args);
-      assert.equal(missing.status, 1, `${system} ${args.join(' ')}`);
-      assert.match(missing.stderr, new RegExp(`^scripts/servers\\.sh: ${engine} is not found on PATH: install ${install} `));
-      assert.deepEqual([missing.stdout, missing.calls], ['', []]);
-    }
-  }
 });
 
-test('a platform without an engine and a verb that the script does not know fail', (t) => {
-  const other = run(t, { system: 'FreeBSD', engine: 'docker', bay: true }, ['check']);
-  assert.equal(other.status, 1);
-  assert.match(other.stderr, /^scripts\/servers\.sh: no engine is named for FreeBSD: Darwin runs Apple container and Linux runs docker\n$/);
-  assert.deepEqual(other.calls, []);
-  for (const args of [[], ['start'], ['check', 'a'], ['pull'], ['present'], ['up'], ['up', 'a', 'b'], ['down'], ['status', 'a'], ['logs', 'a']]) {
-    const unknown = run(t, linux, args);
+test('a verb that the script does not know and a verb with other arguments fail', (t) => {
+  for (const args of [[], ['start'], ['status'], ['present', IMAGE], ['check', 'a'], ['pull'], ['plan'], ['up'], ['up', 'a', 'b'], ['images'], ['exec', 'a', 'b'], ['logs', 'a'], ['down']]) {
+    const unknown = run(t, present, args);
     assert.equal(unknown.status, 2, args.join(' '));
     assert.match(unknown.stderr, /^usage: scripts\/servers\.sh /);
     assert.deepEqual(unknown.calls, []);
@@ -166,19 +176,19 @@ const leave = (names: string[]): string =>
   ['printf "%s\\n" "$SESSION_STORE_PROJECTS" > "$PROJECTS_SEEN"', ...names.map((name) => `mkdir "$SESSION_STORE_PROJECTS/${name}" && : > "$SESSION_STORE_PROJECTS/${name}/compose.yaml"`)].join(' && ');
 
 test('a run checks the programs, gives the tests a directory of projects named after the run and removes it', (t) => {
-  const ended = runTests(t, darwin, `${leave([])} && test -d "$SESSION_STORE_PROJECTS" && test -d "$TMPDIR"`);
+  const ended = runTests(t, present, `${leave([])} && test -d "$SESSION_STORE_PROJECTS" && test -d "$TMPDIR"`);
   assert.deepEqual([ended.status, ended.stderr], [0, '']);
-  assert.deepEqual(ended.calls, [['bay', 'check']]);
+  assert.deepEqual(ended.calls, [['bay', 'check', '-scope', 'run']]);
   assert.match(ended.projects, /\/session-store-test-[0-9]+$/);
   assert.equal(existsSync(dirname(ended.projects)), false);
 });
 
 test('a run that ends or fails runs down for every Compose file that its directory still holds', (t) => {
   for (const status of [0, 3]) {
-    const ended = runTests(t, linux, `${leave(['p-1-0', 'p-1-1'])} && exit ${status}`);
+    const ended = runTests(t, present, `${leave(['p-1-0', 'p-1-1'])} && exit ${status}`);
     assert.deepEqual([ended.status, ended.stderr], [status, '']);
     assert.deepEqual(ended.calls, [
-      ['bay', 'check'],
+      ['bay', 'check', '-scope', 'run'],
       ['bay', '-f', join(ended.projects, 'p-1-0', 'compose.yaml'), 'down'],
       ['bay', '-f', join(ended.projects, 'p-1-1', 'compose.yaml'), 'down'],
     ]);
@@ -187,18 +197,18 @@ test('a run that ends or fails runs down for every Compose file that its directo
 });
 
 test('a run whose programs or machine setup are missing fails before its command starts', (t) => {
-  const withoutBay = runTests(t, { ...darwin, bay: false }, leave([]));
+  const withoutBay = runTests(t, { bay: false }, leave([]));
   assert.equal(withoutBay.status, 1);
   assert.match(withoutBay.stderr, /^scripts\/servers\.sh: bay is not found on PATH: /);
   assert.equal(withoutBay.projects, '');
-  const withoutSetup = runTests(t, { ...darwin, status: { check: 1 } }, leave([]));
+  const withoutSetup = runTests(t, { bay: true, status: { check: 1 } }, leave([]));
   assert.equal(withoutSetup.status, 1);
   assert.match(withoutSetup.stderr, /`bay install` applies it/);
   assert.equal(withoutSetup.projects, '');
 });
 
 test('a project that down does not remove fails the run, which keeps its directory and names the file', (t) => {
-  const kept = runTests(t, { ...darwin, status: { down: 1 } }, leave(['p-1-0']));
+  const kept = runTests(t, { bay: true, status: { down: 1 } }, leave(['p-1-0']));
   t.after(() => { if (kept.projects !== '') rmSync(dirname(kept.projects), { recursive: true, force: true }); });
   const file = join(kept.projects, 'p-1-0', 'compose.yaml');
   assert.equal(kept.status, 1);
@@ -211,7 +221,7 @@ test('a project that down does not remove fails the run, which keeps its directo
  * FIFO, which never comes, so that only the signal ends it. The test sends the signal when it reads the report.
  */
 function stopped(t: TestContext, signal: 'SIGINT' | 'SIGTERM'): Promise<Run & { projects: string }> {
-  const made = stand(t, darwin);
+  const made = stand(t, present);
   const seen = join(made.directory, 'seen');
   const fifo = join(made.directory, 'fifo');
   assert.equal(spawnSync('/usr/bin/mkfifo', [fifo]).status, 0);
@@ -243,7 +253,7 @@ test('a run that SIGINT or SIGTERM stops waits for its command, runs down for it
     const run = await stopped(t, signal);
     // The shell of the script reports the stopped job on standard error, in words of its own.
     assert.equal(run.status, status, signal);
-    assert.deepEqual(run.calls, [['bay', 'check'], ['bay', '-f', join(run.projects, 'p-1-0', 'compose.yaml'), 'down']]);
+    assert.deepEqual(run.calls, [['bay', 'check', '-scope', 'run'], ['bay', '-f', join(run.projects, 'p-1-0', 'compose.yaml'), 'down']]);
     assert.equal(existsSync(dirname(run.projects)), false);
   }
 });

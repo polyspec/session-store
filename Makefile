@@ -46,17 +46,17 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-rust ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-rust ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
 
 # The targets of each job of .github/workflows/ci.yml, which ci-targets of kit runs past failures into CI_REPORT. make
 # test is in neither list: its tests of the store of Redis need Apple container, which a Linux runner does not have.
-CI_SHARED := docs-check owner-validate workflows-test release-coverage
+CI_SHARED := docs-check owner-validate workflows-test commit-names-check commit-names-test release-coverage
 CI_RUST := lint-rust fmt-check binding-check
 CI_REPORT ?= var/report/ci-targets
 
-check: lint-rust fmt-check test binding-check docs-check owner-validate workflows-test release-coverage
+check: lint-rust fmt-check test binding-check docs-check owner-validate workflows-test commit-names-check commit-names-test release-coverage
 
 # The npm that devEngines of package.json names installs the lock, @polyspec/kit included. It runs outside the checkout with
 # --prefix, since an npm of another release refuses a folder whose devEngines names npm 12.2.0 (EBADDEVENGINES); npm reads
@@ -103,6 +103,13 @@ owner-validate:
 # The rules of the GitHub workflows (AGENTS.md, "CI and release"), on the installed test runner of kit.
 workflows-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/workflows.test.mts
+
+# No tracked Markdown file names a Git commit (AGENTS.md, "Commits"); commit-names-test tests the checker.
+commit-names-check:
+	$(NODE) scripts/check-commit-names.mts
+
+commit-names-test:
+	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/commit-names.test.mts
 
 # scripts/test-run.sh owns the containers and the temporary directory of the run and removes them when the run ends,
 # fails or is stopped by SIGINT or SIGTERM. A peer that is not found is passed empty, and the test that needs it fails.

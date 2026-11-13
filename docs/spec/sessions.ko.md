@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 0620492c525b42df577b8dc66ee182596f19d6fce7e06976c22746d22bedd920 -->
+<!-- source-sha256: 96636ca096aee3f27a5860948b1382ff8e58e0eb68f10323dd878351524a461e -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -367,7 +367,7 @@
   시험도 장비에 설치된 서버를 실행하지 않는다. 서버는 bay가 시작하고 지운다. bay는 Compose 프로젝트를 Darwin에서는
   Apple `container`로, Linux에서는 Docker로 실행한다. 그래서 image와 그 digest는 하나이고, 두 플랫폼의 시험이 같은
   bytes의 서버에 연결하며, 이 저장소의 어떤 파일도 engine의 명령을 갖지 않는다. `scripts/servers.sh`가 bay의
-  명령(`check`, `pull`, `plan`, `up`, `images`, `exec`, `logs`, `down`)을 갖고, harness와 run은 이 script만 시작한다.
+  명령(`check`, `pull`, `plan`, `up`, `images`, `exec`, `logs`, `output`, `down`)을 갖고, harness와 run은 이 script만 시작한다.
   - 시험마다 프로젝트 하나. 시험은 자기가 필요한 서버의 Compose 파일을 run의 디렉터리(`SESSION_STORE_PROJECTS`) 아래
     자기 디렉터리에 쓰고, 한 번의 `up`으로 프로젝트 하나로 시작한다. 서버마다 service 하나를 두고, image는 digest로
     적고, 서버의 인자는 `command`로, 서버의 port는 `expose`로, 서버가 시험의 파일을 읽는 곳은 프로젝트의 디렉터리를

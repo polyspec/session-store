@@ -22,7 +22,12 @@
   every test of the servers passed with the tests in parallel, and no container and no project of bay remained after
   a run; `make -k lint-rust fmt-check` ended with status 0. The logs are in the record of the runs, which is not
   tracked. Only the values of the release that CI installs and documents changed after that tree, and no run reads
-  those values. Not run: `make setup-bay`, the tests on Linux, and the workflow. Not confirmed until the first run of
+  those values. With bay v0.0.6 on this Mac `make test` ended with status 2 once in five
+  runs: the test of TLS failed with the words of the store alone, the connection to Redis failed: I/O error, and the
+  cause is not known, because the project of the server was removed with the test; a server of TLS that was started
+  by hand in the same way answered every one of 32 clients that verified its certificate. The test of TLS now adds
+  what its server wrote to a failure of its client (`scripts/servers.sh output`), and the three runs after that
+  change ended with status 0. Not run: `make setup-bay`, the tests on Linux, and the workflow. Not confirmed until the first run of
   CI: that `bay install` completes on
   the runner, that the test process reads the authority file of a bay that root runs, and that a signal of the run
   reaches a bay that `sudo` started.
@@ -42,7 +47,7 @@
   plan; `make test` passes no `OPENSSL`. The configuration of Sentinel names its primary by the name of the plan. The
   test of the cluster runs `redis-cli --cluster create` with `bay exec` in the container of the first node and waits
   for the state ok of each node in the output of `bay logs -f`. `scripts/servers.sh` replaces `scripts/container.sh`
-  and holds commands of bay alone (`check`, `pull`, `plan`, `up`, `images`, `exec`, `logs`, `down`);
+  and holds commands of bay alone (`check`, `pull`, `plan`, `up`, `images`, `exec`, `logs`, `output`, `down`);
   `make redis-image` pulls with `bay pull`. `scripts/test-run.sh` fails before the build when bay or a part of the
   machine setup that a project needs is missing (`bay check -scope run`), runs `down` for every Compose file that its
   directory still holds when the run ends, fails or is stopped by SIGINT or SIGTERM, and fails a run whose project

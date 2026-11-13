@@ -1,5 +1,5 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: c2a8645875e444f9ca1a82d296b56f1f5b4468d5c1d3c2c69151c00b3b54a72d -->
+<!-- source-sha256: 0eb244c6859764fd57bb583bf409d9e1e48d14f1e0b20eed05d6c58d78af2cd3 -->
 
 ## Unreleased
 
@@ -21,7 +21,11 @@
   tree에서 `make test`가 세 번 연속 status 0으로 끝났다. 서버의 모든 시험이 병렬 실행 그대로 통과했고, run 뒤에 bay의
   container와 프로젝트가 남지 않았다. `make -k lint-rust fmt-check`도 status 0으로 끝났다. 로그는 추적하지 않는 실행
   기록에 있다. 그 tree 뒤에 바뀐 것은 CI가 설치하는 릴리스의 값과 문서뿐이고, 어떤 run도 그 값을 읽지 않는다.
-  미실행: `make setup-bay`, Linux에서의 시험, workflow. CI의 첫 run까지 미확인:
+  이 Mac의 bay v0.0.6에서 `make test`는 다섯 번 중 한 번 status 2로 끝났다. TLS의 시험이 저장소의 말,
+  곧 the connection to Redis failed: I/O error만 적고 실패했고, 서버의 프로젝트가 시험과 함께 지워졌으므로 원인은
+  알지 못한다. 같은 방법으로 손으로 시작한 TLS 서버는 certificate를 검증한 client 32개 모두에 응답했다. TLS의 시험은
+  이제 client가 실패하면 서버가 쓴 것을 실패에 덧붙이고(`scripts/servers.sh output`), 그 변경 뒤의 세 run은 status
+  0으로 끝났다. 미실행: `make setup-bay`, Linux에서의 시험, workflow. CI의 첫 run까지 미확인:
   runner에서 `bay install`이 끝나는 것, root가 실행한 bay의 authority 파일을 시험 process가 읽는 것, run의 신호가
   `sudo`가 시작한 bay에 닿는 것.
 
@@ -39,7 +43,7 @@
   plan의 이름으로 primary를 적는다. cluster의 시험은 `bay exec`로 첫 node의 container에서
   `redis-cli --cluster create`를 실행하고, 각 node의 state ok를 `bay logs -f`의 출력에서 기다린다.
   `scripts/servers.sh`가 `scripts/container.sh`를 대신하고 bay의 명령만 갖는다(`check`, `pull`, `plan`, `up`, `images`,
-  `exec`, `logs`, `down`). `make redis-image`는 `bay pull`로 받는다. `scripts/test-run.sh`는 bay나 프로젝트에 필요한
+  `exec`, `logs`, `output`, `down`). `make redis-image`는 `bay pull`로 받는다. `scripts/test-run.sh`는 bay나 프로젝트에 필요한
   장비 설정의 일부가 없으면(`bay check -scope run`) 빌드 전에 실패하고, run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로
   멈출 때 자기 디렉터리에 남은 모든 Compose 파일에 `down`을 실행하며, 프로젝트를 지우지 못한 run을 실패시킨다.
   `make servers-test`가 `make container-test`를 대신한다. bay의 대역으로 장비의 Node.js에서 `node --test`를 실행하면

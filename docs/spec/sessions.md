@@ -370,7 +370,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   the servers: it runs a Compose project on Apple `container` on Darwin and on Docker on Linux, so the image and its
   digest are one, the tests of both platforms connect to the same bytes of the server, and no file of this repository
   holds a command of an engine. `scripts/servers.sh` holds the commands of bay (`check`, `pull`, `plan`, `up`,
-  `images`, `exec`, `logs`, `down`); the harness and the run start that script alone.
+  `images`, `exec`, `logs`, `output`, `down`); the harness and the run start that script alone.
   - A project for each test. A test writes the Compose file of the servers that it needs into a directory of its own
     below the directory of the run (`SESSION_STORE_PROJECTS`) and starts it as one project by one `up`: one service
     for each server, the image by its digest, the arguments of the server as `command`, the port of the server as

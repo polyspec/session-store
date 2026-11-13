@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- The library takes binding of the current `v1/rust-core` and php-serialization of the current `v1/rust-core`, whose
+  fault injection point is the macro `binding_core::fault::point!`, which judges a point by the feature `fault-test`
+  of the crate that writes it (binding GN-5). The module `fault` of the core calls `point!`, and the tests of the core,
+  of the store of files and of the store of Redis turn on `fault-test` of `polyspec-session-store-core` through a
+  dev-dependency, so that their points fire; before, the dev-dependency turned on only that of binding. The point
+  `session_store.internal` now holds two invariant branches: the renewal of `MemoryStore` (SE-4.3), as before, and the
+  start of a record session, `session.rs` line 70, which the point `session_store.session_waits` held before, so that
+  point is removed. The start of a record session is on the path of every caller of `file_session` and
+  `redis_session`, so a contract that passes on the kinds of this library arms the point `internal` for a member of
+  its own (binding X-1); before, its one point was in `MemoryStore`, which no such caller reaches. The case of
+  `recordFaults` arms `session_store.internal` and runs the same call without the arming first. `binding scaffold`
+  writes the binding packages again: each takes the lints of the workspace (`[lints] workspace = true`), and
+  `packages/php-ext/build.rs` is new. The workspace denies unsafe code instead of forbidding it, because a binding
+  crate allows it with its reason (binding B-4); each crate of the library forbids it in its `lib.rs`. `make bindings`
+  generates each target apart (`make bindings-<target>`, binding GN-1b), and each make target of a binding needs only
+  the generation of its target. `make test` gives 142 passed, 0 failed and 13 ignored.
+
 - Every invariant branch of the kind `internal` that `get`, `set` and `remove` of a record session reach has a fault
   injection point (SE-9.6). Before, the only point of the kind `internal` was `session_store.internal` in `renew` of
   `MemoryStore`, so a caller of `get`, `set` and `remove` of `file_session` or `redis_session` had no point that gives

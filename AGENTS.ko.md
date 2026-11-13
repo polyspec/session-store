@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 52472b58a89b7371449b7fa0d9e94bda151f9cbe539897070381e621be87140e -->
+<!-- source-sha256: 65244f4c10402ddde122310ddedce1548495b57cf1d8840e91e85ab827737680 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -62,7 +62,9 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 
 ## Bindings
 
-- `make bindings`가 생성한다. 바인딩을 빌드하거나 시험하는 모든 make target은 그것을 먼저 실행한다. `make test-bindings`는
+- `make bindings`가 계약의 target마다 따로 생성한다(`make bindings-<target>`, binding GN-1b). 그래서 생성기가 거부하는
+  target은 자기 make target만 실패시킨다. 바인딩을 빌드하거나 시험하는 모든 make target은 자기 target의 생성을 먼저
+  실행한다. `make test-bindings`는
   workspace 전체에 clippy를 실행하고, `make check-declarations`를 실행하고, 그다음 계약의 다섯 target마다 하나씩
   `make test-python`, `make test-node`, `make test-wasm`, `make test-php`, `make test-go`를 실행한다. 각각은 binding이
   생성한 시험과 그 바인딩의 contract case를 그 언어의 표준 runner로 실행한다. runner는 unittest, node --test(Node와

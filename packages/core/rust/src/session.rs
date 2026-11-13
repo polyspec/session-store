@@ -67,7 +67,7 @@ impl RecordSession {
             };
         }
         // SE-9.6: the point imitates a start that left the session waiting, which no input reaches (X-1).
-        fault::invariant(fault::SESSION_WAITS, "a started session waits")?;
+        fault::invariant(fault::INTERNAL, "a started session waits")?;
         match &mut self.state {
             State::Started { values, id, new } => Ok((values, id, new)),
             State::Failed(error) => Err(error.clone()),

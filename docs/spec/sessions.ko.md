@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: fc6f49e2b69eaba5aebe62a1e3040e97ed007c5feb7fcf687150d4051e393789 -->
+<!-- source-sha256: f6720a87382b05415e6746345bc422487c55eafb98a7e5124bdba1fe18ec4f6c -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -144,8 +144,7 @@
   | Id | 자리(함수) | 주입 | 채우는 kind | 조건의 규칙 | 장전을 받는가 |
   |---|---|---|---|---|---|
   | `random` | `new_identifier`, 새 세션의 시작, 갱신, Redis 저장소의 열기가 부르는 `random_hex` | `io` | `random` | SE-5.4 | 예 |
-  | `internal` | `MemoryStore`의 `renew`: 갱신 횟수가 u64를 넘는 것으로 다룬다 | `broken` | `internal` | SE-4.3 | 예 |
-  | `session_waits` | `get`, `set`, `remove`, `renew`에서 record session의 시작(`RecordSession::start`): 시작 뒤의 상태를 기다리는 상태로 다룬다 | `broken` | `internal` | SE-7.2 | 예 |
+  | `internal` | 두 분기: `MemoryStore`의 `renew`에서 갱신 횟수가 u64를 넘는 것으로 다루고(SE-4.3), `get`, `set`, `remove`, `renew`에서 record session의 시작(`RecordSession::start`)에서 시작 뒤의 상태를 기다리는 상태로 다룬다(SE-7.2). 둘째는 `file_session`과 `redis_session`의 모든 호출자의 경로에 있으므로, 이 라이브러리의 kind를 넘겨주는 계약은 자기 member에서 지점 `internal`을 장전한다(binding X-1) | `broken` | `internal` | SE-9.6 | 예 |
   | `record_root` | record session의 시작에서 찾은 레코드의 decode(`Values::decode`): root가 배열을 가리키지 않는 것으로 다룬다 | `broken` | `internal` | SE-6.3 | 예 |
   | `record_index` | record session의 `get`(`Values::get`): index가 항목을 가리키지 않는 것으로 다룬다 | `broken` | `internal` | SE-6.5 | 예 |
   | `value_reference` | 참조인 읽은 원소에 대한 record session의 `get`(`value_of`): 원본이 참조를 가리키지 않는 것으로 다룬다 | `broken` | `internal` | SE-6.5 | 예 |

@@ -218,7 +218,7 @@
       "fills": [
         "internal"
       ],
-      "reason": "SE-4.3",
+      "reason": "SE-9.6",
       "place": "polyspec_session_store::MemoryStore::renew"
     },
     {
@@ -244,18 +244,6 @@
       ],
       "reason": "SF-9.2",
       "place": "polyspec_session_store::FileSessions::collect"
-    },
-    {
-      "id": "session_waits",
-      "core": "polyspec_session_store::fault::SESSION_WAITS",
-      "inject": [
-        "broken"
-      ],
-      "fills": [
-        "internal"
-      ],
-      "reason": "SE-7.2",
-      "place": "polyspec_session_store::RecordSession::set"
     },
     {
       "id": "record_root",

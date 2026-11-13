@@ -145,8 +145,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   | Id | Place (function) | Inject | Fills | Rule of the condition | Takes the arming |
   |---|---|---|---|---|---|
   | `random` | `random_hex`, which `new_identifier`, the start of a new session, a renewal and the opening of the store of Redis call | `io` | `random` | SE-5.4 | yes |
-  | `internal` | `renew` of `MemoryStore`: the count of renewals is treated as passing u64 | `broken` | `internal` | SE-4.3 | yes |
-  | `session_waits` | the start of a record session in `get`, `set`, `remove` and `renew` (`RecordSession::start`): the state after the start is treated as waiting | `broken` | `internal` | SE-7.2 | yes |
+  | `internal` | two branches: `renew` of `MemoryStore`, where the count of renewals is treated as passing u64 (SE-4.3), and the start of a record session in `get`, `set`, `remove` and `renew` (`RecordSession::start`), where the state after the start is treated as waiting (SE-7.2); the second is on the path of every caller of `file_session` and `redis_session`, so a contract that passes on the kinds of this library arms the point `internal` for a member of its own (binding X-1) | `broken` | `internal` | SE-9.6 | yes |
   | `record_root` | the decode of a found record at the start of a record session (`Values::decode`): the root is treated as naming no array | `broken` | `internal` | SE-6.3 | yes |
   | `record_index` | `get` of a record session (`Values::get`): the index is treated as naming no entry | `broken` | `internal` | SE-6.5 | yes |
   | `value_reference` | `get` of a record session of a read element that is a reference (`value_of`): the source is treated as naming no reference | `broken` | `internal` | SE-6.5 | yes |

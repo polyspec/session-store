@@ -26,6 +26,8 @@ tokio = { version = "1.54.1", default-features = false, features = ["sync", "tim
 
 [dev-dependencies]
 # tests/contract.rs arms the fault injection points of the cases that name them, as a generated binding test does.
+# The points are in polyspec-session-store-core and judged by its feature fault-test (binding GN-5).
+polyspec-session-store-core = { path = "../../core/rust", features = ["fault-test"] }
 polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", branch = "v1/rust-core", features = ["fault-test"] }
 libtest-mimic = "=0.8.2"
 redis = { version = "=1.8.1", default-features = false, features = ["tokio-comp"] }

@@ -62,7 +62,9 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 
 ## Bindings
 
-- `make bindings` generates; every make target that builds or tests a binding runs it first. `make test-bindings` runs
+- `make bindings` generates, each target of the contract apart (`make bindings-<target>`, binding GN-1b), so that a
+  target that the generator refuses fails its own make targets alone; every make target that builds or tests a binding
+  runs the generation of its target first. `make test-bindings` runs
   clippy on the whole workspace, `make check-declarations`, then `make test-python`, `make test-node`, `make
   test-wasm`, `make test-php` and `make test-go`, one for each of the five targets of the contract, each of which runs
   the tests that binding generates and the contract cases of the binding on the standard runner of its language:

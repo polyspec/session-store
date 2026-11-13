@@ -8,7 +8,11 @@ use binding_core::fault::{point, Injected};
 /// The random source of the operating system, in `random_hex` (SE-5.4).
 #[doc(hidden)]
 pub const RANDOM: &str = "session_store.random";
-/// The count of renewals of a memory store: armed as `broken`, it passes u64 (SE-4.3, X-1).
+/// The point of the kind `internal` (X-1), at two invariant branches that no input reaches: the count of renewals of a
+/// memory store, which passes u64 when it is armed as `broken` (SE-4.3), and the state of a record session that its
+/// start left waiting, in the start of `get`, `set`, `remove` and `renew` of a record session (SE-7.2). The second is on
+/// the path of every caller of a session of a request, so a contract that passes on the kinds of this library arms it
+/// for a member of its own.
 #[doc(hidden)]
 pub const INTERNAL: &str = "session_store.internal";
 /// The open of the session file, in `FileSessions::open` (SF-3, SF-9.2).
@@ -17,10 +21,6 @@ pub const OPEN: &str = "session_store.open";
 /// The read of the session directory, in `FileSessions::collect` (SF-5, SF-9.2).
 #[doc(hidden)]
 pub const READ_DIR: &str = "session_store.read_dir";
-/// The state of a record session that its start left waiting, in the start of `get`, `set`, `remove` and `renew` of a
-/// record session (SE-7.2).
-#[doc(hidden)]
-pub const SESSION_WAITS: &str = "session_store.session_waits";
 /// The array of a decoded record, which the root names, at the start of a record session that found a record (SE-6.3).
 #[doc(hidden)]
 pub const RECORD_ROOT: &str = "session_store.record_root";
@@ -60,7 +60,7 @@ pub const COPY_SET_REFERENCE: &str = "session_store.copy_set_reference";
 #[doc(hidden)]
 #[must_use]
 pub fn failed(name: &'static str) -> Option<Option<i32>> {
-    match point(name)? {
+    match point!(name)? {
         Injected::Io { errno } => Some(errno),
         Injected::Short { .. } | Injected::Broken => None,
     }
@@ -70,7 +70,7 @@ pub fn failed(name: &'static str) -> Option<Option<i32>> {
 #[doc(hidden)]
 #[must_use]
 pub fn broken(name: &'static str) -> bool {
-    matches!(point(name), Some(Injected::Broken))
+    matches!(point!(name), Some(Injected::Broken))
 }
 
 /// The kind `internal` with `what` when the invariant of the point `name` is armed as broken: a point at an invariant

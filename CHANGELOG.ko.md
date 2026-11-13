@@ -1,7 +1,22 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: ceb0fdd08eae6376f29cb19af26c6f687d75658dd5d47d645855962e0746f147 -->
+<!-- source-sha256: 722eff7d2a7b7422aab8b8e5a2c4b0640fa1e1a7dcceb985ce5807e129d8a209 -->
 
 ## Unreleased
+
+- 라이브러리가 지금 `v1/rust-core`의 binding과 php-serialization을 받는다. 그 결함 주입 지점은 macro
+  `binding_core::fault::point!`이며, 지점을 쓰는 crate의 feature `fault-test`로 지점을 판정한다(binding GN-5). 코어의
+  모듈 `fault`가 `point!`를 부르고, 코어, 파일 저장소, Redis 저장소의 시험은 dev-dependency로
+  `polyspec-session-store-core`의 `fault-test`를 켜서 지점이 발동하게 한다. 전에는 dev-dependency가 binding의 것만
+  켰다. 지점 `session_store.internal`은 이제 불변식 분기 둘을 가진다: 전과 같은 `MemoryStore`의 갱신(SE-4.3)과,
+  전에 지점 `session_store.session_waits`가 가졌던 record session의 시작(`session.rs` 70행)이다. 그래서 그 지점은
+  없앤다. record session의 시작은 `file_session`과 `redis_session`의 모든 호출자의 경로에 있으므로, 이 라이브러리의
+  kind를 넘겨주는 계약은 자기 member에서 지점 `internal`을 장전한다(binding X-1). 전에는 그 지점이 그런 호출자가
+  닿지 않는 `MemoryStore`에만 있었다. `recordFaults`의 case는 `session_store.internal`을 장전하고, 장전하지 않은 같은
+  호출을 먼저 실행한다. `binding scaffold`가 바인딩 패키지를 다시 쓴다: 각각 workspace의 lint를 받고(`[lints]
+  workspace = true`), `packages/php-ext/build.rs`가 새로 생겼다. 바인딩 crate가 이유와 함께 unsafe 코드를 허용하므로
+  (binding B-4) workspace는 unsafe 코드를 forbid하지 않고 deny한다. 라이브러리의 crate는 각자 `lib.rs`에서 forbid한다.
+  `make bindings`는 target마다 따로 생성하고(`make bindings-<target>`, binding GN-1b), 바인딩의 make target은 자기
+  target의 생성만 필요로 한다. `make test`는 142개 통과, 0개 실패, 13개 ignored를 낸다.
 
 - record session의 `get`, `set`, `remove`가 닿는 kind `internal`의 모든 불변식 분기가 실패 주입점을 가진다(SE-9.6).
   전에는 kind `internal`의 주입점이 `MemoryStore`의 `renew`에 있는 `session_store.internal` 하나뿐이어서,

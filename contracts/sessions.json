@@ -991,8 +991,8 @@
  ],
  "recordFaults": [
   {
-   "id": "a_broken_session_waits_is_internal",
-   "label": "the fault injection point session_store.session_waits imitates that the start of the session finds it still waiting, the kind internal, which no input reaches",
+   "id": "a_started_session_that_waits_is_internal",
+   "label": "the fault injection point session_store.internal imitates that the start of the session finds it still waiting, the kind internal, which no input reaches",
    "rules": [
     "SE-7.2",
     "SE-9.6"
@@ -1008,7 +1008,7 @@
    ],
    "faults": [
     {
-     "point": "session_store.session_waits",
+     "point": "session_store.internal",
      "kind": "broken"
     }
    ],

@@ -26,9 +26,12 @@ publish = false
 
 # R-1: every warning fails, no unsafe code, no unwrap or expect, no discarded result, no unchecked conversion of a number,
 # and every allow attribute names its rule id; clippy.toml disallows the methods that turn an Err or a None into a value.
+# The binding crates take these lints too (`[lints] workspace = true`, which binding scaffold writes). A binding crate
+# allows unsafe code with its reason (binding B-4), which a forbid of the workspace would refuse, so the workspace denies
+# it and each crate of the library forbids it in its lib.rs.
 [workspace.lints.rust]
 warnings = "deny"
-unsafe_code = "forbid"
+unsafe_code = "deny"
 unused_must_use = "deny"
 
 [workspace.lints.clippy]

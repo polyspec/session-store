@@ -5,6 +5,8 @@ CARGOFLAGS ?=
 CORE := -p polyspec-session-store -p polyspec-session-store-core -p polyspec-session-store-file -p polyspec-session-store-redis
 # The library crate, whose name the binding crates take with the suffix of their target.
 LIBRARY := polyspec-session-store
+# The five targets of the contract (binding BD-27).
+TARGETS := php python node go wasm
 # binding at the commit of Cargo.lock (scripts/binding.mts).
 BINDING := node scripts/binding.mts
 # The real peers of the tests, each required: PHP reads the records back (SE-10.3), Apple container runs the Redis
@@ -40,7 +42,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: check test redis-image lint-rust fmt-check binding-check bindings test-bindings lint-bindings check-declarations \
+.PHONY: check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go
 
 check: lint-rust fmt-check test binding-check
@@ -68,8 +70,12 @@ binding-check:
 
 # Writes the generated sources into the directories generated/ of the binding packages, which are not tracked, and the
 # Go files zz_generated_*.go of packages/go, which are tracked (binding GN-3).
-bindings:
-	$(BINDING) generate --root .
+# Each target of the contract is generated apart (binding GN-1b), so that a target that the generator refuses fails
+# its own make targets alone, with status 1, and the others build and test.
+bindings: $(addprefix bindings-,$(TARGETS))
+
+$(addprefix bindings-,$(TARGETS)): bindings-%:
+	$(BINDING) generate --root . --target $*
 
 # Every target of the contract (binding BD-27), each with the tests that binding generates and the contract cases of
 # the binding on the standard runner of its language.
@@ -78,12 +84,12 @@ test-bindings: lint-bindings check-declarations test-python test-node test-wasm 
 lint-bindings: bindings
 	$(CARGO) clippy $(CARGOFLAGS) --workspace --locked --all-targets --features panic-test -- -D warnings
 
-check-declarations: bindings
+check-declarations: bindings-node bindings-wasm
 	$(TSC) --noEmit --strict packages/ts/generated/index.d.ts
 	$(TSC) --noEmit --strict packages/ts/wasm/generated/index.d.ts
 
 # The wheel, installed into a virtual environment; the generated tests (binding G-5) and the contract cases (SE-10).
-test-python: bindings
+test-python: bindings-python
 	$(PYTHON) -m venv --clear $(VAR)/venv
 	$(VAR)/venv/bin/pip install -q $(MATURIN)
 	rm -rf $(VAR)/wheels
@@ -99,7 +105,7 @@ test-python: bindings
 PLATFORM := $(shell node -p 'process.platform + "-" + process.arch + (process.platform === "linux" ? "-gnu" : "")')
 NODE_ADDON := session-store.$(PLATFORM).node
 WASM_BINDGEN_RELEASE := $(shell sed -n 's/^wasm-bindgen = "=\(.*\)"$$/\1/p' packages/ts/wasm/Cargo.toml)
-node-package: bindings
+node-package: bindings-node bindings-wasm
 	test "$$($(WASM_BINDGEN) --version)" = "wasm-bindgen $(WASM_BINDGEN_RELEASE)"
 	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-wasm --locked --target wasm32-unknown-unknown --features panic-test
 	$(WASM_BINDGEN) --target web --out-dir packages/ts/wasm/generated --out-name session_store_wasm \
@@ -127,7 +133,7 @@ test-wasm: node-package
 
 # The extension built against PHP_CONFIG and loaded into PHP; the stub is linted, then the generated tests and the
 # contract cases run on PHPUnit.
-test-php: bindings
+test-php: bindings-php
 	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-php-ext --locked --features panic-test,fault-test
 	$(PHP) -l packages/php-ext/generated/polyspec_session_store.stub.php
 	$(PHP) -d extension=$(CARGO_TARGET_DIR)/debug/libpolyspec_session_store.$(CDYLIB) $(PHPUNIT) packages/php-ext/generated/tests
@@ -138,7 +144,7 @@ test-php: bindings
 # release than the go directive fails instead of fetching that release.
 GO_RELEASE := $(shell sed -n 's/^go \(.*\)$$/\1/p' packages/go/go.mod)
 GO_ENV := GOTOOLCHAIN=local CGO_LDFLAGS=-L$(CARGO_TARGET_DIR)/debug GOFLAGS=-tags=polyspec_panic_test,polyspec_codec_test
-test-go: bindings
+test-go: bindings-go
 	test "$$($(GO_ENV) $(GO) env GOVERSION)" = "go$(GO_RELEASE)"
 	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-go --locked --features panic-test,codec-test
 	test -z "$$(cd packages/go && $(GOFMT) -l .)"

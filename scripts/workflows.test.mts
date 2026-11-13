@@ -73,12 +73,15 @@ function findings(file: string, text: string, targets: Set<string>, actions: Set
       }
     }
     const run = valueOf(line, 'run');
-    if (run !== undefined) {
+    const next = lines.slice(index + 1).find((later) => later.trim() !== '' && !later.trim().startsWith('#'));
+    const deeper = next !== undefined && next.search(/\S/) > line.indexOf('run:');
+    // A key `run:` with no value whose deeper lines are keys is a mapping of that name, such as the input `run` of a
+    // dispatch, and no run step.
+    if (run !== undefined && !(run === '' && deeper && /^ *[A-Za-z_-]+:(?: |$)/.test(next))) {
       const target = RUN.exec(run)?.[1];
       if (target === undefined) found.push(`${at}: the run step is not one make target: ${run}`);
       else if (!targets.has(target)) found.push(`${at}: the Makefile defines no target ${target}`);
-      const next = lines.slice(index + 1).find((later) => later.trim() !== '' && !later.trim().startsWith('#'));
-      if (next !== undefined && next.search(/\S/) > line.indexOf('run:')) found.push(`${at}: the run step continues on a later line`);
+      if (deeper) found.push(`${at}: the run step continues on a later line`);
     }
   });
   if (file.includes('/workflows/') && runners === 0) found.push(`${file}: names no runner`);
@@ -127,6 +130,8 @@ jobs:
 test('a workflow that keeps every rule has no finding', () => {
   assert.deepEqual(findings(CI, GOOD, TARGETS, ACTIONS), []);
   assert.deepEqual(triggerFindings(CI, GOOD), []);
+  // The input `run` of a dispatch is a mapping, no run step.
+  assert.deepEqual(findings(CI, GOOD.replace('  workflow_dispatch:\n', '  workflow_dispatch:\n    inputs:\n      run:\n        required: true\n'), TARGETS, ACTIONS), []);
 });
 
 test('each broken rule of a workflow is a finding', () => {
@@ -146,6 +151,7 @@ test('each broken rule of a workflow is a finding', () => {
   assert.deepEqual(broken('run: make docs-check', 'run: make docs-check release-tag'), [`${CI}:16: the run step is not one make target: make docs-check release-tag`]);
   assert.deepEqual(broken('run: make docs-check', 'run: make test'), [`${CI}:16: the Makefile defines no target test`]);
   assert.deepEqual(broken('run: make docs-check', 'run: |\n          make docs-check'), [`${CI}:16: the run step is not one make target: |`, `${CI}:16: the run step continues on a later line`]);
+  assert.deepEqual(broken('run: make docs-check', 'run:\n          make docs-check && make release-tag'), [`${CI}:16: the run step is not one make target: `, `${CI}:16: the run step continues on a later line`]);
   assert.deepEqual(broken('run: make docs-check', 'run: make docs-check\n          make release-tag'), [`${CI}:16: the run step continues on a later line`]);
 });
 

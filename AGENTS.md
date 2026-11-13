@@ -24,6 +24,10 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 - `Cargo.toml` of the root is the workspace of the four crates and the binding crates of the five targets with one
   `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
+- `scripts/workflows.test.mts`: the test of the rules of the GitHub workflows, which `make workflows-test` runs.
+- `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/actions/bootstrap`: CI, the release and the
+  bootstrap of their jobs. `.node-version` names the Node.js that the bootstrap sets up; a development machine runs its
+  own Node.js within the `engines` of kit.
 - `config/release.json`: the classification of every manifest for the release, which the release utilities of kit read.
 - `docs/spec/`: the specification. Root: `AGENTS.md`, `README.md`, `CHANGELOG.md` and their Korean translations
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`, `.cargo/config.toml`.
@@ -102,6 +106,21 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
 
 ## CI and release
 
+- Every job of a GitHub workflow runs on `ubuntu-26.04-arm`. Every action is a local action of `.github/actions` or is
+  pinned by its full commit, and a comment of the file names its release; an action pin is the one Git commit that a
+  tracked file names. No job and no step sets `timeout-minutes`. Every `run` step is one make target that the
+  `Makefile` defines, so that the settings of the Makefile apply to every command of CI. `make workflows-test` fails a
+  workflow or an action that breaks one of these rules.
+- The workflow `ci` starts on a push of `main` and on `workflow_dispatch` alone. Its job `shared` runs
+  `make ci-shared` (`CI_SHARED` of the Makefile) and its job `rust` runs `make install-rust` and `make ci-rust`
+  (`CI_RUST`: `make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
+  ci-targets of kit and uploads the report `var/report/ci-targets`.
+- `make test` is no target of CI. Its tests of the store of Redis start Redis servers in Apple container (SE-10.4),
+  which a Linux runner does not have, and a test whose peer is missing fails. So no run of CI is evidence of the tests:
+  `make test` runs on a development machine, and its counts are recorded in the change log.
+- The workflow `release` starts when a run of `ci` succeeds on `main`, or by a dispatch with the id of such a run. It
+  runs `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`,
+  `make release-publish` and `make release-undraft` in that order.
 - `config/release.json` classifies every manifest of the repository, and `make release-coverage` fails a manifest that
   it does not classify. It names no package: the binding packages are released once kit 0.0.111 makes the platform
   assets and the Go module has its tag form, the release commit and `packages/go/vX.Y.Z`. Until then a release is the
@@ -118,4 +137,4 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
 
 - A commit message is `<type>(<scope>): <Subject> (#id)`, factual and concise, with a body that states what changed and
   why. Unrelated changes are separate commits.
-- No tracked file names a Git commit.
+- No tracked file names a Git commit, except the pin of an action in a workflow.

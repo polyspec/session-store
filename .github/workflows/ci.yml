@@ -1,0 +1,61 @@
+# CI of session-store: one workflow whose jobs run the targets of the Makefile, each job the target that names its list
+# (CI_SHARED and CI_RUST of the Makefile), past failures, with the report of ci-targets as an artifact. The release
+# workflow releases the commit whose run of this workflow succeeded.
+#
+# make test is no target of this workflow: its tests of the store of Redis start Redis servers in Apple container
+# (SE-10.4), which runs on macOS alone, and a test whose peer is missing fails. The tests run on a development machine
+# with make test until a runner gives them their servers.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # The checks of the repository: the documents and the checklist, the rules of the workflows and the classification of
+  # the manifests for the release.
+  shared:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      # actions/checkout v7.0.1: with the whole history, which the checks of the documents read.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/bootstrap
+      - name: shared checks
+        run: make ci-shared
+      # actions/upload-artifact v7.0.1: the report of ci-targets, var/report/ci-targets.
+      - name: report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: report-shared
+          path: var/report/ci-targets/
+          if-no-files-found: ignore
+
+  # The lint of the crates of the library, clippy with the lints of the workspace and rustfmt, and the contract check of
+  # binding with the comparison of the tracked binding packages.
+  rust:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/bootstrap
+      - name: install the Rust toolchain and the locked crates
+        run: make install-rust
+      - name: lint and contract check
+        run: make ci-rust
+      - name: report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: report-rust
+          path: var/report/ci-targets/
+          if-no-files-found: ignore

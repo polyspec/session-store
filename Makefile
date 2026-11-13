@@ -46,9 +46,15 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap docs-check documents-stamp workflows-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-rust ci-shared ci-rust docs-check documents-stamp workflows-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
+
+# The targets of each job of .github/workflows/ci.yml, which ci-targets of kit runs past failures into CI_REPORT. make
+# test is in neither list: its tests of the store of Redis need Apple container, which a Linux runner does not have.
+CI_SHARED := docs-check workflows-test release-coverage
+CI_RUST := lint-rust fmt-check binding-check
+CI_REPORT ?= var/report/ci-targets
 
 check: lint-rust fmt-check test binding-check docs-check workflows-test release-coverage
 
@@ -59,6 +65,17 @@ BOOTSTRAP_NPM := $(abspath $(shell command -v npm))
 bootstrap:
 	root="$$PWD"; version="$$(node -p 'require("./package.json").devEngines.packageManager.version')"; \
 	cd "$${TMPDIR:-/tmp}" && npm_config_cache="$$root/var/bootstrap/npm-cache" "$(BOOTSTRAP_NPM)" exec --yes --package="npm@$$version" -- npm --prefix "$$root" ci --ignore-scripts
+
+# The toolchain of rust-toolchain.toml, which rustup installs, and the crates of Cargo.lock, for a job of CI.
+install-rust:
+	rustup toolchain install --no-self-update
+	$(CARGO) fetch --locked
+
+ci-shared:
+	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_SHARED)
+
+ci-rust:
+	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_RUST)
 
 # The documents of config/documents.json, each on its own (links, anchors, fences and the doc-id and source-sha256 of each
 # Korean twin), and the checklists of docs/plans, whose rows config/checklist.json declares.

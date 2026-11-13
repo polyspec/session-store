@@ -1,7 +1,18 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 22437adad9ba3b977f68d586fdaba400b2d834a4b943d6de1385d89ad16a7585 -->
+<!-- source-sha256: 2a1913e92a1cd3c66121be9c4e1bbb361e65c9fb772cf56ead1e75fb323a46a7 -->
 
 ## Unreleased
+
+- 저장소에 GitHub workflow가 없어서 `make workflows-test`가 실패했다. `.github/workflows/ci.yml`이 추적되지 않았다
+  (4 passed, 1 failed). workflow `ci`는 `main`의 push와 `workflow_dispatch`에서 실행한다. job `shared`는
+  `make ci-shared`(`make docs-check`, `make workflows-test`, `make release-coverage`)를, job `rust`는
+  `make install-rust`와 `make ci-rust`(`make lint-rust`, `make fmt-check`, `make binding-check`)를 실행한다. workflow
+  `release`는 성공한 `ci` run의 commit에 tag를 달고 Makefile의 릴리스 target으로 그 GitHub Release를 공개한다.
+  `.github/actions/bootstrap`은 `.node-version`의 Node.js 26.12.0을 설치하고 `make bootstrap`을 실행한다. 모든 job은
+  `ubuntu-26.04-arm`에서 실행하고, 모든 action은 commit으로 고정한다. `make test`는 CI의 target이 아니다. Redis
+  저장소의 시험에는 Apple container가 필요한데 Linux runner에는 그것이 없다. 시험은 dispatch의 inputs의 key `run`을
+  run step이 아니라 mapping으로 읽는다. `make workflows-test`는 5 passed, 0 failed를 내고, `make ci-shared`는 target
+  3개를 통과한다. GitHub에서 실행된 workflow는 아직 없다.
 
 - 저장소의 manifest를 릴리스에 대해 분류하는 파일이 없었고, `Makefile`에는 릴리스 target이 없었다.
   `config/release.json`은 변경 기록을 적고 manifest 15개를 각각 이유와 함께 릴리스하지 않는 것으로 분류한다. 바인딩

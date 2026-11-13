@@ -1,0 +1,17 @@
+# The bootstrap of every job of session-store: .github/workflows/ci.yml and release.yml run it after their checkout with
+# `uses: ./.github/actions/bootstrap`. It sets up the Node.js of .node-version and installs the locked kit package, whose
+# utilities the Makefile runs.
+name: bootstrap
+description: Sets up the Node.js of .node-version and installs the packages of package-lock.json, the kit package included.
+runs:
+  using: composite
+  steps:
+    # actions/setup-node v7.1.0: the Node.js of .node-version, on which the recipes and the utilities of kit run. make
+    # bootstrap installs the packages with the npm of devEngines, so the cache of setup-node is off.
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      with:
+        node-version-file: .node-version
+        package-manager-cache: false
+    - name: install the locked packages
+      shell: bash
+      run: make bootstrap

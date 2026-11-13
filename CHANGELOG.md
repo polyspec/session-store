@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- The repository had no GitHub workflow, so `make workflows-test` failed: `.github/workflows/ci.yml` was not tracked
+  (4 passed, 1 failed). The workflow `ci` runs on a push of `main` and on `workflow_dispatch`: its job `shared` runs
+  `make ci-shared` (`make docs-check`, `make workflows-test`, `make release-coverage`) and its job `rust` runs
+  `make install-rust` and `make ci-rust` (`make lint-rust`, `make fmt-check`, `make binding-check`). The workflow
+  `release` tags the commit of a successful run of `ci` and publishes its GitHub Release with the release targets of the
+  Makefile. `.github/actions/bootstrap` sets up the Node.js of `.node-version`, 26.12.0, and runs `make bootstrap`.
+  Every job runs on `ubuntu-26.04-arm`, and every action is pinned by its commit. `make test` is no target of CI,
+  because its tests of the store of Redis need Apple container, which a Linux runner does not have. The test takes the
+  key `run` of the inputs of a dispatch as a mapping, not as a run step. `make workflows-test` gives 5 passed and 0
+  failed, and `make ci-shared` passes its 3 targets. No workflow has run on GitHub yet.
+
 - No file classified the manifests of the repository for a release, and the `Makefile` had no release target.
   `config/release.json` names the change logs and classifies the 15 manifests as not released, each with its reason: the
   binding packages wait for kit 0.0.111, which makes the platform assets, and for the tag form of the Go module, the

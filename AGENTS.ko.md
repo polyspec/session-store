@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: d6e86da71044813483006e6b5bb29368ca9e3d6aa9065ee3b7f8b4d2dd687a53 -->
+<!-- source-sha256: 9c13f687fedd1739ec14251e3489c6d1851739ef17b32011eb243d84253d3c7c -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -24,6 +24,10 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 - `scripts/test-run.sh`: `make test`의 시험을 자기 container와 임시 디렉터리를 가진 run으로 실행한다(SE-10.4).
 - 루트의 `Cargo.toml`은 crate 넷과 다섯 target의 바인딩 crate의 workspace이며 `Cargo.lock`은 하나다.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: case다(SE-10).
+- `scripts/workflows.test.mts`: GitHub workflow의 규칙의 시험이며, `make workflows-test`가 실행한다.
+- `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/actions/bootstrap`: CI, 릴리스, 그 job의
+  bootstrap이다. `.node-version`은 bootstrap이 설치하는 Node.js를 적는다. 개발 장비는 kit의 `engines` 안에서 자기
+  Node.js를 쓴다.
 - `config/release.json`: 모든 manifest의 릴리스 분류이며, kit의 릴리스 유틸리티가 읽는다.
 - `docs/spec/`: 명세다. 루트: `AGENTS.md`, `README.md`, `CHANGELOG.md`와 그 한국어 번역
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`, `.cargo/config.toml`.
@@ -100,6 +104,21 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
 
 ## CI와 릴리스
 
+- GitHub workflow의 모든 job은 `ubuntu-26.04-arm`에서 실행한다. 모든 action은 `.github/actions`의 local action이거나
+  전체 commit으로 고정하고, 그 파일의 주석이 action의 릴리스를 적는다. action 고정은 추적 파일이 적는 유일한 Git
+  commit이다. 어떤 job과 step도 `timeout-minutes`를 두지 않는다. 모든 `run` step은 `Makefile`이 정의하는 make target
+  하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
+  workflow와 action을 실패시킨다.
+- workflow `ci`는 `main`의 push와 `workflow_dispatch`에서만 시작한다. job `shared`는 `make ci-shared`(Makefile의
+  `CI_SHARED`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
+  `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
+  보고서 `var/report/ci-targets`를 올린다.
+- `make test`는 CI의 target이 아니다. Redis 저장소의 시험은 Apple container에서 Redis 서버를 시작하는데(SE-10.4),
+  Linux runner에는 그것이 없고, peer가 없는 시험은 실패한다. 그래서 CI의 run은 시험의 증거가 아니다. `make test`는
+  개발 장비에서 실행하고, 그 수는 변경 기록에 적는다.
+- workflow `release`는 `ci`의 run이 `main`에서 성공하면 시작하고, 그런 run의 id를 준 dispatch로도 시작한다.
+  `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`, `make release-publish`,
+  `make release-undraft`를 이 순서로 실행한다.
 - `config/release.json`은 저장소의 모든 manifest를 분류하고, `make release-coverage`는 분류되지 않은 manifest를
   실패시킨다. 이 파일은 package를 적지 않는다. 바인딩 package는 kit 0.0.111이 platform asset을 만들고 Go module이
   tag 형식, 곧 release commit과 `packages/go/vX.Y.Z`를 갖춘 뒤에 릴리스한다. 그때까지 릴리스는 tag `vX.Y.Z`와, 변경
@@ -115,4 +134,4 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
 
 - commit 메시지는 `<type>(<scope>): <Subject> (#id)`이고, 사실만 간결하게 적으며, 본문은 무엇이 왜 바뀌었는지를
   적는다. 서로 관련 없는 변경은 별도의 commit으로 한다.
-- 어떤 추적 파일도 Git commit을 지정하지 않는다.
+- 어떤 추적 파일도 Git commit을 지정하지 않는다. workflow의 action 고정만 예외다.

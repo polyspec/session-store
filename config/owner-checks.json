@@ -75,6 +75,14 @@
     },
     {
       "paths": [
+        "scripts/container.test.mts"
+      ],
+      "targets": [
+        "container-test"
+      ]
+    },
+    {
+      "paths": [
         "scripts/tool-pins.test.mts",
         "mise.toml",
         "mise.lock",

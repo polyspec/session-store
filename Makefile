@@ -62,17 +62,17 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test container-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
 
 # The targets of each job of .github/workflows/ci.yml, which ci-targets of kit runs past failures into CI_REPORT. make
 # test is in neither list: its tests of the store of Redis need Apple container, which a Linux runner does not have.
-CI_SHARED := docs-check owner-validate workflows-test tool-pins-test commit-names-check commit-names-test release-coverage
+CI_SHARED := docs-check owner-validate workflows-test tool-pins-test container-test commit-names-check commit-names-test release-coverage
 CI_RUST := lint-rust fmt-check binding-check
 CI_REPORT ?= var/report/ci-targets
 
-check: lint-rust fmt-check test binding-check docs-check owner-validate workflows-test tool-pins-test commit-names-check commit-names-test release-coverage
+check: lint-rust fmt-check test binding-check docs-check owner-validate workflows-test tool-pins-test container-test commit-names-check commit-names-test release-coverage
 
 # The npm that devEngines of package.json names installs the lock, @polyspec/kit included, before the tools of the
 # checkout exist, since install-tools TOOLS=npm runs the bootstrap of the installed kit. It runs on the node of the
@@ -146,6 +146,11 @@ workflows-test:
 # config/toolchain.json, the bootstrap action and the node that the recipes start.
 tool-pins-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/tool-pins.test.mts
+
+# The commands of scripts/container.sh for the container program of each platform (SE-10.4), against stand-ins of the
+# programs that the test writes, so it needs no container runtime.
+container-test:
+	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/container.test.mts
 
 # No tracked Markdown file names a Git commit (AGENTS.md, "Commits"); commit-names-test tests the checker.
 commit-names-check:

@@ -1,5 +1,7 @@
 //! The Redis servers of the tests (SE-10.4): each runs as `redis-server` of the pinned image (`REDIS_IMAGE`) in a
-//! container of Apple `container` (`CONTAINER`), which the run owns. A container is named after the run
+//! container of the container program of the platform, Apple `container` on Darwin and `docker` on Linux, which the
+//! run owns. `scripts/container.sh` holds the commands of both programs and names the program by the platform; this
+//! file starts that script alone. A container is named after the run
 //! (`SESSION_STORE_CONTAINERS`), so that `make test` removes every container of its run when the run ends or is
 //! stopped by a signal. A test connects to the address of the container, where the server listens on the port of its
 //! own; a start waits for the line in which the server reports that it accepts connections, and a test waits for a
@@ -26,13 +28,15 @@ pub const MOUNT: &str = "/mnt/session-store";
 /// The line in which redis-server reports that it accepts connections.
 pub const READY: &str = "Ready to accept connections";
 
+/// The script that holds the commands of the container program of the platform (SE-10.4).
+const CONTAINER: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../scripts/container.sh");
+
 fn peer(name: &str) -> Result<String, String> {
     match std::env::var(name) {
         Ok(value) if !value.is_empty() => Ok(value),
         _ => Err(format!(
-            "{name} is not set: the tests of a real Redis server run through `make test`, which names Apple container \
-             (CONTAINER), the pinned image (REDIS_IMAGE) and the containers of the run (SESSION_STORE_CONTAINERS); \
-             `make redis-image` pulls the image"
+            "{name} is not set: the tests of a real Redis server run through `make test`, which names the pinned image \
+             (REDIS_IMAGE) and the containers of the run (SESSION_STORE_CONTAINERS); `make redis-image` pulls the image"
         )),
     }
 }
@@ -60,7 +64,6 @@ fn run(command: &mut Command) -> Result<Output, String> {
 
 /// A Redis server in a container of the run. Dropping it deletes the container and stops the reader of its output.
 pub struct Server {
-    container: String,
     image: String,
     name: String,
     child: Child,
@@ -72,19 +75,21 @@ impl Server {
     /// Starts `redis-server` with `arguments`, mounting `directory` at [`MOUNT`] when it is given, and returns once
     /// the server writes a line that contains `ready`: [`READY`] of a server, which Sentinel does not write.
     pub fn start(arguments: &[&str], directory: Option<&Path>, ready: &str) -> Result<Self, String> {
-        let container = peer("CONTAINER")?;
         let image = peer("REDIS_IMAGE")?;
         let name = name()?;
-        if run(Command::new(&container).args(["image", "inspect", &image]).stdout(Stdio::null())).is_err() {
+        // A container program that is not found fails here, with its name and what installs it.
+        run(Command::new(CONTAINER).arg("program").stdout(Stdio::null()))?;
+        if run(Command::new(CONTAINER).args(["present", &image]).stdout(Stdio::null())).is_err() {
             return Err(format!("the image {image} is not installed: `make redis-image` pulls it"));
         }
-        let mut command = Command::new(&container);
-        command.args(["run", "--rm", "--progress", "none", "--name", &name]);
+        let mut command = Command::new(CONTAINER);
+        command.args(["run", &name]);
         if let Some(directory) = directory {
             command.arg("--volume").arg(format!("{}:{MOUNT}", directory.display()));
         }
-        // The container writes its own address before the server starts, because the state that `container inspect`
-        // gives is not yet that of a running container when the server already writes. The entry point of the image
+        // The container writes its own address before the server starts, on both container programs, because the
+        // state that the program gives of a container is not yet that of a running one when the server already
+        // writes. The entry point of the image
         // would run the server as the user redis, who cannot read the files that a test mounts; the server runs as
         // root of its own container.
         command
@@ -93,7 +98,7 @@ impl Server {
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
-        let mut child = command.spawn().map_err(|error| format!("{container} does not run: {error}"))?;
+        let mut child = command.spawn().map_err(|error| format!("{CONTAINER} does not run: {error}"))?;
         let (sender, lines) = channel();
         if let Some(stdout) = child.stdout.take() {
             let sender = sender.clone();
@@ -102,7 +107,7 @@ impl Server {
         if let Some(stderr) = child.stderr.take() {
             std::thread::spawn(move || read(stderr, &sender));
         }
-        let mut server = Self { container, image, name, child, lines, address: String::new() };
+        let mut server = Self { image, name, child, lines, address: String::new() };
         server.address = server.own_address()?;
         server.wait_for(ready)?;
         Ok(server)
@@ -140,8 +145,8 @@ impl Server {
     /// standard output.
     #[allow(dead_code, reason = "SE-10.4: tests/server.rs runs redis-cli, tests/contract.rs does not")]
     pub fn cli(&self, arguments: &[&str]) -> Result<String, String> {
-        let output = run(Command::new(&self.container)
-            .args(["run", "--rm", "--progress", "none", "--name", &name()?])
+        let output = run(Command::new(CONTAINER)
+            .args(["run", &name()?])
             .args(["--entrypoint", "redis-cli", &self.image])
             .args(arguments))?;
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
@@ -162,7 +167,7 @@ fn read(output: impl std::io::Read, sender: &std::sync::mpsc::Sender<String>) {
 
 impl Drop for Server {
     fn drop(&mut self) {
-        if let Err(error) = run(Command::new(&self.container).args(["delete", "--force", &self.name])) {
+        if let Err(error) = run(Command::new(CONTAINER).args(["delete", &self.name])) {
             eprintln!("the container {} is not deleted: {error}", self.name);
         }
         if let Err(error) = self.child.wait() {

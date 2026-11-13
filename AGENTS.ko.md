@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: fa1a78b3186a033d79b3eac4b54b1724c6d02589ddc915ebdfb2645964f11df3 -->
+<!-- source-sha256: 6749e4d854c078487dd5c6be3bed3a165f7b04c07519bc8ab22a7a66d400074e -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -21,7 +21,10 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   `generated/`를 쓰고, 바인딩 package의 빌드는 그 뒤에 한다. 코어의 target은 코어 crate를 `-p`로 지정하므로
   생성된 소스가 필요 없다.
 - `scripts/binding.mts`: `Cargo.lock`이 고정하는 `polyspec-binding-core`의 commit에서 binding을 실행한다.
-- `scripts/test-run.sh`: `make test`의 시험을 자기 container와 임시 디렉터리를 가진 run으로 실행한다(SE-10.4).
+- `scripts/test-run.sh`: `make test`의 시험을 자기 container와 임시 디렉터리를 소유하는 run으로 실행한다(SE-10.4).
+- `scripts/container.sh`: 플랫폼의 container 프로그램의 명령이다. Darwin은 Apple `container`, Linux는 `docker`다.
+  시험, `scripts/test-run.sh`, `make redis-image`가 이 script를 실행한다(SE-10.4). `scripts/container.test.mts`가 그
+  시험이며, `make container-test`가 프로그램의 대역으로 실행한다.
 - 루트의 `Cargo.toml`은 crate 넷과 다섯 target의 바인딩 crate의 workspace이며 `Cargo.lock`은 하나다.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: case다(SE-10).
 - `scripts/workflows.test.mts`: GitHub workflow의 규칙의 시험이며, `make workflows-test`가 실행한다.
@@ -59,7 +62,7 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 - 릴리스가 결과를 바꾸는 모든 도구는 추적 파일에 고정한다. 장비의 도구가 낸 결과는 다른 장비에서 되풀이되지 않기
   때문이다. Node.js와 npm은 `mise.toml`에 적고 `mise.lock`의 digest로 고정하고, npm은 `package.json`의
   `devEngines`에도 적고, mise는 `config/toolchain.json`에 platform별 archive의 sha256과 함께 적고, Rust는
-  `rust-toolchain.toml`에 적는다. Node.js의 고정이 하나이도록 `mise.toml` 옆에 `.node-version`을 두지 않는다.
+  `rust-toolchain.toml`에 적고, CI의 PHP는 minor로 `.php-version`에 적는다. Node.js의 고정이 하나이도록 `mise.toml` 옆에 `.node-version`을 두지 않는다.
 - 도구는 checkout의 `var/tools`에 설치하고, 장비에는 설치하지 않는다. 새 checkout은 `make bootstrap`(`devEngines`의
   npm이 장비의 node에서 `package-lock.json`을 설치한다. @polyspec/kit도 여기에 든다), `make install-tools TOOLS=npm`
   (kit의 bootstrap이 mise를 sha256으로 설치하고, 그 mise가 `locked = true`에서 `mise install`로 `mise.toml`의 node와
@@ -84,11 +87,15 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   `clippy.toml`은 `Option::{unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`와
   `Result::{ok, unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`를 금지한다. 규칙이 필요로 하는 사용에는
   `#[allow(..., reason = "<rule id>")]`를 붙인다.
-- peer(PHP, Redis image를 가진 Apple container, openssl)가 필요한 시험은 그 peer가 주어지지 않으면 실패하고 그
+- peer(PHP, Redis image를 가진 플랫폼의 container 프로그램, openssl)가 필요한 시험은 그 peer가 주어지지 않으면 실패하고 그
   peer를 주는 것을 적는다. peer가 없다는 이유로 무시된 시험으로 보고되는 시험은 없다. 무시되는 시험은 `binding`을 가진
   group `open`의 case뿐이고, 이 case는 바인딩이 실행한다(SF-8.2, SR-8.2).
-- 시험의 Redis 서버는 Makefile의 `REDIS_IMAGE`가 digest로 고정한 image로 Apple `container`(`CONTAINER`)의 container
-  안에서 돈다. 기계에 설치된 서버는 쓰지 않는다(SE-10.4). image는 Redis의 가장 높은 안정판의 공식 image다. `make
+- 시험의 Redis 서버는 Makefile의 `REDIS_IMAGE`가 digest로 고정한 image의 container 안에서 돈다. 기계에 설치된
+  서버는 쓰지 않는다(SE-10.4). container 프로그램은 플랫폼이 정한다. Darwin은 Apple `container`를, Linux는
+  `docker`를 실행하고, image와 digest는 둘에 하나다. 그래서 두 플랫폼이 같은 bytes의 서버를 시험한다.
+  `scripts/container.sh`가 두 프로그램의 명령을 가진 유일한 파일이다. 어떤 변수도 프로그램을 고르지 않고,
+  프로그램을 찾지 못하면 `make test`는 시작할 때 그 이름과 설치 방법을 적고 실패한다. image는 Redis의 가장 높은
+  안정판의 공식 image다. `make
   redis-image`가 그 image를 받고, 어떤 시험도 image를 받지 않는다. run의 container 이름은
   `session-store-test-<pid>-...`이고, `scripts/test-run.sh`는 run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때
   그 container와 run의 임시 디렉터리를 지운다. 시험은 자기 container의 주소에 연결하고 서버가 쓰는 줄을 기다리며,
@@ -133,7 +140,8 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
   workflow와 action을 실패시킨다.
 - workflow `ci`는 `main`의 push와 `workflow_dispatch`에서만 시작한다. job `shared`는 `make ci-shared`(Makefile의
-  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make tool-pins-test`, `make commit-names-check`,
+  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make tool-pins-test`, `make container-test`,
+  `make commit-names-check`,
   `make commit-names-test`, `make release-coverage`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
   보고서 `var/report/ci-targets`를 올린다.
@@ -141,9 +149,9 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   `needs`에 둔다. `make ci-passed FAIL_SKIPPED=1`(kit의 ci-passed)은 각 job의 결과가 success일 때만 통과한다. 그래서
   job 하나가 run의 결과를 말한다. `make workflows-test`는 마지막 job이 다른 job이거나 `needs`가 job 하나를 빠뜨린
   workflow `ci`를 실패시킨다.
-- `make test`는 CI의 target이 아니다. Redis 저장소의 시험은 Apple container에서 Redis 서버를 시작하는데(SE-10.4),
-  Linux runner에는 그것이 없고, peer가 없는 시험은 실패한다. 그래서 CI의 run은 시험의 증거가 아니다. `make test`는
-  개발 장비에서 실행하고, 그 수는 변경 기록에 적는다.
+- workflow `ci`의 job `test`는 `.php-version`의 PHP를 설치하고 `make install-rust`, `make redis-image`,
+  `make test`를 실행한다. 시험의 Redis 서버는 runner의 `docker`에서 `REDIS_IMAGE`의 image로 돈다(SE-10.4). CI의 첫
+  run까지 미확인: runner `ubuntu-26.04-arm`에 `docker`가 있다는 것.
 - workflow `release`는 `ci`의 run이 `main`에서 성공하면 시작하고, 그런 run의 id를 준 dispatch로도 시작한다.
   `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`, `make release-publish`,
   `make release-undraft`를 이 순서로 실행한다.

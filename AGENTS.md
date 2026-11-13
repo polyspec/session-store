@@ -21,6 +21,9 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   targets of the core name the core crates with `-p`, so they need no generated source.
 - `scripts/binding.mts`: runs binding at the commit of `polyspec-binding-core` that `Cargo.lock` pins.
 - `scripts/test-run.sh`: runs the tests of `make test` as a run that owns its containers and its temporary directory (SE-10.4).
+- `scripts/container.sh`: the commands of the container program of the platform, Apple `container` on Darwin and
+  `docker` on Linux, which the tests, `scripts/test-run.sh` and `make redis-image` run (SE-10.4).
+  `scripts/container.test.mts` is its test, which `make container-test` runs against stand-ins of the programs.
 - `Cargo.toml` of the root is the workspace of the four crates and the binding crates of the five targets with one
   `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
@@ -58,8 +61,8 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 
 - Every tool whose release changes a result is pinned in a tracked file, because a tool of the machine gives a result
   that another machine does not repeat: Node.js and npm in `mise.toml` at the digests of `mise.lock`, npm also in
-  `devEngines` of `package.json`, mise in `config/toolchain.json` with the sha256 of its archive of each platform, and
-  Rust in `rust-toolchain.toml`. No `.node-version` is kept beside `mise.toml`, so that Node.js has one pin.
+  `devEngines` of `package.json`, mise in `config/toolchain.json` with the sha256 of its archive of each platform,
+  Rust in `rust-toolchain.toml`, and the PHP of CI by its minor in `.php-version`. No `.node-version` is kept beside `mise.toml`, so that Node.js has one pin.
 - The tools are installed into `var/tools` of the checkout, never into the machine. A fresh checkout runs
   `make bootstrap` (the npm of `devEngines` installs `package-lock.json`, @polyspec/kit included, on the node of the
   machine), `make install-tools TOOLS=npm` (the bootstrap of kit installs mise by its sha256, then the node and the npm
@@ -84,11 +87,15 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   `clippy.toml` disallows `Option::{unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}` and
   `Result::{ok, unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`. A use that a rule needs carries
   `#[allow(..., reason = "<rule id>")]`.
-- A test that needs a peer (PHP, Apple container with the Redis image, openssl) fails when the peer is not given and
+- A test that needs a peer (PHP, the container program of the platform with the Redis image, openssl) fails when the peer is not given and
   names what gives it; no test is reported as ignored because a peer is missing. The only ignored tests are the cases
   of the group `open` that carry `binding`, which the bindings run (SF-8.2, SR-8.2).
-- A Redis server of a test runs in a container of Apple `container` (`CONTAINER`) from the image that `REDIS_IMAGE` of
-  the Makefile pins by its digest, never a server installed on the machine (SE-10.4). The image is the official image
+- A Redis server of a test runs in a container from the image that `REDIS_IMAGE` of the Makefile pins by its digest,
+  never a server installed on the machine (SE-10.4). The platform names the container program: Darwin runs Apple
+  `container` and Linux runs `docker`, one image and one digest for both, so that both platforms test the same bytes
+  of the server. `scripts/container.sh` is the one file that holds the commands of both programs; no variable
+  selects the program, and a program that is not found fails `make test` at its start with its name and what
+  installs it. The image is the official image
   of the highest stable release of Redis; `make redis-image` pulls it, and no test pulls an image. The containers of a
   run are named `session-store-test-<pid>-...`, and `scripts/test-run.sh` deletes them and the temporary directory of
   the run when the run ends, fails or is stopped by SIGINT or SIGTERM. A test connects to the address of its container
@@ -136,16 +143,17 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   workflow or an action that breaks one of these rules.
 - The workflow `ci` starts on a push of `main` and on `workflow_dispatch` alone. Its job `shared` runs
   `make ci-shared` (`CI_SHARED` of the Makefile: `make docs-check`, `make owner-validate`, `make workflows-test`,
-  `make tool-pins-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
+  `make tool-pins-test`, `make container-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
   (`CI_RUST`: `make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
 - The last job of the workflow `ci` is `ci-passed`. It runs after every other job, also after a failed one, needs each
   of them, and `make ci-passed FAIL_SKIPPED=1` (ci-passed of kit) passes only when each has the result success, so that
   one job states the result of the run. `make workflows-test` fails a workflow `ci` whose last job is another or whose
   `needs` leaves a job out.
-- `make test` is no target of CI. Its tests of the store of Redis start Redis servers in Apple container (SE-10.4),
-  which a Linux runner does not have, and a test whose peer is missing fails. So no run of CI is evidence of the tests:
-  `make test` runs on a development machine, and its counts are recorded in the change log.
+- The job `test` of the workflow `ci` sets up the PHP of `.php-version` and runs `make install-rust`,
+  `make redis-image` and `make test`: the Redis servers of the tests run in `docker` of the runner from the image of
+  `REDIS_IMAGE` (SE-10.4). Not confirmed until the first run of CI: that the runner `ubuntu-26.04-arm` holds
+  `docker`.
 - The workflow `release` starts when a run of `ci` succeeds on `main`, or by a dispatch with the id of such a run. It
   runs `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`,
   `make release-publish` and `make release-undraft` in that order.

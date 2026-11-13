@@ -3,9 +3,8 @@
 # ci-passed passes only when every other job succeeded. The release workflow releases the commit whose run of this
 # workflow succeeded.
 #
-# make test is no target of this workflow: its tests of the store of Redis start Redis servers in Apple container
-# (SE-10.4), which runs on macOS alone, and a test whose peer is missing fails. The tests run on a development machine
-# with make test until a runner gives them their servers.
+# The job test runs make test: the Redis servers of its tests run in docker from the image that REDIS_IMAGE of the
+# Makefile pins by its digest, the same image that Apple container runs on a development machine (SE-10.4).
 name: ci
 
 on:
@@ -61,12 +60,32 @@ jobs:
           path: var/report/ci-targets/
           if-no-files-found: ignore
 
+  # The tests of the crates of the library, the stores of Redis against real Redis servers (SE-10.4): PHP reads the
+  # records back, make redis-image pulls the pinned image into docker, and make test owns the containers of its run.
+  test:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      # shivammathur/setup-php 2.40.0: the PHP of .php-version, which reads the records of the tests back (SE-10.3).
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
+        with:
+          php-version-file: .php-version
+          tools: none
+          coverage: none
+      - uses: ./.github/actions/bootstrap
+      - name: install the Rust toolchain and the locked crates
+        run: make install-rust
+      - name: pull the pinned Redis image
+        run: make redis-image
+      - name: tests
+        run: make test
+
   # The result of the run: the job runs after every other job, also after a failed or cancelled one, and make ci-passed
   # passes only when each job of needs has the result success; a skipped job fails it (FAIL_SKIPPED=1). make
   # workflows-test fails this workflow when ci-passed is not its last job or when needs leaves a job out.
   ci-passed:
     if: ${{ always() }}
-    needs: [shared, rust]
+    needs: [shared, rust, test]
     runs-on: ubuntu-26.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

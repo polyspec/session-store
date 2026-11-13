@@ -29,11 +29,11 @@ LIBRARY := polyspec-session-store
 TARGETS := php python node go wasm
 # binding at the commit of Cargo.lock (scripts/binding.mts).
 BINDING := $(NODE) scripts/binding.mts
-# The real peers of the tests, each required: PHP reads the records back (SE-10.3), Apple container runs the Redis
-# servers of the stores of Redis from the image REDIS_IMAGE, and openssl makes their certificates of TLS (SE-10.4). A
+# The real peers of the tests, each required: PHP reads the records back (SE-10.3), the container program of the
+# platform runs the Redis servers of the stores of Redis from the image REDIS_IMAGE, Apple container on Darwin and
+# docker on Linux, whose commands scripts/container.sh holds, and openssl makes their certificates of TLS (SE-10.4). A
 # test whose peer is not given fails and names what gives it.
 PHP ?= $(shell command -v php)
-CONTAINER ?= $(shell command -v container)
 OPENSSL ?= $(shell command -v openssl)
 # Redis 8.10.3, the highest stable release of Redis, in the official image of Debian trixie, pinned by the digest of its
 # index; make redis-image pulls it, and the tests fail while it is not installed, so that no test pulls an image.
@@ -66,8 +66,8 @@ CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
 
-# The targets of each job of .github/workflows/ci.yml, which ci-targets of kit runs past failures into CI_REPORT. make
-# test is in neither list: its tests of the store of Redis need Apple container, which a Linux runner does not have.
+# The targets of each job of .github/workflows/ci.yml, which ci-targets of kit runs past failures into CI_REPORT. The
+# job test runs make redis-image and make test, one target each.
 CI_SHARED := docs-check owner-validate workflows-test tool-pins-test container-test commit-names-check commit-names-test release-coverage
 CI_RUST := lint-rust fmt-check binding-check
 CI_REPORT ?= var/report/ci-targets
@@ -160,15 +160,15 @@ commit-names-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/commit-names.test.mts
 
 # scripts/test-run.sh owns the containers and the temporary directory of the run and removes them when the run ends,
-# fails or is stopped by SIGINT or SIGTERM. A peer that is not found is passed empty, and the test that needs it fails.
+# fails or is stopped by SIGINT or SIGTERM; it fails before the tests when the container program of the platform is
+# not found. PHP or openssl that is not found is passed empty, and the test that needs it fails.
 test:
-	scripts/test-run.sh '$(CONTAINER)' env PHP='$(PHP)' CONTAINER='$(CONTAINER)' REDIS_IMAGE='$(REDIS_IMAGE)' \
-		OPENSSL='$(OPENSSL)' $(CARGO) test $(CARGOFLAGS) $(CORE) --locked
+	scripts/test-run.sh env PHP='$(PHP)' REDIS_IMAGE='$(REDIS_IMAGE)' OPENSSL='$(OPENSSL)' \
+		$(CARGO) test $(CARGOFLAGS) $(CORE) --locked
 
-# Pulls the pinned Redis image of the tests into the images of Apple container (SE-10.4).
+# Pulls the pinned Redis image of the tests into the images of the container program of the platform (SE-10.4).
 redis-image:
-	test -n '$(CONTAINER)' || { echo 'Apple container is not found: install it or name it with CONTAINER=' >&2; exit 1; }
-	'$(CONTAINER)' image pull '$(REDIS_IMAGE)'
+	scripts/container.sh pull '$(REDIS_IMAGE)'
 
 lint-rust:
 	$(CARGO) clippy $(CARGOFLAGS) $(CORE) --locked --all-targets -- -D warnings

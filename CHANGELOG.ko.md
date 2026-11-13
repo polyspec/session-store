@@ -1,7 +1,24 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 2b8f57537047456dabb964ad516787fdad28e76207f4b7972b5d236bbed3643c -->
+<!-- source-sha256: 73dde5ee88899fc7d33fd1c2abac6f15ae70f7578ef472dd435d276bacb44bd2 -->
 
 ## Unreleased
+
+- Redis 저장소의 시험은 macOS에서만 실행됐다. SE-10.4와 harness가 Apple `container`를 적었고, 그래서 workflow
+  `ci`는 시험을 실행하지 않았다. SE-10.4는 container 프로그램을 플랫폼으로 정한다. Darwin은 Apple `container`,
+  Linux는 `docker`이고, image는 `REDIS_IMAGE`가 digest로 고정한 하나다. 그래서 두 플랫폼이 같은 bytes의 서버를
+  시험하고, 어떤 시험도 장비의 서버를 실행하지 않는다. `scripts/container.sh`가 두 프로그램의 명령(`program`,
+  `pull`, `present`, `run`, `delete`, `list`)을 가진 유일한 파일이다. 이 script는 프로그램을 `uname -s`만으로
+  정하고, PATH에 없는 프로그램은 그 이름과 설치 방법을 적고 즉시 실패한다. harness
+  `packages/redis/rust/tests/servers`는 그 script를 시작하고, `scripts/test-run.sh`는 그 script로 자기 run의
+  container를 나열하고 지우며 프로그램을 찾지 못하면 시험 전에 실패하고, `make redis-image`는 그 script로 image를
+  받는다. Makefile의 변수 `CONTAINER`는 지웠다. container의 주소는 두 프로그램 모두에서 그 명령이 쓰는 첫
+  줄(`hostname -i`)이고, 시작은 전과 같이 서버가 쓰는 줄을 기다리며 시간을 기다리지 않는다. workflow의 job
+  `test`는 `.php-version`의 PHP(8.4)를 설치하고 `make install-rust`, `make redis-image`, `make test`를 실행하며,
+  `ci-passed`가 이 job을 needs에 둔다. `make container-test`는 `uname`, `docker`, `container`의 대역으로 script를
+  실행한다. script가 없을 때는 0개 통과, 4개 실패였고, 있으면 4개 통과, 0개 실패다. `make ci-shared`는 target 8개를
+  통과하고 `make fmt-check`가 통과한다. 이 Mac에서 script는 `container`를 적고, 고정한 image를 찾고,
+  `scripts/test-run.sh true`는 상태 0으로 끝난다. 미실행: `make test`와 `make lint-rust`. 그래서 바뀐 harness는 아직
+  compile하지 않았다. runner `ubuntu-26.04-arm`에 `docker`가 있다는 것을 보인 CI run도 아직 없다.
 
 - `.node-version` 하나가 CI의 Node.js를 적었고, 개발 장비는 자기 Node.js를 썼고, 어떤 파일도 도구의 digest를
   고정하지 않았다. 도구를 다른 polyspec 저장소의 형식으로 고정한다. `mise.toml`은 Node.js 26.12.0과 npm 12.2.0을

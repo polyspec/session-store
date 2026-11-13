@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- The tests of the store of Redis ran on macOS alone: SE-10.4 and the harness named Apple `container`, so the workflow
+  `ci` ran no test. SE-10.4 names the container program by the platform, Apple `container` on Darwin and `docker` on
+  Linux, with the one image that `REDIS_IMAGE` pins by its digest, so that both platforms test the same bytes of the
+  server and no test runs a server of the machine. `scripts/container.sh` is the one file with the commands of both
+  programs (`program`, `pull`, `present`, `run`, `delete`, `list`); it takes the program from `uname -s` alone and
+  fails at once with the name of a program that PATH does not hold and what installs it. The harness
+  `packages/redis/rust/tests/servers` starts that script, `scripts/test-run.sh` lists and deletes the containers of
+  its run through it and fails before the tests when the program is not found, and `make redis-image` pulls through
+  it; the variable `CONTAINER` of the Makefile is removed. The address of a container is the first line that its
+  command writes (`hostname -i`) on both programs, and a start waits for the lines of the server as before, never for
+  a time. The job `test` of the workflow sets up the PHP of `.php-version` (8.4) and runs `make install-rust`,
+  `make redis-image` and `make test`, and `ci-passed` needs it. `make container-test` runs the script against
+  stand-ins of `uname`, `docker` and `container`: without the script it gave 0 passed and 4 failed, and with it 4
+  passed and 0 failed. `make ci-shared` passes its 8 targets and `make fmt-check` passes. On this Mac the script
+  names `container`, finds the pinned image and `scripts/test-run.sh true` ends with status 0. Not run: `make test`
+  and `make lint-rust`, so the changed harness is not compiled yet, and no run of CI has shown that the runner
+  `ubuntu-26.04-arm` holds `docker`.
+
 - A lone `.node-version` named the Node.js of CI, a development machine ran its own Node.js, and no file pinned the
   digest of a tool. The tools are pinned in the form of the other polyspec repositories: `mise.toml` names Node.js
   26.12.0 and npm 12.2.0, `mise.lock` pins Node.js by the checksum of its archive of 6 platforms and npm by the digest

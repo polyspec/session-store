@@ -23,6 +23,7 @@
         "packages/rust/**",
         "contracts/*.json",
         "scripts/test-run.sh",
+        "scripts/container.sh",
         "Cargo.toml",
         "Cargo.lock",
         "clippy.toml",
@@ -75,7 +76,8 @@
     },
     {
       "paths": [
-        "scripts/container.test.mts"
+        "scripts/container.test.mts",
+        "scripts/container.sh"
       ],
       "targets": [
         "container-test"
@@ -125,6 +127,7 @@
     {
       "paths": [
         ".gitignore",
+        ".php-version",
         "LICENSE",
         ".npmrc",
         "package-lock.json"

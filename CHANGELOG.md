@@ -13,3 +13,6 @@
 - The contract names, for each member of the callback unit `store` (`get`, `set`, `remove`, `renew`), the method of the
   trait `polyspec_session_store::Store` that it is and its receiver `&mut self` in `core` (binding CK-17, design U-3):
   the generated type implements the trait, and the receiver of a trait method is not read from the Rust source.
+- The kinds `random` and `identifier_taken` are of the category `io`, not `internal` (SE-9.5): the random source of the
+  operating system and a file that another process created are the environment of the process, not a defect, so their
+  errors are `SessionStoreIoError`. The category `internal` holds only the kind `internal`.

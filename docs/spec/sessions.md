@@ -108,7 +108,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
 
   | Kind | Status | Category | Rule |
   |---|---|---|---|
-  | `random` | 500 | `internal` | SE-5.4 |
+  | `random` | 500 | `io` | SE-5.4 |
   | `record` | 500 | `store` | SE-6.3 |
   | `record_not_array` | 500 | `store` | SE-6.4 |
   | `record_write` | 500 | `store` | SE-6.8 |
@@ -119,6 +119,11 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   write fails the request as an error of the server. <a id="SE-9.4"></a> The kinds of the stores (SF-9, SR-9) are
   variants of the same error enum, `Error` of `polyspec-session-store-core`, so that one kind interface and one table of
   classes hold every failure of the library, and a failure of the record that a store meets keeps its kind.
+  <a id="SE-9.5"></a> The category `internal` holds only the kind `internal`, a defect of the implementation. A
+  failure that the environment of the process causes without a defect is of the category `io`: the random source of
+  the operating system fails (`random`, SE-5.4), or another process created the file of a new identifier
+  (`identifier_taken`, SF-4.4). A caller that tells a defect from a failure of the environment by the class of the
+  error is then right for both.
 
 ## The store of files
 
@@ -195,7 +200,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   | `invalid_directory` | none | `value` | SF-1.2 |
   | `invalid_lifetime` | none | `value` | SF-1.3 |
   | `cancelled` | 500 | `io` | SF-3.8 |
-  | `identifier_taken` | 500 | `internal` | SF-4.4 |
+  | `identifier_taken` | 500 | `io` | SF-4.4 |
   | `not_found`, `permission_denied`, `cross_device`, `storage_full`, `io` | 500 | `io` | an operation of the file system fails; the error carries the `errno` |
   | the kinds of SE-9.2 | | | the core |
 

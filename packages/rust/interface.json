@@ -94,7 +94,7 @@
     "kinds": [
       {
         "variant": "polyspec_session_store::Error::Random",
-        "category": "internal"
+        "category": "io"
       },
       {
         "variant": "polyspec_session_store::Error::Record",
@@ -126,7 +126,7 @@
       },
       {
         "variant": "polyspec_session_store::Error::IdentifierTaken",
-        "category": "internal"
+        "category": "io"
       },
       {
         "variant": "polyspec_session_store::Error::Io",

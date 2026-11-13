@@ -75,6 +75,17 @@
     },
     {
       "paths": [
+        "scripts/tool-pins.test.mts",
+        "package.json",
+        "Makefile",
+        ".github/actions/**"
+      ],
+      "targets": [
+        "tool-pins-test"
+      ]
+    },
+    {
+      "paths": [
         "config/release.json",
         "CHANGELOG.md",
         "CHANGELOG.ko.md",

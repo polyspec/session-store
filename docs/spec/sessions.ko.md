@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: bc287ec3ed6357606e46f9492a4773f0dba4643a993b746b55aafe84734855c7 -->
+<!-- source-sha256: ba61cb71daaaf2e0f7a01fb0d81e4ca22cf56602266861dbd59283ab0019416a -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -132,10 +132,10 @@
   부르며, 인터페이스 계약은 같은 주입점을 `faults`에 적는다. 주입점은 `polyspec-session-store-core`의 feature
   `fault-test`가 켜져 있지 않으면 아무것도 하지 않는다: `polyspec-session-store`는 자기 feature `fault-test`로 그것을
   켜고, 바인딩 crate는 자기 시험에서만 그 feature를 켜며, crate의 시험은 dev-dependency `polyspec-binding-core`로
-  그것을 켜고, 어떤 release 빌드에도 그것은 없다. `open`이나 `read_dir`의 `io` 주입은 그 시스템 호출이 fault의
+  그것을 켜고, 어떤 release 빌드에도 그것은 없다. `open`, `create`, `read_dir`의 `io` 주입은 그 시스템 호출이 fault의
   `errno`로 실패하는 것이고 그 kind는 SF-9.2를 따르며, fault가 `errno`를 적지 않으면 `errno` 없는 kind `io`의
   실패다. `errors.kinds`의 variant `Io` 행이 `kinds`를 적지 않고 주입점은 그 표의 kind만 채우므로, 계약의
-  `fills`는 SF-9.2의 kind 중 `io`만 적는다. `random`의 `io` 주입은 난수원의 실패이며 `errno`가 없다. 코어는 task도
+  `fills`는 SF-9.2의 kind 중 `io`만 적는다. `create`는 그 호출의 `EEXIST`가 가리키는 kind `identifier_taken`도 채운다(SF-4.4). `random`의 `io` 주입은 난수원의 실패이며 `errno`가 없다. 코어는 task도
   thread도 시작하지 않으므로, 각 주입점은 그 점에 닿는 호출의 장전을 받는다. record session의 `get`, `set`,
   `remove`(`file_session`과 `redis_session`의 호출)가 닿는 kind `internal`의 모든 불변식 분기는 바로 앞에 주입점을
   가지며, 그 주입점은 실패한 불변식을 `broken`으로 흉내 낸다. 복사의 주입점은 같은 복사로 레코드를 쓰는 `close`도
@@ -157,6 +157,7 @@
   | `copy_reference` | `get`과 `close`에서 참조의 복사(`Copier::fill`): 원본이 참조를 가리키지 않는 것으로 다룬다 | `broken` | `internal` | SE-6.6 | 예 |
   | `copy_set_reference` | `get`과 `close`에서 참조의 값의 복사(`Copier::fill`): 값이 거부되는 것으로 다룬다 | `broken` | `internal` | SE-6.6 | 예 |
   | `open` | `FileSessions::open`에서 세션 파일의 open | `io` | `io` | SF-3.1, SF-9.2 | 예 |
+  | `create` | `file_session`의 `close`에서 새 세션 파일의 배타적 생성 | `io` | `io`, `identifier_taken` | SF-4.4, SF-9.2 | 예 |
   | `read_dir` | `FileSessions::collect`에서 디렉터리의 읽기 | `io` | `io` | SF-5.1, SF-9.2 | 예 |
 
 ## 파일 저장소

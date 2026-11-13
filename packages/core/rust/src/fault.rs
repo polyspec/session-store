@@ -18,6 +18,10 @@ pub const INTERNAL: &str = "session_store.internal";
 /// The open of the session file, in `FileSessions::open` (SF-3, SF-9.2).
 #[doc(hidden)]
 pub const OPEN: &str = "session_store.open";
+/// The exclusive creation of the file of a new session, in `close` of a file session (SF-4.4, SF-9.2): an errno
+/// `EEXIST` of the fault is an identifier that another process took.
+#[doc(hidden)]
+pub const CREATE: &str = "session_store.create";
 /// The read of the session directory, in `FileSessions::collect` (SF-5, SF-9.2).
 #[doc(hidden)]
 pub const READ_DIR: &str = "session_store.read_dir";

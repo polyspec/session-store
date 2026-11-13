@@ -278,7 +278,14 @@ impl FileSession {
 /// Creates the file of a new identifier with the mode 0600 and writes its record (SF-4.4).
 fn create(path: &Path, id: &str, record: &[u8]) -> Result<(), Error> {
     let flags = OFlags::WRONLY.union(OFlags::CREATE).union(OFlags::EXCL).union(OFlags::NOFOLLOW).union(OFlags::CLOEXEC);
-    let file = match rustix::fs::open(path, flags, Mode::RUSR.union(Mode::WUSR)) {
+    // SE-9.6: the point imitates a failure of the exclusive creation, which no input reaches; an errno of the fault is
+    // that of the system call, and a fault without one is a failure without errno.
+    let created = match fault::failed(fault::CREATE) {
+        Some(Some(errno)) => Err(Errno::from_raw_os_error(errno)),
+        Some(None) => return Err(io_error("open", path, &injected(fault::CREATE))),
+        None => rustix::fs::open(path, flags, Mode::RUSR.union(Mode::WUSR)),
+    };
+    let file = match created {
         Ok(descriptor) => File::from(descriptor),
         Err(Errno::EXIST) => return Err(Error::IdentifierTaken { id: id.to_owned() }),
         Err(errno) => return Err(errno_error("open", path, errno)),

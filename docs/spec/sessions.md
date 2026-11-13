@@ -131,11 +131,11 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   points of their places through it, and the interface contract names the same points in `faults`. A point does nothing
   unless the feature `fault-test` of `polyspec-session-store-core` is on: `polyspec-session-store` turns it on through
   its own feature `fault-test`, which a binding crate turns on for its tests only, the tests of the crates turn it on
-  through their dev-dependency `polyspec-binding-core`, and no release build has it. An `io` injection at `open` or
+  through their dev-dependency `polyspec-binding-core`, and no release build has it. An `io` injection at `open`, `create` or
   `read_dir` is the failure of that call of the system with the `errno` of the fault, whose kind follows SF-9.2, or a
   failure without `errno` of the kind `io` when the fault names none. The `fills` of the contract name `io` alone of
   the kinds of SF-9.2, because the row of the variant `Io` in `errors.kinds` names no `kinds`, and a point fills only
-  the kinds of that table. An `io` injection at `random` is a failure of the random source, which has no `errno`. The
+  the kinds of that table; `create` also fills `identifier_taken`, the kind of `EEXIST` at that call (SF-4.4). An `io` injection at `random` is a failure of the random source, which has no `errno`. The
   core starts no task and no thread, so each point takes the arming of the call that reaches it. Every invariant branch
   of the kind `internal` that `get`, `set` and `remove` of a record session reach, the calls of `file_session` and
   `redis_session`, has a point just before it, which imitates the failed invariant as `broken`; the points of the copy
@@ -158,6 +158,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   | `copy_reference` | the copy of a reference, in `get` and in `close` (`Copier::fill`): the source is treated as naming no reference | `broken` | `internal` | SE-6.6 | yes |
   | `copy_set_reference` | the copy of the value of a reference, in `get` and in `close` (`Copier::fill`): the value is treated as refused | `broken` | `internal` | SE-6.6 | yes |
   | `open` | the open of the session file in `FileSessions::open` | `io` | `io` | SF-3.1, SF-9.2 | yes |
+  | `create` | the exclusive creation of the file of a new session in `close` of `file_session` | `io` | `io`, `identifier_taken` | SF-4.4, SF-9.2 | yes |
   | `read_dir` | the read of the directory in `FileSessions::collect` | `io` | `io` | SF-5.1, SF-9.2 | yes |
 
 ## The store of files

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- The exclusive creation of the file of a new session, in `close` of `file_session`, has the fault injection point
+  `session_store.create` (SE-9.6, SF-4.4, SF-9.2), so `io` and `identifier_taken` of `file_session.close` have their
+  cases. Before, no point and no input reached them, and `make binding-check` gave these two CK-22 findings. The point
+  takes `io`, fills `io` and `identifier_taken`, and imitates the failed system call with the `errno` of the fault:
+  `EEXIST` is an identifier that another process took. The group `file_session.close.made` of
+  `contracts/file-sessions.json` closes a session that `open` made and that set a value, with the fault `EIO`, which
+  gives `io`, and with the fault `EEXIST`, which gives `identifier_taken`. `make binding-check` gives no CK-22
+  finding.
+
 - The kinds that only a session made by `open` reaches have their cases (SE-10.6, binding GN-13f, CK-22), and
   `Cargo.lock` pins the binding whose case forms and check take them. A case gives the session under the key
   `receiver` as an instance value: `open` without a cookie of a store made by its constructor, the store of files of

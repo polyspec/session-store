@@ -1,7 +1,15 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: e11a352dabf37c6c319496ea0e9219d4b14c5006154d8d7c5656d0c7070e9f08 -->
+<!-- source-sha256: 38f69b28bad489cf33be827990312a4d46146ed6a78daa3297ad3f1f5e487fdc -->
 
 ## Unreleased
+
+- `file_session`의 `close`에서 새 세션 파일의 배타적 생성이 fault 주입점 `session_store.create`를 가진다(SE-9.6,
+  SF-4.4, SF-9.2). 그래서 `file_session.close`의 `io`와 `identifier_taken`이 case를 가진다. 전에는 어떤 주입점도
+  입력도 그 둘에 닿지 않았고, `make binding-check`는 이 두 CK-22 지적을 냈다. 주입점은 `io`를 받고 `io`와
+  `identifier_taken`을 채우며, 실패한 시스템 호출을 fault의 `errno`로 흉내 낸다. `EEXIST`는 다른 프로세스가 가져간
+  식별자다. `contracts/file-sessions.json`의 group `file_session.close.made`는 `open`이 만들고 값을 set한 세션을
+  닫으며, fault `EIO`로 `io`를, fault `EEXIST`로 `identifier_taken`을 준다. `make binding-check`는 CK-22 지적을 내지
+  않는다.
 
 - `open`이 만든 세션만 닿는 kind가 case를 가진다(SE-10.6, binding GN-13f, CK-22). `Cargo.lock`은 그 case 꼴을 받고
   검사하는 binding을 고정한다. case는 세션을 키 `receiver` 아래에 instance 값으로 준다. 그것은 생성자로 만든 저장소의

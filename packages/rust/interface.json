@@ -234,6 +234,19 @@
       "place": "polyspec_session_store::FileSessions::open"
     },
     {
+      "id": "create",
+      "core": "polyspec_session_store::fault::CREATE",
+      "inject": [
+        "io"
+      ],
+      "fills": [
+        "io",
+        "identifier_taken"
+      ],
+      "place": "polyspec_session_store::FileSession::close",
+      "reason": "SF-4.4"
+    },
+    {
       "id": "read_dir",
       "core": "polyspec_session_store::fault::READ_DIR",
       "inject": [

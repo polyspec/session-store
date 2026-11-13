@@ -391,6 +391,12 @@ the statement that it checks. A PHP value and its serialize form are those of ph
     `schemaVersion` is not 1, the version of the contract that it reads.
   - The server of TLS takes the certificate that bay issues for its name, at the paths in its container that the
     plan gives, and the test trusts the authority of bay, whose file the plan names. No test makes a certificate.
+    The store verifies a server against the trust store of its process, because a connection setting names no
+    authority (SR-6.1), and rustls reads the file that `SSL_CERT_FILE` names. The environment of a process belongs to
+    all its threads, and a thread that changes it while another reads it is not safe, so no test changes the
+    environment of a process whose trials run in parallel: the test of TLS is a test binary of its own
+    (`tests/tls.rs`) with one trial, which names the authority file in `SSL_CERT_FILE` before it starts a second
+    thread.
   - The return of `up` is the event of a start: bay returns after every service accepts connections on its port. The
     harness holds no time limit, no sleep and no repeated question. The test of the cluster creates the cluster with
     `redis-cli --cluster create` of the image, which `bay exec` runs in the container of the first node with the

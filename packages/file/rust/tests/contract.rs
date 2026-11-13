@@ -340,6 +340,76 @@ fn collect_faults(case: &Value) -> Result<(), Failed> {
     }
 }
 
+/// A cancellation of a case (binding GN-13f): `{"cancel": "fired"}`, which fired before the call, or `{"cancel":
+/// "open"}`, which does not fire. The trigger is kept with it, so that it fires no later.
+fn cancel_of(value: &Value) -> Result<(binding_core::CancelTrigger, binding_core::Cancel), Failed> {
+    let (trigger, cancel) = binding_core::cancel_pair();
+    match str_of(value, "cancel")? {
+        "fired" => trigger.cancel(),
+        "open" => {}
+        other => return Err(format!("a cancellation is fired or open, not {other}").into()),
+    }
+    Ok((trigger, cancel))
+}
+
+/// The cookie of the arguments of an opening: null for none, or the text whose characters are its bytes.
+fn cookie_of(args: &Value) -> Result<Option<Vec<u8>>, Failed> {
+    match args.get("cookie") {
+        Some(Value::Null) => Ok(None),
+        Some(Value::String(text)) => Ok(Some(latin1(text)?)),
+        _ => Err("an opening has no cookie".into()),
+    }
+}
+
+/// The store of the arguments of `file_sessions.new`.
+fn store_with(args: &Value) -> Result<FileSessions, Failed> {
+    let directory = Path::new(str_of(args, "directory")?);
+    FileSessions::new(Io::for_generated_call(), directory, args.get("lifetime").and_then(Value::as_u64)).map_err(failed)
+}
+
+/// A session of a request that earlier calls made (binding GN-13f): `{"new": "file_sessions.open", "receiver":
+/// {"new": "file_sessions.new", "args": {...}}, "args": {"cookie", "cancel"}}`.
+fn made_session(value: &Value) -> Result<FileSession, Failed> {
+    expect_eq("new", &str_of(value, "new")?, &"file_sessions.open")?;
+    let store = value.get("receiver").ok_or("an opening has no receiver")?;
+    expect_eq("new", &str_of(store, "new")?, &"file_sessions.new")?;
+    let store = store_with(store.get("args").ok_or("a store has no args")?)?;
+    let args = value.get("args").ok_or("an opening has no args")?;
+    let (_trigger, cancel) = cancel_of(args.get("cancel").ok_or("an opening has no cancel")?)?;
+    let cookie = cookie_of(args)?;
+    store.open(ProcessWait::for_generated_call(), cookie.as_deref(), Some(&cancel)).map_err(failed)
+}
+
+/// SE-5.4, SE-7.2: one call of a record session of a session that `open` made, with the faults of the case; the group
+/// of each member is read by that member alone.
+fn made_call(case: &Value, name: &str) -> Result<(), Failed> {
+    let raises = case.get("raises").ok_or("the case has no raises")?;
+    let mut session = made_session(case.get("receiver").ok_or("the case has no receiver")?)?;
+    let mut arguments = Vec::new();
+    for key in ["key", "value"] {
+        if let Some(argument) = case.get(key) {
+            arguments.push(argument.clone());
+        }
+    }
+    let pair = Value::Array(vec![Value::String(name.to_owned()), Value::Array(arguments)]);
+    match armed(case, &format!("file_session.{name}"), || call(&mut session, &pair))?? {
+        Ok(result) => Err(format!("the call gives {result}").into()),
+        Err(error) => expect_failure(&error, raises),
+    }
+}
+
+/// SF-3.8: an opening whose cancellation fired before the call; only `file_sessions.open` reads the group.
+fn open_cancel(case: &Value) -> Result<(), Failed> {
+    let raises = case.get("raises").ok_or("the case has no raises")?;
+    let store = store_with(case)?;
+    let (_trigger, cancel) = cancel_of(case.get("cancel").ok_or("the case has no cancel")?)?;
+    let cookie = cookie_of(case)?;
+    match store.open(ProcessWait::for_generated_call(), cookie.as_deref(), Some(&cancel)) {
+        Ok(_) => Err("the session is opened".into()),
+        Err(error) => expect_failure(&error, raises),
+    }
+}
+
 type Group = fn(&Value) -> Result<(), Failed>;
 
 fn main() {
@@ -348,8 +418,17 @@ fn main() {
         Ok(contract) => contract,
         Err(error) => panic!("contracts/file-sessions.json is no JSON: {error}"),
     };
-    let groups: [(&str, Group); 4] =
-        [("requests", requests), ("open", open), ("openFaults", open_faults), ("collectFaults", collect_faults)];
+    let groups: [(&str, Group); 9] = [
+        ("requests", requests),
+        ("open", open),
+        ("openFaults", open_faults),
+        ("collectFaults", collect_faults),
+        ("file_session.get.made", |case| made_call(case, "get")),
+        ("file_session.set.made", |case| made_call(case, "set")),
+        ("file_session.remove.made", |case| made_call(case, "remove")),
+        ("file_session.renew.made", |case| made_call(case, "renew")),
+        ("file_sessions.open.cancel", open_cancel),
+    ];
     let mut trials = Vec::new();
     for (group, run) in groups {
         let Some(Value::Array(cases)) = contract.get(group) else {

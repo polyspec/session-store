@@ -1139,5 +1139,186 @@
     "message": null
    }
   }
+ ],
+ "file_session.get.made": [
+  {
+   "id": "a_new_session_whose_random_source_fails_fails_get_with_random",
+   "label": "get of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rules": [
+    "SE-5.4",
+    "SE-7.2",
+    "SE-9.6"
+   ],
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.new",
+     "args": {
+      "directory": "/",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": null,
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "key": "a",
+   "faults": [
+    {
+     "point": "session_store.random",
+     "kind": "io"
+    }
+   ],
+   "raises": {
+    "kind": "random",
+    "status": 500,
+    "category": "io",
+    "message": null
+   }
+  }
+ ],
+ "file_session.set.made": [
+  {
+   "id": "a_new_session_whose_random_source_fails_fails_set_with_random",
+   "label": "set of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rules": [
+    "SE-5.4",
+    "SE-7.2",
+    "SE-9.6"
+   ],
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.new",
+     "args": {
+      "directory": "/",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": null,
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "key": "a",
+   "value": "i:1;",
+   "faults": [
+    {
+     "point": "session_store.random",
+     "kind": "io"
+    }
+   ],
+   "raises": {
+    "kind": "random",
+    "status": 500,
+    "category": "io",
+    "message": null
+   }
+  }
+ ],
+ "file_session.remove.made": [
+  {
+   "id": "a_new_session_whose_random_source_fails_fails_remove_with_random",
+   "label": "remove of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rules": [
+    "SE-5.4",
+    "SE-7.2",
+    "SE-9.6"
+   ],
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.new",
+     "args": {
+      "directory": "/",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": null,
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "key": "a",
+   "faults": [
+    {
+     "point": "session_store.random",
+     "kind": "io"
+    }
+   ],
+   "raises": {
+    "kind": "random",
+    "status": 500,
+    "category": "io",
+    "message": null
+   }
+  }
+ ],
+ "file_session.renew.made": [
+  {
+   "id": "a_new_session_whose_random_source_fails_fails_renew_with_random",
+   "label": "renew of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rules": [
+    "SE-5.4",
+    "SE-7.2",
+    "SE-9.6"
+   ],
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.new",
+     "args": {
+      "directory": "/",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": null,
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "faults": [
+    {
+     "point": "session_store.random",
+     "kind": "io"
+    }
+   ],
+   "raises": {
+    "kind": "random",
+    "status": 500,
+    "category": "io",
+    "message": null
+   }
+  }
+ ],
+ "file_sessions.open.cancel": [
+  {
+   "id": "an_opening_whose_cancellation_fired_fails_with_cancelled",
+   "label": "the opening of a found identifier whose cancellation fired before the call fails with cancelled and waits for nothing (SF-3.8)",
+   "rules": [
+    "SF-3.8"
+   ],
+   "directory": "/",
+   "lifetime": 1440,
+   "cookie": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "cancel": {
+    "cancel": "fired"
+   },
+   "raises": {
+    "kind": "cancelled",
+    "status": 500,
+    "category": "io",
+    "message": null
+   }
+  }
  ]
 }

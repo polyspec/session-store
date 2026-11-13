@@ -1679,6 +1679,56 @@
       "member": "redis_session.close",
       "file": "contracts/redis-sessions.json",
       "group": "requests"
+    },
+    {
+      "member": "file_session.get",
+      "file": "contracts/file-sessions.json",
+      "group": "file_session.get.made"
+    },
+    {
+      "member": "file_session.set",
+      "file": "contracts/file-sessions.json",
+      "group": "file_session.set.made"
+    },
+    {
+      "member": "file_session.remove",
+      "file": "contracts/file-sessions.json",
+      "group": "file_session.remove.made"
+    },
+    {
+      "member": "file_session.renew",
+      "file": "contracts/file-sessions.json",
+      "group": "file_session.renew.made"
+    },
+    {
+      "member": "file_sessions.open",
+      "file": "contracts/file-sessions.json",
+      "group": "file_sessions.open.cancel"
+    },
+    {
+      "member": "redis_session.get",
+      "file": "contracts/redis-sessions.json",
+      "group": "redis_session.get.made"
+    },
+    {
+      "member": "redis_session.set",
+      "file": "contracts/redis-sessions.json",
+      "group": "redis_session.set.made"
+    },
+    {
+      "member": "redis_session.remove",
+      "file": "contracts/redis-sessions.json",
+      "group": "redis_session.remove.made"
+    },
+    {
+      "member": "redis_session.renew",
+      "file": "contracts/redis-sessions.json",
+      "group": "redis_session.renew.made"
+    },
+    {
+      "member": "redis_session.close",
+      "file": "contracts/redis-sessions.json",
+      "group": "redis_session.close.made"
     }
   ]
 }

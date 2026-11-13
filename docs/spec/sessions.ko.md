@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: f6720a87382b05415e6746345bc422487c55eafb98a7e5124bdba1fe18ec4f6c -->
+<!-- source-sha256: bc287ec3ed6357606e46f9492a4773f0dba4643a993b746b55aafe84734855c7 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -376,14 +376,16 @@
   만든다(binding T-5): 라이브러리의 모든 플랫폼에 있고 그 읽기를 장전된 주입점이 호출이 읽기 전에 실패시키는
   디렉터리 `/`의 파일 저장소, 그리고 어떤 파일도 될 수 없는 `/dev/null` 아래 socket의 Redis 저장소다.
   `contracts/redis-sessions.json`의 group `opening`은 그 설정으로 연결이 실패하는 한 호출의 입력 case를
-  담는다(SR-6.4). 이 입력이 닿는 실패를 흉내 내는 주입은 없다. <a id="SE-10.6"></a> 계약에는 다음 member의 kind에
-  대한 case가 없고, 계약 검사는 그것을 하나씩 지적한다(binding CK-22). 요청의 세션(`file_session`,
-  `redis_session`)은 다른 unit의 메서드인 그 저장소의 `open`이 만들고, 한 호출 case는 자기 unit의 생성자나 static
-  member로만 receiver를 만든다(binding T-5). 그래서 어떤 한 호출 case도 두 세션의 `get`, `set`, `remove`,
-  `renew`의 `random`(새 세션의 시작과 갱신이 식별자를 만든다, SE-7.2, SE-7.3), `file_session.close`의 `io`와
-  `identifier_taken`, `redis_session.close`의 `connection`에 닿지 않는다. 이 kind들에는 다른 unit의 호출로
-  receiver를 만드는 case 형식이 필요하다. `file_sessions.open`의 `cancelled`(SF-3.8)는 입력, 곧 호출이 기다리기
-  전에 발동한 취소가 닿으며, 타입 `cancel`의 값을 주는 case 형식이 필요하다. 검사는 group `requests`의 case를
+  담는다(SR-6.4). 이 입력이 닿는 실패를 흉내 내는 주입은 없다. <a id="SE-10.6"></a> 요청의 세션(`file_session`, `redis_session`)은 다른 unit의 메서드인 그 저장소의
+  `open`이 만든다. 그래서 그 호출 하나의 case는 앞선 호출이 만드는 instance 값으로 키 `receiver` 아래에 receiver를
+  준다(binding GN-13f). 그 값은 생성자로 만든 저장소의 쿠키 없는 `open`과 `then`의 호출이다. 저장소는 디렉터리 `/`의
+  파일 저장소(발동하지 않는 취소와 함께)와 `/dev/null` 아래 socket의 Redis 저장소다. `get`, `set`, `remove`,
+  `renew`의 group `file_session.<member>.made`와 `redis_session.<member>.made`는 새 세션의 시작이 닿는
+  `session_store.random`을 장전한다(SE-5.4, SE-7.2). `redis_session.close.made`는 값을 set한 세션을 닫는다. 그 close는
+  그 socket에 연결하므로 `connection`으로 실패한다(SR-6.4). `file_sessions.open.cancel`은 호출 전에 발동한
+  취소(`{"cancel": "fired"}`)로 `file_sessions.open`의 `cancelled`(SF-3.8)를 준다. 계약에는 `file_session.close`의
+  `io`와 `identifier_taken`의 case가 없고, 계약 검사는 둘을 지적한다(binding CK-22). 세션 파일의 쓰기에는 결함 주입
+  지점이 없고, 라이브러리의 모든 플랫폼에서 두 kind에 닿는 입력이 없기 때문이다. 검사는 group `requests`의 case를
   그 group을 읽는 모든 member에 센다. 그러나 바인딩 시험은 case의 key를 한 호출의 인자로 받으며 여러 요청의
   case(`steps`)는 하나도 실행하지 않는다. 그래서 그 group의 어떤 case도 주입점을 장전하지 않는다. 그런 case는
   어떤 바인딩 시험도 실행하지 않는데 검사는 통과시키기 때문이다.

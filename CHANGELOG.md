@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- The kinds that only a session made by `open` reaches have their cases (SE-10.6, binding GN-13f, CK-22), and
+  `Cargo.lock` pins the binding whose case forms and check take them. A case gives the session under the key
+  `receiver` as an instance value: `open` without a cookie of a store made by its constructor, the store of files of
+  the directory `/` with a cancellation that does not fire and the store of Redis of a socket under `/dev/null`. The
+  new groups `file_session.get.made`, `file_session.set.made`, `file_session.remove.made` and
+  `file_session.renew.made` of `contracts/file-sessions.json`, and the same four of `redis_session` of
+  `contracts/redis-sessions.json`, arm `session_store.random` and give `random`; `redis_session.close.made` gives
+  `connection` of the close of a session that set a value; `file_sessions.open.cancel` gives `cancelled` of
+  `file_sessions.open` by a cancellation that fired before the call. The tests of the store of files and of the store
+  of Redis run the ten cases. `make binding-check` gives 2 CK-22 findings where it gave 12: `io` and
+  `identifier_taken` of `file_session.close`, which no fault injection point and no input reach. `make test` gives 152
+  passed, 0 failed and 13 ignored.
+
 - The library takes binding of the current `v1/rust-core` and php-serialization of the current `v1/rust-core`, whose
   fault injection point is the macro `binding_core::fault::point!`, which judges a point by the feature `fault-test`
   of the crate that writes it (binding GN-5). The module `fault` of the core calls `point!`, and the tests of the core,

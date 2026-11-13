@@ -380,14 +380,17 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   exists on every platform of the library and whose read the armed point fails before the call reads it, and the store
   of Redis of a socket under `/dev/null`, which no file can be. The group `opening` of `contracts/redis-sessions.json`
   holds the input case of one call whose connection fails with that setting (SR-6.4); no injection imitates a failure
-  that this input reaches. <a id="SE-10.6"></a> The contract has no case for the following kinds of members, and the
-  contract check reports each (binding CK-22). A session of a request (`file_session`, `redis_session`) is made by
-  `open` of its store, a method of another unit, and a case of one call makes a receiver only with a constructor or a
-  static member of its own unit (binding T-5), so no case of one call reaches `random` of `get`, `set`, `remove` and
-  `renew` of either session (the start of a new session and a renewal make an identifier, SE-7.2, SE-7.3), `io` and
-  `identifier_taken` of `file_session.close`, or `connection` of `redis_session.close`; these kinds need a case form
-  that makes the receiver by a call of another unit. `cancelled` of `file_sessions.open` (SF-3.8) is reached by an
-  input, a cancellation that fired before the call waits, and needs a case form that gives a value of the type
-  `cancel`. The check counts a case of the group `requests` for every member that reads the group, but a binding test
+  that this input reaches. <a id="SE-10.6"></a> A session of a request (`file_session`, `redis_session`) is made by
+  `open` of its store, a method of another unit, so a case of one of its calls gives its receiver under the key
+  `receiver` as an instance value that earlier calls make (binding GN-13f): `open` without a cookie of a store made by
+  its constructor, the store of files of the directory `/` with a cancellation that does not fire and the store of
+  Redis of a socket under `/dev/null`, and the calls of `then`. The groups `file_session.<member>.made` and
+  `redis_session.<member>.made` of `get`, `set`, `remove` and `renew` arm `session_store.random`, which the start of the
+  new session reaches (SE-5.4, SE-7.2); `redis_session.close.made` closes a session that set a value, whose close
+  connects to that socket and fails with `connection` (SR-6.4). `file_sessions.open.cancel` gives `cancelled` of
+  `file_sessions.open` (SF-3.8) by a cancellation that fired before the call (`{"cancel": "fired"}`). The contract has
+  no case for `io` and `identifier_taken` of `file_session.close`, and the contract check reports both (binding
+  CK-22): no fault injection point is in the write of a session file, and no input reaches either kind on every
+  platform of the library. The check counts a case of the group `requests` for every member that reads the group, but a binding test
   takes the keys of a case as the arguments of one call and runs no case of several requests (`steps`); so no case of
   that group arms a point, because it would satisfy the check while no binding test runs it.

@@ -1,7 +1,18 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 722eff7d2a7b7422aab8b8e5a2c4b0640fa1e1a7dcceb985ce5807e129d8a209 -->
+<!-- source-sha256: e11a352dabf37c6c319496ea0e9219d4b14c5006154d8d7c5656d0c7070e9f08 -->
 
 ## Unreleased
+
+- `open`이 만든 세션만 닿는 kind가 case를 가진다(SE-10.6, binding GN-13f, CK-22). `Cargo.lock`은 그 case 꼴을 받고
+  검사하는 binding을 고정한다. case는 세션을 키 `receiver` 아래에 instance 값으로 준다. 그것은 생성자로 만든 저장소의
+  쿠키 없는 `open`이며, 저장소는 디렉터리 `/`의 파일 저장소(발동하지 않는 취소와 함께)와 `/dev/null` 아래 socket의
+  Redis 저장소다. `contracts/file-sessions.json`의 새 group `file_session.get.made`, `file_session.set.made`,
+  `file_session.remove.made`, `file_session.renew.made`와 `contracts/redis-sessions.json`의 같은 `redis_session` 넷은
+  `session_store.random`을 장전하고 `random`을 준다. `redis_session.close.made`는 값을 set한 세션의 close의
+  `connection`을 주고, `file_sessions.open.cancel`은 호출 전에 발동한 취소로 `file_sessions.open`의 `cancelled`를
+  준다. 파일 저장소와 Redis 저장소의 시험이 이 case 열 개를 실행한다. `make binding-check`는 12건이던 CK-22 finding을
+  2건으로 낸다: 결함 주입 지점도 입력도 닿지 않는 `file_session.close`의 `io`와 `identifier_taken`이다. `make test`는
+  152개 통과, 0개 실패, 13개 ignored를 낸다.
 
 - 라이브러리가 지금 `v1/rust-core`의 binding과 php-serialization을 받는다. 그 결함 주입 지점은 macro
   `binding_core::fault::point!`이며, 지점을 쓰는 crate의 feature `fault-test`로 지점을 판정한다(binding GN-5). 코어의

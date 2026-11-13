@@ -479,6 +479,86 @@ fn opening(case: &Value) -> Result<(), Failed> {
     }
 }
 
+/// A session of a request that earlier calls made on a store whose setting names a socket under `/dev/null` (binding
+/// GN-13f): `{"new": "redis_sessions.open", "receiver": {"new": "redis_sessions.new", "args": {"setting", "options"}},
+/// "args": {"cookie": null}, "then": [...]}`, whose calls of `then` are calls of a record session that succeed.
+fn made_session(
+    value: &Value,
+    runtime: &tokio::runtime::Runtime,
+) -> Result<polyspec_session_store_redis::RedisSession, Failed> {
+    expect_eq("new", &str_of(value, "new")?, &"redis_sessions.open")?;
+    let store = value.get("receiver").ok_or("an opening has no receiver")?;
+    expect_eq("new", &str_of(store, "new")?, &"redis_sessions.new")?;
+    let args = store.get("args").ok_or("a store has no args")?;
+    let store =
+        RedisSessions::new(setting_of(args.get("setting").ok_or("a store has no setting")?)?, store_options(args))
+            .map_err(failed)?;
+    let cookie = match value.get("args").and_then(|args| args.get("cookie")) {
+        Some(Value::Null) => None,
+        Some(Value::String(text)) => Some(latin1(text)?),
+        _ => return Err("an opening has no cookie".into()),
+    };
+    let mut session = runtime.block_on(store.open(cookie.as_deref())).map_err(failed)?;
+    let mut steps = Vec::new();
+    for then in value.get("then").and_then(Value::as_array).into_iter().flatten() {
+        let name =
+            str_of(then, "call")?.strip_prefix("redis_session.").ok_or("a call of then is no call of a session")?;
+        let args = then.get("args");
+        let mut arguments = Vec::new();
+        for key in ["key", "value"] {
+            if let Some(argument) = args.and_then(|args| args.get(key)) {
+                arguments.push(argument.clone());
+            }
+        }
+        steps.push(Value::Array(vec![Value::String(name.to_owned()), Value::Array(arguments)]));
+    }
+    let step = serde_json::json!({ "calls": steps });
+    if let Err(error) = calls(&mut session, &step)? {
+        return Err(format!("a call of then fails: {error}").into());
+    }
+    Ok(session)
+}
+
+/// SE-5.4, SE-7.2: one call of a record session of a session that `open` made, with the faults of the case; the group
+/// of each member is read by that member alone.
+fn made_call(case: &Value, name: &str) -> Result<(), Failed> {
+    let raises = case.get("raises").ok_or("the case has no raises")?;
+    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(failed)?;
+    let mut session = made_session(case.get("receiver").ok_or("the case has no receiver")?, &runtime)?;
+    let mut arguments = Vec::new();
+    for key in ["key", "value"] {
+        if let Some(argument) = case.get(key) {
+            arguments.push(argument.clone());
+        }
+    }
+    let step = serde_json::json!({ "calls": [[name, arguments]] });
+    match armed(case, &format!("redis_session.{name}"), || calls(&mut session, &step))?? {
+        Ok(results) => Err(format!("the call gives {results:?}").into()),
+        Err(error) => {
+            expect_eq("kind", &error.kind(), &str_of(raises, "kind")?)?;
+            expect_eq("status", &error.status().map(u64::from), &raises.get("status").and_then(Value::as_u64))?;
+            expect_eq("category", &category(error.kind())?.as_str(), &str_of(raises, "category")?)
+        }
+    }
+}
+
+/// SR-6.4: the close of a session that set a value connects to the server of its setting, which no file can be.
+fn made_close(case: &Value) -> Result<(), Failed> {
+    let raises = case.get("raises").ok_or("the case has no raises")?;
+    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(failed)?;
+    let session = made_session(case.get("receiver").ok_or("the case has no receiver")?, &runtime)?;
+    match runtime.block_on(session.close()) {
+        Ok(found) => Err(format!("the session is closed as {found:?}").into()),
+        Err(error) => {
+            expect_eq("kind", &error.kind(), &str_of(raises, "kind")?)?;
+            expect_eq("status", &error.status().map(u64::from), &raises.get("status").and_then(Value::as_u64))?;
+            expect_eq("category", &category(error.kind())?.as_str(), &str_of(raises, "category")?)
+        }
+    }
+}
+
+type Group = fn(&Value) -> Result<(), Failed>;
+
 /// The Redis server of every trial, in a container of the run (`tests/servers`); each trial uses a database of its own.
 struct Shared {
     address: String,
@@ -629,6 +709,24 @@ fn main() {
                 panic!("a case has no id");
             };
             trials.push(Trial::test(format!("{group}::{id}"), move || opening(&case)));
+        }
+    }
+    let made: [(&str, Group); 5] = [
+        ("redis_session.get.made", |case| made_call(case, "get")),
+        ("redis_session.set.made", |case| made_call(case, "set")),
+        ("redis_session.remove.made", |case| made_call(case, "remove")),
+        ("redis_session.renew.made", |case| made_call(case, "renew")),
+        ("redis_session.close.made", made_close),
+    ];
+    for (group, run) in made {
+        let Some(Value::Array(cases)) = contract.get(group) else {
+            panic!("contracts/redis-sessions.json has no group {group}");
+        };
+        for case in cases.clone() {
+            let Some(id) = case.get("id").and_then(Value::as_str) else {
+                panic!("a case has no id");
+            };
+            trials.push(Trial::test(format!("{group}::{id}"), move || run(&case)));
         }
     }
     let conclusion = libtest_mimic::run(&arguments, trials);

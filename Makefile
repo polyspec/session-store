@@ -34,6 +34,15 @@ BINDING := $(NODE) scripts/binding.mts
 # whose commands scripts/servers.sh holds, and issues their certificates of TLS (SE-10.4). A test whose peer is not
 # given fails and names what gives it.
 PHP ?= $(shell command -v php)
+# How bay is started, the one value that scripts/servers.sh reads (SE-10.4): bay of PATH, which the owner of a
+# development machine installed and set up, or with BAY_SUDO=1 the bay that make install-bay put into var/tools, as
+# root without a question for a password. The workflow ci sets BAY_SUDO=1: on Linux the setup and the commands of bay
+# run as root, and bay keeps its state below the home of the user who runs it, so every command runs as one user.
+BAY ?= $(if $(BAY_SUDO),sudo -n $(VAR_TOOLS)/bay/bay,bay)
+# The version of bay that config/toolchain.json pins and the address of that release. A run fails at its start when
+# the bay that it starts gives another version.
+BAY_PIN = $(shell $(NODE) -p 'const bay = require("./config/toolchain.json").bay; bay.version + " " + bay.releases + "/tag/" + bay.version')
+BAY_ENV = BAY='$(BAY)' BAY_VERSION='$(word 1,$(BAY_PIN))' BAY_RELEASE='$(word 2,$(BAY_PIN))'
 # Redis 8.10.3, the highest stable release of Redis, in the official image of Debian trixie, pinned by the digest of its
 # index; make redis-image pulls it, and the tests fail while it is not installed, so that no test pulls an image.
 REDIS_IMAGE := docker.io/library/redis:8.10.3-trixie@sha256:de1068af6f552240dfab67bcc9bfef99bfc60f776bb4580ef077ea4c8c97e848
@@ -61,7 +70,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust install-bay setup-bay install-bay-test ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
 
@@ -164,15 +173,27 @@ commit-names-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/commit-names.test.mts
 
 # scripts/test-run.sh owns the servers and the temporary directory of the run and removes them when the run ends,
-# fails or is stopped by SIGINT or SIGTERM; it fails before the tests when bay or a part of its machine setup is
-# missing. PHP that is not found is passed empty, and the test that needs it fails.
+# fails or is stopped by SIGINT or SIGTERM; it fails before the tests when bay is missing, is not the pinned release
+# or lacks a part of its machine setup. PHP that is not found is passed empty, and the test that needs it fails.
 test:
-	scripts/test-run.sh env PHP='$(PHP)' REDIS_IMAGE='$(REDIS_IMAGE)' \
+	$(BAY_ENV) scripts/test-run.sh env PHP='$(PHP)' REDIS_IMAGE='$(REDIS_IMAGE)' \
 		$(CARGO) test $(CARGOFLAGS) $(CORE) --locked
 
-# Pulls the pinned Redis image of the tests with bay (SE-10.4), the only step that pulls.
+# Pulls the pinned Redis image of the tests with bay (SE-10.4), the only step that pulls, after the check of the run:
+# the pinned release of bay with its machine setup.
 redis-image:
-	scripts/servers.sh pull '$(REDIS_IMAGE)'
+	$(BAY_ENV) scripts/servers.sh check
+	$(BAY_ENV) scripts/servers.sh pull '$(REDIS_IMAGE)'
+
+# Installs the pinned release of bay of config/toolchain.json into var/tools/bay by the sha256 of its archive, for a
+# machine that holds no bay; it changes no setup of the machine.
+install-bay:
+	$(NODE) scripts/install-bay.mts
+
+# Applies the machine setup of bay with its install command, the one target that changes the setup of a machine: the
+# workflow ci runs it on its runner, and a developer runs it by choice.
+setup-bay:
+	$(BAY) install
 
 lint-rust:
 	$(CARGO) clippy $(CARGOFLAGS) $(CORE) --locked --all-targets -- -D warnings

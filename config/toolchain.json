@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "comment": "The toolchains of session-store that no other file declares. npm is declared in the devEngines.packageManager of package.json and Rust in rust-toolchain.toml. mise is the release that make install-tools TOOLS=npm installs with the sha256 of each platform; mise.toml declares the tools it installs and mise.lock locks them.",
+  "comment": "The toolchains of session-store that no other file declares. npm is declared in the devEngines.packageManager of package.json and Rust in rust-toolchain.toml. mise is the release that make install-tools TOOLS=npm installs with the sha256 of each platform; mise.toml declares the tools it installs and mise.lock locks them. bay is the release that make install-bay installs with the sha256 of each platform.",
   "mise": {
     "version": "2026.10.8",
     "sha256": {
@@ -8,6 +8,17 @@
       "darwin-x64": "28c924c5703c6344489bc73227c59da2194eaf7fd962c5f3d233b9524b7419e9",
       "linux-x64": "e908ea27810ae358c9a9a7d897ea10197bdc38d39839243e1b36acc31cbef868",
       "linux-arm64": "88aea77e41c2a3c45a9cbd64df9516ba887017442846213b3de178acbd3c9a46"
+    }
+  },
+  "bay": {
+    "comment": "The release of bay that starts the Redis servers of the tests (SE-10.4), with the sha256 of its archive of each platform. A run fails at its start when the bay that it starts is of another version, because a server that another build starts is not the result that another machine repeats; make install-bay installs this release into var/tools/bay. The pin is raised to a later release that the tests need; it is removed with the servers of the tests.",
+    "version": "v0.0.2",
+    "releases": "https://github.com/polyspec/bay/releases",
+    "sha256": {
+      "darwin-arm64": "49a2577ceba7c090db8f23cb0d8c338c1b4d10fc39be51e0631221e49a6d4741",
+      "darwin-x64": "e0c1d853f2c4ba55301a3b709a8f99d490dc82b38c5819032ed3717f488b331d",
+      "linux-x64": "2d160b3677ad5c0e067d6e4790eea8e3a6256577de86d2e1a2e5797e56d5fddf",
+      "linux-arm64": "f1f6affdc191908bf3727fb4d3c0b0c1eaad66f21b89590ffeaa119338c45907"
     }
   }
 }

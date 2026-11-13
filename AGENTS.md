@@ -20,10 +20,11 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   workspace; `make bindings` writes their `generated/`, which is not tracked, and builds of them come after it. The
   targets of the core name the core crates with `-p`, so they need no generated source.
 - `scripts/binding.mts`: runs binding at the commit of `polyspec-binding-core` that `Cargo.lock` pins.
-- `scripts/test-run.sh`: runs the tests of `make test` as a run that owns its containers and its temporary directory (SE-10.4).
-- `scripts/container.sh`: the commands of the container program of the platform, Apple `container` on Darwin and
-  `docker` on Linux, which the tests, `scripts/test-run.sh` and `make redis-image` run (SE-10.4).
-  `scripts/container.test.mts` is its test, which `make container-test` runs against stand-ins of the programs.
+- `scripts/test-run.sh`: runs the tests of `make test` as a run that owns its servers and its temporary directory (SE-10.4).
+- `scripts/servers.sh`: the commands of the Redis servers of the tests, which the tests, `scripts/test-run.sh` and
+  `make redis-image` run (SE-10.4): bay starts and removes the servers as Compose projects, and the engine of the
+  platform, Apple `container` on Darwin and `docker` on Linux, pulls and finds the image. `scripts/servers.test.mts`
+  is the test of both scripts, which `make servers-test` runs against stand-ins of bay and of the engines.
 - `Cargo.toml` of the root is the workspace of the four crates and the binding crates of the five targets with one
   `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
@@ -87,19 +88,25 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   `clippy.toml` disallows `Option::{unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}` and
   `Result::{ok, unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`. A use that a rule needs carries
   `#[allow(..., reason = "<rule id>")]`.
-- A test that needs a peer (PHP, the container program of the platform with the Redis image, openssl) fails when the peer is not given and
+- A test that needs a peer (PHP, bay and the engine of the platform with the Redis image, openssl) fails when the peer is not given and
   names what gives it; no test is reported as ignored because a peer is missing. The only ignored tests are the cases
   of the group `open` that carry `binding`, which the bindings run (SF-8.2, SR-8.2).
 - A Redis server of a test runs in a container from the image that `REDIS_IMAGE` of the Makefile pins by its digest,
-  never a server installed on the machine (SE-10.4). The platform names the container program: Darwin runs Apple
-  `container` and Linux runs `docker`, one image and one digest for both, so that both platforms test the same bytes
-  of the server. `scripts/container.sh` is the one file that holds the commands of both programs; no variable
-  selects the program, and a program that is not found fails `make test` at its start with its name and what
-  installs it. The image is the official image
-  of the highest stable release of Redis; `make redis-image` pulls it, and no test pulls an image. The containers of a
-  run are named `session-store-test-<pid>-...`, and `scripts/test-run.sh` deletes them and the temporary directory of
-  the run when the run ends, fails or is stopped by SIGINT or SIGTERM. A test connects to the address of its container
-  and waits for the lines of the server, never for a time.
+  never a server installed on the machine (SE-10.4). bay starts and removes the servers as Compose projects, on Apple
+  `container` on Darwin and on Docker on Linux, one image and one digest for both, so that both platforms test the
+  same bytes of the server. `scripts/servers.sh` is the one file that holds the commands; no test and no recipe
+  starts bay or an engine by itself. bay, the engine of the platform or the machine setup of bay that is missing
+  fails `make test` at its start with what is missing and what gives it (`bay install` applies the setup; no run
+  applies it). The image is the official image of the highest stable release of Redis; `make redis-image` pulls it
+  with the engine of the platform, and no test pulls an image.
+- A test owns the servers that it needs as one Compose project, because the arguments of a server are part of what a
+  test states and the state of a server must not reach another test. It writes `compose.yaml` into a directory of
+  its own below `SESSION_STORE_PROJECTS`, the directory `session-store-test-<pid>` of the run, before it starts the
+  project, and the file names the project after that directory, the test process and a count. The return of `up` is
+  the event of a start; a test takes the address of a server from `bay status --json`, connects to it, and waits for
+  a later report of a server by its line in `bay logs -f`, never for a time. No file states the domain of the names
+  of bay, and no port is published. `scripts/test-run.sh` runs `down` for every Compose file that the directory of
+  the run still holds and removes the directory when the run ends, fails or is stopped by SIGINT or SIGTERM.
 
 ## Bindings
 
@@ -143,7 +150,7 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   workflow or an action that breaks one of these rules.
 - The workflow `ci` starts on a push of `main` and on `workflow_dispatch` alone. Its job `shared` runs
   `make ci-shared` (`CI_SHARED` of the Makefile: `make docs-check`, `make owner-validate`, `make workflows-test`,
-  `make tool-pins-test`, `make container-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
+  `make tool-pins-test`, `make servers-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
   (`CI_RUST`: `make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
 - The last job of the workflow `ci` is `ci-passed`. It runs after every other job, also after a failed one, needs each
@@ -151,9 +158,9 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   one job states the result of the run. `make workflows-test` fails a workflow `ci` whose last job is another or whose
   `needs` leaves a job out.
 - The job `test` of the workflow `ci` sets up the PHP of `.php-version` and runs `make install-rust`,
-  `make redis-image` and `make test`: the Redis servers of the tests run in `docker` of the runner from the image of
-  `REDIS_IMAGE` (SE-10.4). Not confirmed until the first run of CI: that the runner `ubuntu-26.04-arm` holds
-  `docker`.
+  `make redis-image` and `make test`: bay runs the Redis servers of the tests on Docker of the runner from the image
+  of `REDIS_IMAGE` (SE-10.4). No step installs bay yet, so the job fails at the start of `make test` and names bay,
+  and `ci-passed` fails with it, until the job installs bay (row T1.26 of the checklist).
 - The workflow `release` starts when a run of `ci` succeeds on `main`, or by a dispatch with the id of such a run. It
   runs `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`,
   `make release-publish` and `make release-undraft` in that order.

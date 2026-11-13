@@ -2,6 +2,39 @@
 
 ## Unreleased
 
+- The harness of the Redis servers of the tests held the commands with which two engines run a server
+  (`scripts/container.sh`: Apple `container` on Darwin and `docker` on Linux), took the address of a server from a
+  line that its command wrote and ran `redis-cli` in containers of its own. SE-10.4 states that bay starts and removes
+  the servers as Compose projects on both platforms. A test owns one project: it writes `compose.yaml` into a
+  directory of its own below `SESSION_STORE_PROJECTS`, the directory `session-store-test-<pid>` of the run, before
+  each start, with the name of the project, the image by its digest, `redis-server` with its arguments as `command`,
+  the port in `expose` and no published port; no server is shared between tests, because the arguments and the state
+  of a server belong to one test. The return of `up` is the event of a start, and a test connects to the address that
+  `bay status --json` gives for its service, so no file states the domain of the names of bay. The server of TLS
+  takes its certificate, which `openssl` of the host still makes for its name, by a second `up` that replaces it;
+  Sentinel starts by a second `up`, after the name of its primary is known; the test of the cluster sends
+  `CLUSTER ADDSLOTSRANGE`, `CLUSTER SET-CONFIG-EPOCH` and `CLUSTER MEET` itself and waits for the state ok of each
+  node in the output of `bay logs -f`. `scripts/servers.sh` replaces `scripts/container.sh` (`check`, `up`, `down`,
+  `status`, `logs`, and `present` and `pull` of the engine of the platform, until bay pulls), and
+  `scripts/test-run.sh` fails before the tests when bay, the engine or the machine setup of bay (`bay check`) is
+  missing, runs `down` for every Compose file that its directory still holds when the run ends, fails or is stopped by
+  SIGINT or SIGTERM, and fails a run whose project is not removed. `make servers-test` replaces
+  `make container-test`: with stand-ins of `uname`, bay and the engines, `node --test` on the Node.js of the machine
+  gave 0 passed and 12 failed without the scripts, and with them 11 passed and 1 failed, the test of the stopped run,
+  which compared the report of the shell on standard error; that test compares the status alone and passes when it
+  runs alone. Observed with bay on this Mac, with throwaway projects of the pinned image: two projects start at once;
+  a server with mounted certificates serves TLS at its name; Sentinel resolves the name of its primary; a second `up`
+  keeps the services that did not change, replaces a changed one and removes one that the file no longer declares;
+  `up` with a service that ends reports that its port accepts no connection after 20 s; `logs -f` gives the output
+  from its first line and does not end when its service has ended; an `up` that SIGTERM stops while a container is
+  created ends with status 143, and the `down` that follows at once leaves that container, which a second `down`
+  removes. Not run: `make servers-test` and `make docs-check`, because the worktree holds no installed tools, and
+  `make test` and `make lint-rust`, so the changed harness is not compiled. The job `test` of the workflow `ci` fails
+  at the start of `make test` until a step installs bay on the runner. The rows T1.21 to T1.27 of the checklist hold
+  what waits on bay: certificates for a service without a domain, the project name on the command line, a command
+  that pulls, the JSON output of `up`, a version to pin, the install on a Linux runner, and the container that a
+  stopped `up` leaves.
+
 - The contract named the constructor `file_sessions.new` with the wait `blocking_io`, and the variant `setting`
   without its core enum. `binding generate` refused both for every target: a language whose constructor cannot be
   awaited has no form of a constructor that waits (binding GN-6m), and a variant names its Rust enum in `core_type`

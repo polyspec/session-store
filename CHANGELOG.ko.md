@@ -1,7 +1,36 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 94760f4e1eba55f002395becafbdc51cce72ceb6c9c8957d2c4f94cec2357007 -->
+<!-- source-sha256: 16d190842640d5316163e05d7d137f3e2f339f1f548f798d30fb260b3b6fc355 -->
 
 ## Unreleased
+
+- 시험의 Redis 서버 harness는 두 engine이 서버를 실행하는 명령을 갖고 있었고(`scripts/container.sh`: Darwin의 Apple
+  `container`와 Linux의 `docker`), 서버의 주소를 그 명령이 쓴 줄에서 받았고, `redis-cli`를 별도의 container에서
+  실행했다. SE-10.4는 두 플랫폼에서 bay가 서버를 Compose 프로젝트로 시작하고 지운다고 적는다. 시험은 프로젝트 하나를
+  소유한다. 시험은 시작할 때마다 그 전에 `compose.yaml`을 `SESSION_STORE_PROJECTS`, 곧 run의 디렉터리
+  `session-store-test-<pid>` 아래 자기 디렉터리에 쓴다. 그 파일은 프로젝트의 이름, digest로 적은 image, `command`로
+  적은 `redis-server`의 인자, `expose`의 port를 적고, port를 공개하지 않는다. 서버의 인자와 상태는 한 시험의 것이므로
+  시험끼리 서버를 함께 쓰지 않는다. `up`의 반환이 시작의 event이고, 시험은 `bay status --json`이 자기 service에 주는
+  주소에 연결한다. 그래서 어떤 파일도 bay의 이름의 domain을 적지 않는다. TLS 서버는 host의 `openssl`이 여전히 그
+  이름에 대해 만드는 certificate를, 서버를 교체하는 두 번째 `up`으로 받는다. Sentinel은 primary의 이름을 안 뒤 두
+  번째 `up`으로 시작한다. cluster의 시험은 `CLUSTER ADDSLOTSRANGE`, `CLUSTER SET-CONFIG-EPOCH`, `CLUSTER MEET`를 직접
+  보내고, 각 node의 state ok를 `bay logs -f`의 출력에서 기다린다. `scripts/servers.sh`가 `scripts/container.sh`를
+  대신한다(`check`, `up`, `down`, `status`, `logs`, 그리고 bay가 image를 받게 될 때까지 플랫폼 engine의 `present`와
+  `pull`). `scripts/test-run.sh`는 bay, engine, bay의 장비 설정(`bay check`) 중 하나가 없으면 시험 전에 실패하고, run이
+  끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때 자기 디렉터리에 남은 모든 Compose 파일에 `down`을 실행하며,
+  프로젝트를 지우지 못한 run을 실패시킨다. `make servers-test`가 `make container-test`를 대신한다. `uname`, bay,
+  engine의 대역으로 장비의 Node.js에서 `node --test`를 실행하면 script가 없을 때 0개가 통과하고 12개가 실패했고,
+  script가 있을 때 11개가 통과하고 1개가 실패했다. 실패한 것은 멈춘 run의 시험이고, shell이 표준 오류에 쓰는 보고를
+  비교했기 때문이다. 그 시험은 status만 비교하며, 혼자 실행하면 통과한다. 이 Mac의 bay에서 고정된 image의 임시
+  프로젝트로 관찰한 것: 두 프로젝트가 동시에 시작한다. certificate를 mount한 서버가 자기 이름에서 TLS를 제공한다.
+  Sentinel이 primary의 이름을 푼다. 두 번째 `up`은 바뀌지 않은 service를 그대로 두고, 바뀐 service를 교체하고, 파일이
+  더 적지 않는 service를 지운다. 끝나는 service가 있는 `up`은 20초 뒤 그 port가 연결을 받지 않는다고 보고한다.
+  `logs -f`는 출력을 첫 줄부터 주고, service가 끝나도 끝나지 않는다. container를 만드는 동안 SIGTERM이 멈춘 `up`은
+  status 143으로 끝나고, 곧바로 이어진 `down`은 그 container를 남기며, 두 번째 `down`이 지운다. 미실행: worktree에
+  설치된 도구가 없어 `make servers-test`와 `make docs-check`를 실행하지 않았고, `make test`와 `make lint-rust`를
+  실행하지 않았으므로 바뀐 harness는 compile하지 않았다. workflow `ci`의 job `test`는 어떤 step이 runner에 bay를
+  설치할 때까지 `make test`를 시작할 때 실패한다. 체크리스트의 행 T1.21부터 T1.27이 bay를 기다리는 것을 적는다.
+  domain이 없는 service의 certificate, 명령줄의 프로젝트 이름, image를 받는 명령, `up`의 JSON 출력, 고정할 version,
+  Linux runner의 설치, 멈춘 `up`이 남기는 container다.
 
 - 계약은 생성자 `file_sessions.new`를 wait `blocking_io`로 적었고, variant `setting`을 코어 enum 없이 적었다.
   `binding generate`는 둘을 모든 target에서 거부했다. 생성자를 await할 수 없는 언어에는 기다리는 생성자의 꼴이

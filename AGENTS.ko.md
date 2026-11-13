@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 6749e4d854c078487dd5c6be3bed3a165f7b04c07519bc8ab22a7a66d400074e -->
+<!-- source-sha256: 334c92c57eb798d53d475a71f22987af292de2efff1054ea1112f8c19fb523e7 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -21,10 +21,11 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   `generated/`를 쓰고, 바인딩 package의 빌드는 그 뒤에 한다. 코어의 target은 코어 crate를 `-p`로 지정하므로
   생성된 소스가 필요 없다.
 - `scripts/binding.mts`: `Cargo.lock`이 고정하는 `polyspec-binding-core`의 commit에서 binding을 실행한다.
-- `scripts/test-run.sh`: `make test`의 시험을 자기 container와 임시 디렉터리를 소유하는 run으로 실행한다(SE-10.4).
-- `scripts/container.sh`: 플랫폼의 container 프로그램의 명령이다. Darwin은 Apple `container`, Linux는 `docker`다.
-  시험, `scripts/test-run.sh`, `make redis-image`가 이 script를 실행한다(SE-10.4). `scripts/container.test.mts`가 그
-  시험이며, `make container-test`가 프로그램의 대역으로 실행한다.
+- `scripts/test-run.sh`: `make test`의 시험을 자기 서버와 임시 디렉터리를 소유하는 run으로 실행한다(SE-10.4).
+- `scripts/servers.sh`: 시험의 Redis 서버의 명령이다. 시험, `scripts/test-run.sh`, `make redis-image`가 이 script를
+  실행한다(SE-10.4). bay가 서버를 Compose 프로젝트로 시작하고 지우며, 플랫폼의 engine, 곧 Darwin의 Apple
+  `container`와 Linux의 `docker`가 image를 받고 찾는다. `scripts/servers.test.mts`가 두 script의 시험이며,
+  `make servers-test`가 bay와 engine의 대역으로 실행한다.
 - 루트의 `Cargo.toml`은 crate 넷과 다섯 target의 바인딩 crate의 workspace이며 `Cargo.lock`은 하나다.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: case다(SE-10).
 - `scripts/workflows.test.mts`: GitHub workflow의 규칙의 시험이며, `make workflows-test`가 실행한다.
@@ -87,19 +88,24 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   `clippy.toml`은 `Option::{unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`와
   `Result::{ok, unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`를 금지한다. 규칙이 필요로 하는 사용에는
   `#[allow(..., reason = "<rule id>")]`를 붙인다.
-- peer(PHP, Redis image를 가진 플랫폼의 container 프로그램, openssl)가 필요한 시험은 그 peer가 주어지지 않으면 실패하고 그
+- peer(PHP, bay와 Redis image를 가진 플랫폼의 engine, openssl)가 필요한 시험은 그 peer가 주어지지 않으면 실패하고 그
   peer를 주는 것을 적는다. peer가 없다는 이유로 무시된 시험으로 보고되는 시험은 없다. 무시되는 시험은 `binding`을 가진
   group `open`의 case뿐이고, 이 case는 바인딩이 실행한다(SF-8.2, SR-8.2).
 - 시험의 Redis 서버는 Makefile의 `REDIS_IMAGE`가 digest로 고정한 image의 container 안에서 돈다. 기계에 설치된
-  서버는 쓰지 않는다(SE-10.4). container 프로그램은 플랫폼이 정한다. Darwin은 Apple `container`를, Linux는
-  `docker`를 실행하고, image와 digest는 둘에 하나다. 그래서 두 플랫폼이 같은 bytes의 서버를 시험한다.
-  `scripts/container.sh`가 두 프로그램의 명령을 가진 유일한 파일이다. 어떤 변수도 프로그램을 고르지 않고,
-  프로그램을 찾지 못하면 `make test`는 시작할 때 그 이름과 설치 방법을 적고 실패한다. image는 Redis의 가장 높은
-  안정판의 공식 image다. `make
-  redis-image`가 그 image를 받고, 어떤 시험도 image를 받지 않는다. run의 container 이름은
-  `session-store-test-<pid>-...`이고, `scripts/test-run.sh`는 run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때
-  그 container와 run의 임시 디렉터리를 지운다. 시험은 자기 container의 주소에 연결하고 서버가 쓰는 줄을 기다리며,
-  시간을 기다리지 않는다.
+  서버는 쓰지 않는다(SE-10.4). bay가 서버를 Compose 프로젝트로 시작하고 지운다. Darwin에서는 Apple `container`로,
+  Linux에서는 Docker로 실행하고, image와 digest는 둘에 하나다. 그래서 두 플랫폼이 같은 bytes의 서버를 시험한다.
+  `scripts/servers.sh`가 그 명령을 가진 유일한 파일이다. 어떤 시험도, 어떤 recipe도 bay나 engine을 직접 시작하지
+  않는다. bay, 플랫폼의 engine, bay의 장비 설정 중 하나가 없으면 `make test`는 시작할 때 없는 것과 그것을 주는
+  것을 적고 실패한다(`bay install`이 설정을 적용한다. 어떤 run도 설정을 적용하지 않는다). image는 Redis의 가장 높은
+  안정판의 공식 image다. `make redis-image`가 플랫폼의 engine으로 그 image를 받고, 어떤 시험도 image를 받지 않는다.
+- 시험은 자기가 필요한 서버를 Compose 프로젝트 하나로 소유한다. 서버의 인자는 시험이 적는 내용의 일부이고, 서버의
+  상태는 다른 시험에 닿으면 안 되기 때문이다. 시험은 프로젝트를 시작하기 전에 `compose.yaml`을
+  `SESSION_STORE_PROJECTS`, 곧 run의 디렉터리 `session-store-test-<pid>` 아래 자기 디렉터리에 쓰고, 그 파일은
+  프로젝트의 이름을 그 디렉터리와 시험 process와 순번으로 적는다. `up`의 반환이 시작의 event다. 시험은 서버의 주소를
+  `bay status --json`에서 받아 거기에 연결하고, 서버의 나중 보고는 `bay logs -f`의 줄로 기다리며, 시간을 기다리지
+  않는다. 어떤 파일도 bay의 이름의 domain을 적지 않고, 어떤 port도 공개하지 않는다. `scripts/test-run.sh`는 run이
+  끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때 run의 디렉터리에 남은 모든 Compose 파일에 `down`을 실행하고 그
+  디렉터리를 지운다.
 
 ## Bindings
 
@@ -140,7 +146,7 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
   workflow와 action을 실패시킨다.
 - workflow `ci`는 `main`의 push와 `workflow_dispatch`에서만 시작한다. job `shared`는 `make ci-shared`(Makefile의
-  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make tool-pins-test`, `make container-test`,
+  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make tool-pins-test`, `make servers-test`,
   `make commit-names-check`,
   `make commit-names-test`, `make release-coverage`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
@@ -150,8 +156,9 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   job 하나가 run의 결과를 말한다. `make workflows-test`는 마지막 job이 다른 job이거나 `needs`가 job 하나를 빠뜨린
   workflow `ci`를 실패시킨다.
 - workflow `ci`의 job `test`는 `.php-version`의 PHP를 설치하고 `make install-rust`, `make redis-image`,
-  `make test`를 실행한다. 시험의 Redis 서버는 runner의 `docker`에서 `REDIS_IMAGE`의 image로 돈다(SE-10.4). CI의 첫
-  run까지 미확인: runner `ubuntu-26.04-arm`에 `docker`가 있다는 것.
+  `make test`를 실행한다. bay가 시험의 Redis 서버를 runner의 Docker에서 `REDIS_IMAGE`의 image로 실행한다(SE-10.4).
+  아직 어떤 step도 bay를 설치하지 않으므로, 그 job이 bay를 설치할 때까지(체크리스트의 행 T1.26) job은 `make test`를
+  시작할 때 bay를 적고 실패하고, `ci-passed`도 함께 실패한다.
 - workflow `release`는 `ci`의 run이 `main`에서 성공하면 시작하고, 그런 run의 id를 준 dispatch로도 시작한다.
   `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`, `make release-publish`,
   `make release-undraft`를 이 순서로 실행한다.

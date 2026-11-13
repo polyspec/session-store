@@ -3,8 +3,9 @@
 # ci-passed passes only when every other job succeeded. The release workflow releases the commit whose run of this
 # workflow succeeded.
 #
-# The job test runs make test: the Redis servers of its tests run in docker from the image that REDIS_IMAGE of the
-# Makefile pins by its digest, the same image that Apple container runs on a development machine (SE-10.4).
+# The job test runs make test: bay runs the Redis servers of its tests on Docker from the image that REDIS_IMAGE of the
+# Makefile pins by its digest, the same image that it runs on Apple container on a development machine (SE-10.4). No
+# step installs bay yet, so make test fails at its start and names bay.
 name: ci
 
 on:
@@ -61,7 +62,7 @@ jobs:
           if-no-files-found: ignore
 
   # The tests of the crates of the library, the stores of Redis against real Redis servers (SE-10.4): PHP reads the
-  # records back, make redis-image pulls the pinned image into docker, and make test owns the containers of its run.
+  # records back, make redis-image pulls the pinned image into docker, and make test owns the servers of its run.
   test:
     runs-on: ubuntu-26.04-arm
     steps:

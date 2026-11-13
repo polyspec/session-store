@@ -1373,7 +1373,7 @@ dependencies = [
 [[package]]
 name = "polyspec-php-serialization"
 version = "0.0.6"
-source = "git+https://github.com/polyspec/php-serialization.git?branch=v1%2Frust-core#cb8eed97b1c6988924b727cdd906ad11d54313a1"
+source = "git+https://github.com/polyspec/php-serialization.git?branch=v1%2Frust-core#1e9d2b580e03c30f12c70eb1d097a417c61fecc6"
 dependencies = [
  "polyspec-binding-core",
  "ryu",

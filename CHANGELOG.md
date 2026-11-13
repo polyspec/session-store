@@ -1,5 +1,8 @@
 <!-- doc-id: changelog -->
 
+- `Cargo.lock` pins `polyspec-php-serialization` at the head of its branch `v1/rust-core`, whose crate has the fault
+  injection point `php_serialization.internal` and the feature `fault-test`. Nothing else in the lock changes.
+
 - The contract names the five targets of binding (BD-27): `targets` of `packages/rust/interface.json` is php, python,
   node, go and wasm, `packages.go` names the Go module `github.com/polyspec/session-store/packages/go`, the entry `.` of
   the npm package takes the conditions `{node: napi, browser: wasm}`, each error class names its WASM class, the Node

@@ -1,5 +1,8 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 04679b9798fb99684b80faf93d363b40014d02a4a264057feb2b658b40904105 -->
+<!-- source-sha256: 5f4bf5a76c102e07273a980b134427d7da0baa6592bf1ca34a5c72db6df1b4d3 -->
+
+- `Cargo.lock`은 `polyspec-php-serialization`을 그 브랜치 `v1/rust-core`의 끝으로 고정한다. 그 crate에는 실패 주입점
+  `php_serialization.internal`과 feature `fault-test`가 있다. lock의 다른 것은 바뀌지 않는다.
 
 - 계약이 binding의 다섯 target을 적는다(BD-27): `packages/rust/interface.json`의 `targets`는 php, python, node,
   go, wasm이고, `packages.go`는 Go 모듈 `github.com/polyspec/session-store/packages/go`를 적으며, npm 패키지의 entry

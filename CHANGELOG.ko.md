@@ -1,5 +1,5 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 9541813bcc60177b2a32738aa6d628d622597c70dab037330f403d7e4319fe64 -->
+<!-- source-sha256: c6fe298389eed419294528e3802820fb211b1235d2552f91dd0edb91d5ddcac3 -->
 
 ## Unreleased
 
@@ -25,11 +25,11 @@
   실패했다. 이 Mac에서 `scripts/servers.sh check`와 `scripts/test-run.sh true`는 status 0으로 끝난다. 이 Mac의 bay에서
   고정된 image의 임시 프로젝트로 관찰한 것: 두 프로젝트가 동시에 시작한다. 한 번의 `up -no-pull --json`이 bay의
   certificate를 쓰는 TLS 서버, primary와 그 Sentinel, node 셋을 시작하고, plan의 authority 파일을 신뢰하는 client가
-  TLS 서버의 이름에서 `+PONG`을 읽는다. 표준 입력이 빈 pipe인 `bay exec`는 `redis-cli --cluster create`를 status 0으로
-  실행하고, 표준 입력이 `/dev/null`이면 실패한다. 이름으로 만든 cluster의 node는 IPv6 주소를 알린다. SIGTERM이 멈춘
-  `up`은 status 143으로 끝나고 container도 프로젝트도 남기지 않는다. 이미 끝난 service가 있는 `up`은 그 service의
-  이름을 기다린 뒤 실패한다. 끝난 service의 `logs -f`는 끝난다. 설치되지 않은 image의 `up -no-pull`은 실패하고
-  `bay pull`을 적는다. 미실행: worktree에 설치된 도구가 없어 `make servers-test`와 `make docs-check`를 실행하지
+  TLS 서버의 이름에서 `+PONG`을 읽는다. `bay exec`는 표준 입력이 `/dev/null`이어도 `redis-cli --cluster create`를
+  status 0으로 실행하고, 그 직후 한 node는 state ok의 줄을 아직 쓰지 않았다. 이름으로 만든 cluster의 node는 IPv6
+  주소를 알린다. SIGTERM이 멈춘 `up`은 status 143으로 끝나고 container도 프로젝트도 남기지 않는다. port가 없고 이미
+  끝난 service가 있는 `up`은 status 0으로 끝난다. 끝난 service의 `logs -f`는 끝난다. 설치되지 않은 image의
+  `up -no-pull`은 실패하고 `bay pull`을 적으며 프로젝트를 남기지 않는다. 미실행: worktree에 설치된 도구가 없어 `make servers-test`와 `make docs-check`를 실행하지
   않았고, `make test`와 `make lint-rust`를 실행하지 않았으므로 바뀐 harness는 compile하지 않았다. workflow `ci`의 job
   `test`는 어떤 step이 runner에 bay를 설치할 때까지 `make test`를 시작할 때 실패하고(T1.26), 어떤 파일도 bay의
   릴리스를 고정하지 않는다(T1.25).

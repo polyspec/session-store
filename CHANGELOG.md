@@ -27,12 +27,12 @@
   `scripts/test-run.sh true` end with status 0. Observed with bay on this Mac, with throwaway projects of the pinned
   image: two projects start at once; one `up -no-pull --json` starts a server of TLS with the certificate of bay, a
   primary with its Sentinel and three nodes, and a client that trusts the authority file of the plan reads `+PONG`
-  from the server of TLS at its name; `bay exec` with an empty pipe as its standard input runs
-  `redis-cli --cluster create` with status 0, and fails with `/dev/null` as its standard input; the nodes of a
-  cluster that is created by names tell IPv6 addresses; an `up` that SIGTERM stops ends with status 143 and leaves
-  no container and no project; `up` with a service that has ended fails after it waited for the name of that
-  service; `logs -f` of an ended service ends; `up -no-pull` with an image that is not installed fails and names
-  `bay pull`. Not run: `make servers-test` and `make docs-check`, because the worktree holds no installed tools, and
+  from the server of TLS at its name; `bay exec` runs `redis-cli --cluster create` with status 0, also with
+  `/dev/null` as its standard input, and right after it a node had not yet written the line of the state ok; the
+  nodes of a cluster that is created by names tell IPv6 addresses; an `up` that SIGTERM stops ends with status 143
+  and leaves no container and no project; `up` with a service without a port that has ended ends with status 0;
+  `logs -f` of an ended service ends; `up -no-pull` with an image that is not installed fails, names `bay pull` and
+  leaves no project. Not run: `make servers-test` and `make docs-check`, because the worktree holds no installed tools, and
   `make test` and `make lint-rust`, so the changed harness is not compiled. The job `test` of the workflow `ci` fails
   at the start of `make test` until a step installs bay on the runner (T1.26), and no file pins a release of bay
   (T1.25).

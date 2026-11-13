@@ -70,8 +70,7 @@ images)
 exec)
 	file=$1
 	shift
-	# The standard input is an empty pipe: bay exec gives the command the input of its caller.
-	: | bay -f "$file" exec "$@"
+	exec bay -f "$file" exec "$@" </dev/null
 	;;
 logs)
 	exec bay -f "$1" logs -f "$2" </dev/null

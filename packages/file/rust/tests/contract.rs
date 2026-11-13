@@ -1,5 +1,6 @@
 //! Every case of `contracts/file-sessions.json` (SE-10.1), one trial each, on a new temporary directory. A case with
 //! `faults` arms the fault injection points that it names for its one call, as a generated binding test does (SE-10.5).
+//! Two trials read the interface contract for the making of the store (SF-1.5).
 
 use std::path::Path;
 use std::time::{Duration, SystemTime};
@@ -440,6 +441,59 @@ fn open_cancel(case: &Value) -> Result<(), Failed> {
 
 type Group = fn(&Value) -> Result<(), Failed>;
 
+/// The members of the units of the interface contract.
+fn members(interface: &Value) -> Result<Vec<&Value>, Failed> {
+    let units = interface.get("units").and_then(Value::as_array).ok_or("the contract has no list units")?;
+    Ok(units.iter().filter_map(|unit| unit.get("members").and_then(Value::as_array)).flatten().collect())
+}
+
+/// SF-1.5: no member of the contract that waits is a constructor or a property, because a language whose constructor
+/// or property cannot be awaited has no form of one that waits (binding GN-6m).
+fn no_constructor_and_no_property_waits() -> Result<(), Failed> {
+    let interface: Value = serde_json::from_str(INTERFACE).map_err(failed)?;
+    let members = members(&interface)?;
+    if members.is_empty() {
+        return Err("the contract has no member".into());
+    }
+    let mut found = Vec::new();
+    for member in members {
+        let wait = member.get("wait").and_then(Value::as_str);
+        let kind = member.get("kind").and_then(Value::as_str);
+        if !matches!(wait, None | Some("none")) && matches!(kind, Some("constructor" | "property")) {
+            found.push(format!("{}: a {kind:?} with wait {wait:?}", str_of(member, "id")?));
+        }
+    }
+    expect_eq("the members that wait in a form that no language awaits", &found, &Vec::new())
+}
+
+/// SF-1.5: the store of files is made by the static member `file_sessions.in_directory`, which returns the store and
+/// names `FileSessions::in_directory`, and the class has no constructor.
+fn the_store_of_files_is_made_by_a_static_member() -> Result<(), Failed> {
+    let interface: Value = serde_json::from_str(INTERFACE).map_err(failed)?;
+    let units = interface.get("units").and_then(Value::as_array).ok_or("the contract has no list units")?;
+    let unit = units
+        .iter()
+        .find(|unit| unit.get("id").and_then(Value::as_str) == Some("file_sessions"))
+        .ok_or("the contract has no unit file_sessions")?;
+    expect_eq("constructible of file_sessions", &unit.get("constructible"), &Some(&Value::Bool(false)))?;
+    let members = unit.get("members").and_then(Value::as_array).ok_or("file_sessions has no members")?;
+    let constructors: Vec<&str> = members
+        .iter()
+        .filter(|member| member.get("kind").and_then(Value::as_str) == Some("constructor"))
+        .filter_map(|member| member.get("id").and_then(Value::as_str))
+        .collect();
+    expect_eq("the constructors of file_sessions", &constructors, &Vec::new())?;
+    let making = members
+        .iter()
+        .find(|member| member.get("id").and_then(Value::as_str) == Some("file_sessions.in_directory"))
+        .ok_or("the contract has no member file_sessions.in_directory")?;
+    expect_eq("kind", &str_of(making, "kind")?, &"static")?;
+    expect_eq("returns", &making.get("returns"), &Some(&serde_json::json!({"unit": "file_sessions"})))?;
+    expect_eq("wait", &str_of(making, "wait")?, &"blocking_io")?;
+    let core = making.get("core").ok_or("file_sessions.in_directory has no core")?;
+    expect_eq("core.path", &str_of(core, "path")?, &"polyspec_session_store::FileSessions::in_directory")
+}
+
 fn main() {
     let arguments = Arguments::from_args();
     let contract: Value = match serde_json::from_str(CONTRACT) {
@@ -458,7 +512,13 @@ fn main() {
         ("file_sessions.open.cancel", open_cancel),
         ("file_session.close.made", made_close),
     ];
-    let mut trials = Vec::new();
+    let mut trials = vec![
+        Trial::test("interface::no_constructor_and_no_property_waits", no_constructor_and_no_property_waits),
+        Trial::test(
+            "interface::the_store_of_files_is_made_by_a_static_member",
+            the_store_of_files_is_made_by_a_static_member,
+        ),
+    ];
     for (group, run) in groups {
         let Some(Value::Array(cases)) = contract.get(group) else {
             panic!("contracts/file-sessions.json has no group {group}");

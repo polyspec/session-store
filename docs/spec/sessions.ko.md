@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 8e11bcb4cc9d2d87cad89a60760b192a8a0603818b193559f91fa8a52e252422 -->
+<!-- source-sha256: 02e9fa28b7183a87e1cf770d47fdac73171b93ce211469394ce5d42950375426 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -377,7 +377,9 @@
     하나다. 서버 하나를 함께 쓰고, case마다 자기 database를 쓴다.
   - 프로젝트의 이름은 그 디렉터리의 이름이다. 파일이 이름을 적지 않으면 bay가 디렉터리의 이름을 쓴다. 그 이름은
     run의 디렉터리 이름, 시험 process의 id, 순번으로 이루어진다. run의 디렉터리는 run의 process를 따라 이름 지으므로,
-    한 장비의 두 run이 같은 이름을 갖지 않는다.
+    한 장비의 두 run이 같은 이름을 갖지 않는다. bay는 이름에 글자, 숫자, `-`, `_` 밖의 문자가 있는 프로젝트를
+    거부한다. 그래서 harness나 `scripts/servers.sh`가 만드는 프로젝트의 디렉터리는 모두 그 문자들로만 이름 짓는다.
+    template 없이 `mktemp -d`가 주는 이름에는 점이 있다.
   - 모든 이름은 bay가 준다. 시작하기 전에 harness는 Compose 파일의 `bay plan --json`을 읽는다. 거기에 각 service의
     host 이름과, bay가 그 이름에 발급하는 certificate의 경로가 있다. 다른 서버의 이름을 적는 서버는 그 이름을
     plan에서 받는다. Sentinel의 설정이 primary의 이름을 이렇게 적는다. 그래서 한 번의 `up`이 한 시험의 모든 서버를
@@ -404,6 +406,8 @@
   - 어떤 시험도 image를 받지 않는다. harness는 프로젝트를 `up -no-pull`로 시작하고, 이 명령은 image가 설치되지
     않았으면 아무것도 만들기 전에 실패한다. 그렇게 실패한 시험은 `make redis-image`를 적는다. 그런 시험은 무시된
     시험으로 보고되지 않는다. `make redis-image`는 `bay pull`로 받으며, 받는 step은 이것뿐이다.
+    `scripts/servers.sh pull`은 image를 `TMPDIR` 아래 자기 디렉터리 `session-store-pull-<글자>`에 프로젝트의 service
+    하나로 적고, 받고, 그 디렉터리를 지운다.
   - bay는 make처럼 장비가 주는 도구다. run은 PATH의 `bay`를 시작하고, 그 version을 고정하지도 비교하지도 않는다.
     harness의 결과를 바꾸는 것은 bay 릴리스의 번호가 아니라 harness가 읽는 출력의 계약이다. 그래서 harness는
     `schemaVersion`이 1이 아닌 plan이나 `up`의 출력을 실패시키고, 자주 새 빌드가 되는 개발 장비의 bay는 그대로 시험을

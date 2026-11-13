@@ -103,8 +103,31 @@ fn options_of(case: &Value) -> Result<Options, Error> {
     )
 }
 
-/// The calls of a step on the session of a request, each as the serialize form of a value or null.
-fn calls(session: &mut dyn Store, step: &Value) -> Result<Vec<Value>, Failed> {
+/// The serialize form of a value of a case: a text, or `{"nested": n}`, n arrays that each hold the next at the key 0,
+/// the innermost holding null (SE-10.2).
+fn value_text(argument: Option<&Value>) -> Result<String, Failed> {
+    match argument {
+        Some(Value::String(text)) => Ok(text.clone()),
+        Some(Value::Object(form)) => {
+            let depth = form.get("nested").and_then(Value::as_u64).ok_or("a value form has no nested")?;
+            let depth = usize::try_from(depth).map_err(failed)?;
+            Ok(format!("{}N;{}", "a:1:{i:0;".repeat(depth), "}".repeat(depth)))
+        }
+        _ => Err("an argument is no value".into()),
+    }
+}
+
+/// SE-7.1: the identifier that the opening of a step found, where the case states it.
+fn expect_found(case: &Value, index: usize, found: Option<&str>) -> Result<(), Failed> {
+    match case.get("found").and_then(Value::as_array).and_then(|found| found.get(index)) {
+        Some(expected) => expect_eq("found", &found, &expected.as_str()),
+        None => Ok(()),
+    }
+}
+
+/// The calls of a step on the session of a request, each as the serialize form of a value or null, or the error of the
+/// call that fails.
+fn calls(session: &mut dyn Store, step: &Value) -> Result<Result<Vec<Value>, Error>, Failed> {
     let mut results = Vec::new();
     for call in array_of(step, "calls")? {
         let (name, arguments) = match call.as_array().map(Vec::as_slice) {
@@ -116,7 +139,10 @@ fn calls(session: &mut dyn Store, step: &Value) -> Result<Vec<Value>, Failed> {
         };
         let result = match name {
             "get" => session.get(text(0)?).map(|value| value.map(|value| serialize(&value))),
-            "set" => session.set(text(0)?, &unserialize(&latin1(text(1)?)?).map_err(failed)?).map(|()| None),
+            "set" => {
+                let value = unserialize(&latin1(&value_text(arguments.get(1))?)?).map_err(failed)?;
+                session.set(text(0)?, &value).map(|()| None)
+            }
             "remove" => session.remove(text(0)?).map(|()| None),
             "renew" => session.renew().map(|()| None),
             other => return Err(format!("unknown call {other}").into()),
@@ -124,13 +150,13 @@ fn calls(session: &mut dyn Store, step: &Value) -> Result<Vec<Value>, Failed> {
         results.push(match result {
             Ok(Some(bytes)) => Value::String(text_of(&bytes.map_err(failed)?)),
             Ok(None) => Value::Null,
-            Err(Failure::Kind(error)) => return Err(format!("a call fails: {error}").into()),
+            Err(Failure::Kind(error)) => return Ok(Err(error)),
             Err(Failure::Raised(_) | Failure::Callback(_)) => {
                 return Err("the store raised an exception of its caller".into())
             }
         });
     }
-    Ok(results)
+    Ok(Ok(results))
 }
 
 fn cookie(step: &Value) -> Result<Option<Vec<u8>>, Failed> {
@@ -143,13 +169,20 @@ fn cookie(step: &Value) -> Result<Option<Vec<u8>>, Failed> {
 fn expect_raises(error: &Error, raises: &Value, at: &str) -> Result<(), Failed> {
     expect_eq("at", &at, &str_of(raises, "at")?)?;
     expect_eq("kind", &error.kind(), &str_of(raises, "kind")?)?;
-    expect_eq("status", &error.status().map(u64::from), &raises.get("status").and_then(Value::as_u64))
+    expect_eq("status", &error.status().map(u64::from), &raises.get("status").and_then(Value::as_u64))?;
+    // SE-9.1: a message is compared where a rule states it.
+    match raises.get("message") {
+        Some(Value::String(expected)) => expect_eq("message", &error.to_string().as_str(), &expected.as_str()),
+        _ => Ok(()),
+    }
 }
 
 /// A model of the commands of the protocol (SE-10.4), which records them.
 struct Model {
     keys: BTreeMap<Vec<u8>, Vec<u8>>,
     text_replies: bool,
+    /// The error reply that the model gives to each command of a name, in place of what the command does (SR-5.2).
+    error_replies: BTreeMap<Vec<u8>, String>,
     log: Vec<Vec<Vec<u8>>>,
 }
 
@@ -157,6 +190,9 @@ impl Model {
     fn reply(&mut self, command: &Command) -> Reply {
         self.log.push(command.words.clone());
         let words: Vec<&[u8]> = command.words.iter().map(Vec::as_slice).collect();
+        if let Some(message) = words.first().and_then(|name| self.error_replies.get(*name)) {
+            return Reply::Error(message.clone());
+        }
         match words.as_slice() {
             [b"EXISTS", key] => Reply::Integer(i64::from(self.keys.contains_key(*key))),
             [b"SET", key, value, b"NX", b"PX", _] => {
@@ -232,13 +268,20 @@ fn model(case: &Value) -> Result<(), Failed> {
             .map(|(key, value)| Ok((latin1(&key)?, latin1(&value)?)))
             .collect::<Result<_, Failed>>()?,
         text_replies: case.get("textReplies").is_some(),
+        error_replies: match case.get("errorReplies") {
+            Some(Value::Object(replies)) => replies
+                .iter()
+                .map(|(name, message)| Ok((name.as_bytes().to_vec(), message.as_str().ok_or("no text")?.to_owned())))
+                .collect::<Result<_, Failed>>()?,
+            _ => BTreeMap::new(),
+        },
         log: Vec::new(),
     };
     let raises = case.get("raises");
     let mut created = Vec::new();
     let mut results = Vec::new();
     let mut created_steps = Vec::new();
-    for step in array_of(case, "steps")? {
+    for (index, step) in array_of(case, "steps")?.iter().enumerate() {
         let mut session = match Opening::new(&options, cookie(step)?.as_deref()).map_err(failed)? {
             Err(session) => session,
             Ok(mut opening) => match model.drive(|reply| opening.next(reply)) {
@@ -249,13 +292,23 @@ fn model(case: &Value) -> Result<(), Failed> {
                 }
             },
         };
-        results.push(Value::Array(calls(&mut session, step)?));
+        expect_found(case, index, session.found())?;
+        let called = calls(&mut session, step)?;
         if let Some(meanwhile) = step.get("meanwhile").and_then(Value::as_array) {
             for (key, value) in pairs(meanwhile)? {
                 model.keys.insert(latin1(&key)?, latin1(&value)?);
             }
         }
         let mut closing = Closing::new(&options, session);
+        match called {
+            Ok(values) => results.push(Value::Array(values)),
+            Err(error) => {
+                // SE-7.2, SR-4.1: a session whose record fails writes nothing, and its close releases the lock.
+                expect_raises(&error, raises.ok_or_else(|| failed(&error))?, "call")?;
+                expect_eq("close after a failure", &model.drive(|reply| closing.next(reply)), &Ok(None))?;
+                break;
+            }
+        }
         match model.drive(|reply| closing.next(reply)) {
             Ok(Some(id)) => {
                 created_steps.push(Value::String(format!("#{}", created.len())));
@@ -290,7 +343,46 @@ fn model(case: &Value) -> Result<(), Failed> {
     expect_eq("stored", &stored(model.keys, &created), &pairs(array_of(case, "stored")?)?)
 }
 
+/// The connection setting of a case: one of `server`, `sentinel` and `cluster` with its fields (SR-6.1).
+fn setting_of(setting: &Value) -> Result<Setting, Failed> {
+    let urls = |form: &Value| -> Result<Vec<String>, Failed> {
+        Ok(array_of(form, "urls")?.iter().filter_map(Value::as_str).map(str::to_owned).collect())
+    };
+    let text = |form: &Value, key: &str| form.get(key).and_then(Value::as_str).map(str::to_owned);
+    if let Some(form) = setting.get("server") {
+        Ok(Setting::Server { url: str_of(form, "url")?.to_owned() })
+    } else if let Some(form) = setting.get("sentinel") {
+        Ok(Setting::Sentinel {
+            urls: urls(form)?,
+            service: str_of(form, "service")?.to_owned(),
+            tls: form.get("tls").and_then(Value::as_bool).ok_or("a Sentinel setting has no tls")?,
+            user: text(form, "user"),
+            password: text(form, "password"),
+        })
+    } else if let Some(form) = setting.get("cluster") {
+        Ok(Setting::Cluster { urls: urls(form)? })
+    } else {
+        Err("a setting is none of server, sentinel and cluster".into())
+    }
+}
+
+/// A case with a setting makes the store, which connects to nothing before its first request (SR-6.1).
+fn setting_case(case: &Value, setting: &Value) -> Result<(), Failed> {
+    match (RedisSessions::new(setting_of(setting)?, store_options(case)), case.get("raises")) {
+        (Err(error), Some(raises)) => {
+            expect_eq("kind", &error.kind(), &str_of(raises, "kind")?)?;
+            expect_eq("status", &error.status().map(u64::from), &raises.get("status").and_then(Value::as_u64))
+        }
+        (Ok(_), None) => Ok(()),
+        (Ok(_), Some(_)) => Err("the store is made".into()),
+        (Err(error), None) => Err(failed(error)),
+    }
+}
+
 fn open_case(case: &Value) -> Result<(), Failed> {
+    if let Some(setting) = case.get("setting") {
+        return setting_case(case, setting);
+    }
     match (options_of(case), case.get("raises")) {
         (Err(error), Some(raises)) => {
             expect_eq("kind", &error.kind(), &str_of(raises, "kind")?)?;
@@ -389,7 +481,7 @@ async fn server_case(case: &Value, database: usize) -> Result<(), Failed> {
     let mut created = Vec::new();
     let mut results = Vec::new();
     let mut created_steps = Vec::new();
-    for step in array_of(case, "steps")? {
+    for (index, step) in array_of(case, "steps")?.iter().enumerate() {
         let mut opened = match store.open(cookie(step)?.as_deref()).await {
             Ok(opened) => opened,
             Err(error) => {
@@ -397,7 +489,8 @@ async fn server_case(case: &Value, database: usize) -> Result<(), Failed> {
                 break;
             }
         };
-        results.push(Value::Array(calls(&mut opened, step)?));
+        expect_found(case, index, opened.found())?;
+        let called = calls(&mut opened, step)?;
         if let Some(meanwhile) = step.get("meanwhile").and_then(Value::as_array) {
             for (key, value) in pairs(meanwhile)? {
                 redis::cmd("SET")
@@ -406,6 +499,14 @@ async fn server_case(case: &Value, database: usize) -> Result<(), Failed> {
                     .query_async::<()>(&mut connection)
                     .await
                     .map_err(failed)?;
+            }
+        }
+        match called {
+            Ok(values) => results.push(Value::Array(values)),
+            Err(error) => {
+                expect_raises(&error, raises.ok_or_else(|| failed(&error))?, "call")?;
+                expect_eq("close after a failure", &opened.close().await, &Ok(None))?;
+                break;
             }
         }
         match opened.close().await {
@@ -451,8 +552,8 @@ fn main() {
         };
         let model_case = case.clone();
         trials.push(Trial::test(format!("model::{id}"), move || model(&model_case)));
-        // A reply that is not bytes comes only from a model; a real server gives bulk strings.
-        let server_only = case.get("textReplies").is_none();
+        // A reply that is not bytes and an error reply to a command that the case names come only from a model.
+        let server_only = case.get("textReplies").is_none() && case.get("errorReplies").is_none();
         let server_case_value = case.clone();
         trials.push(
             Trial::test(format!("server::{id}"), move || {

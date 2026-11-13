@@ -19,3 +19,11 @@
 - `make test` names a peer (`PHP`, `REDIS_SERVER`, `REDIS_CLI`, `OPENSSL`) to the tests only when its binary is found.
   It gave a peer that is not found as an empty variable, which the tests of Redis read as a `redis-server` to start, so
   they failed on a machine without Redis; they are now reported as ignored there.
+- Every public member of a generated unit names its cases (binding CK-22, design K-1), and every kind that an input
+  reaches has a case. New cases: group `created` of `contracts/sessions.json` (`new_identifier`, SE-5.3); a value too
+  deep for a record fails the close with `record_write` in both stores (SE-6.8); for the store of Redis a record that
+  holds no array and one that unserialize refuses (`record_not_array`, `record`), an error reply to `GET` and to `SETEX`
+  (`redis`, SR-5.2) and four connection settings that are refused (`invalid_setting`, SR-6.1). Cases state the
+  identifier that an opening found (`found`, SE-7.1) and the directory of a made store (`store_directory`). SE-10.2 and
+  SE-10.4 state the new keys of a case (`{"nested": n}`, `found`, `store_directory`, `setting`, `errorReplies`), and
+  SE-10.4 names `REDIS_SERVER`, the variable that the tests read, in place of `REDIS_URL`.

@@ -164,7 +164,8 @@
    "id": "a_request_that_changed_nothing_sets_only_a_new_expiry",
    "label": "a request that changed nothing sets a new expiry without comparing the lock",
    "rules": [
-    "SR-4.2"
+    "SR-4.2",
+    "SE-7.1"
    ],
    "keys": [
     [
@@ -231,7 +232,10 @@
    ],
    "options": {
     "lock_expire": 30
-   }
+   },
+   "found": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   ]
   },
   {
    "id": "a_reply_that_is_not_bytes_fails_and_releases_the_lock",
@@ -380,7 +384,8 @@
    "id": "a_new_session_is_written_without_a_lock",
    "label": "a session that the request created is written without a lock",
    "rules": [
-    "SR-4.4"
+    "SR-4.4",
+    "SE-7.1"
    ],
    "keys": [],
    "steps": [
@@ -421,7 +426,10 @@
    ],
    "options": {
     "lock_expire": 30
-   }
+   },
+   "found": [
+    null
+   ]
   },
   {
    "id": "an_identifier_without_a_key_starts_a_new_session",
@@ -712,6 +720,338 @@
      "a:0:{}"
     ]
    ]
+  },
+  {
+   "id": "a_key_that_holds_no_array_fails_the_call",
+   "label": "a key whose record holds no array fails the call; the close writes nothing and releases the lock",
+   "rules": [
+    "SE-6.4",
+    "SE-7.1",
+    "SE-7.2",
+    "SR-4.1"
+   ],
+   "keys": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "i:1;"
+    ]
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "get",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "found": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   ],
+   "raises": {
+    "step": 0,
+    "at": "call",
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": "the session of aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa holds no array of values"
+   },
+   "commands": [
+    [
+     "EXISTS",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "SET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>",
+     "NX",
+     "PX",
+     "30000"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "EVAL",
+     "<release>",
+     "1",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>"
+    ]
+   ],
+   "stored": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "i:1;"
+    ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
+  },
+  {
+   "id": "a_key_that_cannot_be_decoded_fails_the_call",
+   "label": "a key whose record unserialize refuses fails the call; the close writes nothing and releases the lock",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SR-4.1"
+   ],
+   "keys": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "s:5:\"token"
+    ]
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "get",
+       [
+        "token"
+       ]
+      ]
+     ]
+    }
+   ],
+   "raises": {
+    "step": 0,
+    "at": "call",
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   },
+   "commands": [
+    [
+     "EXISTS",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "SET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>",
+     "NX",
+     "PX",
+     "30000"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "EVAL",
+     "<release>",
+     "1",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>"
+    ]
+   ],
+   "stored": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "s:5:\"token"
+    ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
+  },
+  {
+   "id": "a_value_too_deep_for_a_record_fails_the_close",
+   "label": "a value of 4096 nested arrays is set, and the close fails because its record, one array deeper, has no serialize form; nothing is sent",
+   "rules": [
+    "SE-6.8"
+   ],
+   "keys": [],
+   "steps": [
+    {
+     "cookie": null,
+     "calls": [
+      [
+       "set",
+       [
+        "a",
+        {
+         "nested": 4096
+        }
+       ]
+      ]
+     ]
+    }
+   ],
+   "found": [
+    null
+   ],
+   "raises": {
+    "step": 0,
+    "at": "close",
+    "kind": "record_write",
+    "status": 500,
+    "category": "store",
+    "message": null
+   },
+   "commands": [],
+   "stored": [],
+   "options": {
+    "lock_expire": 30
+   }
+  },
+  {
+   "id": "an_error_reply_to_the_read_fails_and_releases_the_lock",
+   "label": "an error reply of GET fails the opening after the release",
+   "rules": [
+    "SR-5.2",
+    "SR-4.5"
+   ],
+   "keys": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "a:0:{}"
+    ]
+   ],
+   "errorReplies": {
+    "GET": "WRONGTYPE Operation against a key holding the wrong kind of value"
+   },
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": []
+    }
+   ],
+   "raises": {
+    "step": 0,
+    "at": "open",
+    "kind": "redis",
+    "status": 500,
+    "category": "store",
+    "message": null
+   },
+   "commands": [
+    [
+     "EXISTS",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "SET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>",
+     "NX",
+     "PX",
+     "30000"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "EVAL",
+     "<release>",
+     "1",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>"
+    ]
+   ],
+   "stored": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "a:0:{}"
+    ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
+  },
+  {
+   "id": "an_error_reply_to_the_write_fails_and_releases_the_lock",
+   "label": "an error reply of SETEX fails the close after the release, and the key keeps its record",
+   "rules": [
+    "SR-5.2",
+    "SR-4.5"
+   ],
+   "keys": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "a:1:{s:1:\"n\";i:0;}"
+    ]
+   ],
+   "errorReplies": {
+    "SETEX": "OOM command not allowed when used memory > 'maxmemory'."
+   },
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "set",
+       [
+        "n",
+        "i:1;"
+       ]
+      ]
+     ]
+    }
+   ],
+   "raises": {
+    "step": 0,
+    "at": "close",
+    "kind": "redis",
+    "status": 500,
+    "category": "store",
+    "message": null
+   },
+   "commands": [
+    [
+     "EXISTS",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "SET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>",
+     "NX",
+     "PX",
+     "30000"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK"
+    ],
+    [
+     "SETEX",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "1440",
+     "a:1:{s:1:\"n\";i:1;}"
+    ],
+    [
+     "EVAL",
+     "<release>",
+     "1",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>"
+    ]
+   ],
+   "stored": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "a:1:{s:1:\"n\";i:0;}"
+    ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
   }
  ],
  "open": [
@@ -925,6 +1265,94 @@
     "kind": "invalid_argument_type",
     "status": null,
     "category": "type",
+    "message": null
+   }
+  },
+  {
+   "id": "a_server_address_that_is_no_url_fails",
+   "label": "a server address that is no URL fails",
+   "rules": [
+    "SR-6.1"
+   ],
+   "setting": {
+    "server": {
+     "url": "not a url"
+    }
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_server_address_of_another_scheme_fails",
+   "label": "a server address whose scheme is not one of Redis fails",
+   "rules": [
+    "SR-6.1"
+   ],
+   "setting": {
+    "server": {
+     "url": "http://127.0.0.1:6379/"
+    }
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "an_empty_list_of_sentinel_addresses_fails",
+   "label": "a Sentinel setting without an address fails",
+   "rules": [
+    "SR-6.1"
+   ],
+   "setting": {
+    "sentinel": {
+     "urls": [],
+     "service": "primary",
+     "tls": false,
+     "user": null,
+     "password": null
+    }
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "an_empty_list_of_cluster_addresses_fails",
+   "label": "a Cluster setting without an address fails",
+   "rules": [
+    "SR-6.1"
+   ],
+   "setting": {
+    "cluster": {
+     "urls": []
+    }
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
     "message": null
    }
   }

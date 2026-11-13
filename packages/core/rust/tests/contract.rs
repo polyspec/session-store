@@ -6,7 +6,7 @@ use std::process::Command;
 use binding_core::{Failure, Kinds};
 use libtest_mimic::{Arguments, Failed, Trial};
 use polyspec_php_serialization::{serialize, unserialize, PhpValue};
-use polyspec_session_store_core::{accept, Found, MemoryStore, Outcome, RecordSession, Store};
+use polyspec_session_store_core::{accept, new_identifier, Found, MemoryStore, Outcome, RecordSession, Store};
 use serde_json::Value;
 
 const CONTRACT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../contracts/sessions.json"));
@@ -113,6 +113,24 @@ fn identifier(case: &Value) -> Result<(), Failed> {
     let cookie = latin1(str_of(case, "cookie")?)?;
     let expected = case.get("identifier").and_then(Value::as_str).map(str::to_owned);
     expect_eq("identifier", &accept(&cookie), &expected)
+}
+
+/// SE-5.3: a new identifier has the stated length and characters, is an identifier, and is not the one made before it.
+fn created(case: &Value) -> Result<(), Failed> {
+    let alphabet = str_of(case, "alphabet")?;
+    let id = new_identifier().map_err(|error| Failed::from(error.to_string()))?;
+    let other = new_identifier().map_err(|error| Failed::from(error.to_string()))?;
+    expect_eq("length", &u64::try_from(id.len()).map_err(|error| Failed::from(error.to_string()))?, &{
+        case.get("length").and_then(Value::as_u64).ok_or("the case has no length")?
+    })?;
+    if let Some(character) = id.chars().find(|character| !alphabet.contains(*character)) {
+        return Err(format!("the identifier {id} holds {character:?}").into());
+    }
+    expect_eq("accepted", &accept(id.as_bytes()), &Some(id.clone()))?;
+    if id == other {
+        return Err(format!("two new identifiers are {id}").into());
+    }
+    Ok(())
 }
 
 fn results(case: &Value) -> Result<Vec<Value>, Failed> {
@@ -223,7 +241,8 @@ fn main() {
         Err(error) => panic!("contracts/sessions.json is no JSON: {error}"),
     };
     let mut trials = Vec::new();
-    let groups: [(&str, Group); 3] = [("identifier", identifier), ("store", store), ("record", record)];
+    let groups: [(&str, Group); 4] =
+        [("identifier", identifier), ("created", created), ("store", store), ("record", record)];
     for (group, run) in groups {
         let Some(Value::Array(cases)) = contract.get(group) else {
             panic!("contracts/sessions.json has no group {group}");

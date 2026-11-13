@@ -4,7 +4,8 @@
    "id": "a_request_that_does_not_use_the_session_creates_no_file",
    "label": "a request that does not use the session creates no file",
    "rules": [
-    "SE-7.2"
+    "SE-7.2",
+    "SE-7.1"
    ],
    "files": [],
    "steps": [
@@ -21,6 +22,9 @@
    ],
    "records": [
     []
+   ],
+   "found": [
+    null
    ]
   },
   {
@@ -67,7 +71,8 @@
    "id": "a_session_that_the_store_created_is_read",
    "label": "a session that the store created is read by the next request, which sets no new identifier",
    "rules": [
-    "SF-3.7"
+    "SF-3.7",
+    "SE-7.1"
    ],
    "files": [],
    "steps": [
@@ -120,6 +125,10 @@
       "a:1:{s:1:\"a\";a:3:{i:0;i:1;i:1;d:-0;i:2;s:1:\"c\";}}"
      ]
     ]
+   ],
+   "found": [
+    null,
+    "#0"
    ]
   },
   {
@@ -212,7 +221,8 @@
    "id": "an_identifier_without_a_file_creates_no_file_until_it_is_used",
    "label": "an identifier without a file names no session and creates no file when unused",
    "rules": [
-    "SF-3.3"
+    "SF-3.3",
+    "SE-7.1"
    ],
    "files": [],
    "steps": [
@@ -229,6 +239,9 @@
    ],
    "records": [
     []
+   ],
+   "found": [
+    null
    ]
   },
   {
@@ -859,6 +872,42 @@
      ]
     ]
    ]
+  },
+  {
+   "id": "a_value_too_deep_for_a_record_fails_the_close",
+   "label": "a value of 4096 nested arrays is set, and the close fails because its record, one array deeper, has no serialize form; no file is created",
+   "rules": [
+    "SE-6.8",
+    "SF-4.5"
+   ],
+   "files": [],
+   "steps": [
+    {
+     "cookie": null,
+     "calls": [
+      [
+       "set",
+       [
+        "a",
+        {
+         "nested": 4096
+        }
+       ]
+      ]
+     ]
+    }
+   ],
+   "raises": {
+    "step": 0,
+    "at": "close",
+    "kind": "record_write",
+    "status": 500,
+    "category": "store",
+    "message": null
+   },
+   "records": [
+    []
+   ]
   }
  ],
  "open": [
@@ -955,7 +1004,8 @@
    ],
    "directory": "<temporary>",
    "lifetime": null,
-   "store_lifetime": 1440
+   "store_lifetime": 1440,
+   "store_directory": "<temporary>"
   },
   {
    "id": "a_lifetime_is_taken",
@@ -965,7 +1015,8 @@
    ],
    "directory": "<temporary>",
    "lifetime": 1,
-   "store_lifetime": 1
+   "store_lifetime": 1,
+   "store_directory": "<temporary>"
   },
   {
    "id": "a_lifetime_that_is_negative_fails",

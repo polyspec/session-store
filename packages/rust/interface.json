@@ -1302,9 +1302,9 @@
   ],
   "cases": [
     {
-      "member": "accept",
+      "member": "memory_store.new",
       "file": "contracts/sessions.json",
-      "group": "identifier"
+      "group": "store"
     },
     {
       "member": "memory_store.get",
@@ -1332,6 +1332,16 @@
       "group": "store"
     },
     {
+      "member": "accept",
+      "file": "contracts/sessions.json",
+      "group": "identifier"
+    },
+    {
+      "member": "new_identifier",
+      "file": "contracts/sessions.json",
+      "group": "created"
+    },
+    {
       "member": "file_sessions.new",
       "file": "contracts/file-sessions.json",
       "group": "open"
@@ -1345,6 +1355,16 @@
       "member": "file_sessions.collect",
       "file": "contracts/file-sessions.json",
       "group": "requests"
+    },
+    {
+      "member": "file_sessions.lifetime",
+      "file": "contracts/file-sessions.json",
+      "group": "open"
+    },
+    {
+      "member": "file_sessions.directory",
+      "file": "contracts/file-sessions.json",
+      "group": "open"
     },
     {
       "member": "file_session.get",
@@ -1363,6 +1383,11 @@
     },
     {
       "member": "file_session.renew",
+      "file": "contracts/file-sessions.json",
+      "group": "requests"
+    },
+    {
+      "member": "file_session.found",
       "file": "contracts/file-sessions.json",
       "group": "requests"
     },
@@ -1398,6 +1423,11 @@
     },
     {
       "member": "redis_session.renew",
+      "file": "contracts/redis-sessions.json",
+      "group": "requests"
+    },
+    {
+      "member": "redis_session.found",
       "file": "contracts/redis-sessions.json",
       "group": "requests"
     },

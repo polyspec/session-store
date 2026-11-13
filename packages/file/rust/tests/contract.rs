@@ -73,6 +73,20 @@ fn expected_records(value: &Value) -> Result<Vec<(String, String)>, Failed> {
         .collect()
 }
 
+/// The serialize form of a value of a case: a text, or `{"nested": n}`, n arrays that each hold the next at the key 0,
+/// the innermost holding null (SE-10.2).
+fn value_text(argument: Option<&Value>) -> Result<String, Failed> {
+    match argument {
+        Some(Value::String(text)) => Ok(text.clone()),
+        Some(Value::Object(form)) => {
+            let depth = form.get("nested").and_then(Value::as_u64).ok_or("a value form has no nested")?;
+            let depth = usize::try_from(depth).map_err(failed)?;
+            Ok(format!("{}N;{}", "a:1:{i:0;".repeat(depth), "}".repeat(depth)))
+        }
+        _ => Err("an argument is no value".into()),
+    }
+}
+
 /// The result of one call: the serialize form of a value, or null.
 fn call(session: &mut FileSession, call: &Value) -> Result<Result<Value, polyspec_session_store_core::Error>, Failed> {
     use polyspec_session_store_core::Store;
@@ -86,7 +100,7 @@ fn call(session: &mut FileSession, call: &Value) -> Result<Result<Value, polyspe
     let result = match name {
         "get" => session.get(text(0)?).map(|value| value.map(|value| serialize(&value))),
         "set" => {
-            let value = unserialize(&latin1(text(1)?)?).map_err(failed)?;
+            let value = unserialize(&latin1(&value_text(arguments.get(1))?)?).map_err(failed)?;
             session.set(text(0)?, &value).map(|()| None)
         }
         "remove" => session.remove(text(0)?).map(|()| None),
@@ -149,6 +163,14 @@ fn requests(case: &Value) -> Result<(), Failed> {
                 _ => None,
             };
             let mut session = store.open(ProcessWait::for_generated_call(), cookie.as_deref(), None).map_err(failed)?;
+            // SE-7.1: the identifier that the opening found, where the case states it; a created one is `#n`.
+            if let Some(expected) = case.get("found").and_then(Value::as_array).and_then(|found| found.get(index)) {
+                let found = session.found().map(|id| match created.iter().position(|made| made == id) {
+                    Some(number) => format!("#{number}"),
+                    None => id.to_owned(),
+                });
+                expect_eq("found", &found.as_deref(), &expected.as_str())?;
+            }
             let mut results = Vec::new();
             for call_value in array_of(step, "calls")? {
                 match call(&mut session, call_value)? {
@@ -176,7 +198,9 @@ fn requests(case: &Value) -> Result<(), Failed> {
                         return Err(format!("the close fails: {error}").into());
                     };
                     expect_eq("at", &"close", &str_of(raises, "at")?)?;
-                    return expect_raises(error.kind(), error.status(), &error.to_string(), raises);
+                    expect_raises(error.kind(), error.status(), &error.to_string(), raises)?;
+                    let expected = expected_records(array_of(case, "records")?.get(index).ok_or("no records")?)?;
+                    return expect_eq("records", &records(directory.path(), &created)?, &expected);
                 }
             }
             Value::Array(results)
@@ -216,7 +240,9 @@ fn open(case: &Value) -> Result<(), Failed> {
             expect_raises(error.kind(), error.status(), &error.to_string(), raises)
         }
         (Ok(store), None) => {
-            expect_eq("lifetime", &Some(store.lifetime()), &case.get("store_lifetime").and_then(Value::as_u64))
+            expect_eq("lifetime", &Some(store.lifetime()), &case.get("store_lifetime").and_then(Value::as_u64))?;
+            let expected = str_of(case, "store_directory")?.replace("<temporary>", &temporary.path().to_string_lossy());
+            expect_eq("directory", &store.directory(), &Path::new(&expected))
         }
         (Ok(_), Some(_)) => Err("the store is made".into()),
         (Err(error), None) => Err(format!("the store is not made: {error}").into()),

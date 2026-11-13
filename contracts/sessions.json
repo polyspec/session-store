@@ -129,6 +129,18 @@
    "identifier": null
   }
  ],
+ "created": [
+  {
+   "id": "a_new_identifier_is_64_lowercase_hexadecimal_digits",
+   "label": "a new identifier is 64 lowercase hexadecimal digits, is accepted as an identifier and differs from the one made before it",
+   "rules": [
+    "SE-5.1",
+    "SE-5.3"
+   ],
+   "length": 64,
+   "alphabet": "0123456789abcdef"
+  }
+ ],
  "store": [
   {
    "id": "a_value_that_is_set_is_read_and_a_removed_value_is_absent",

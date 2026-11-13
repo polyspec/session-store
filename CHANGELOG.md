@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- `Cargo.lock` pins binding 3b4bc6b, and `binding scaffold` writes the binding packages again: the allow of a binding
+  crate gives its rule id as its reason, and the Go crate holds a new line of its manifest. The check of that binding
+  fails a core that has fault injection points and whose tests do not take it with the feature `fault-test` (CK-65,
+  GN-5), so `packages/rust/Cargo.toml` names the library itself as a dev-dependency with `fault-test`, as the core,
+  the store of files and the store of Redis do. `make binding-check` passes, and `make test` gives 154 passed, 0
+  failed and 13 ignored.
+
 - The repository had no plan, no checklist and no check of its documents. `docs/plans/rust-core` holds the plan and
   the checklist with their Korean twins: the done steps name their commits, and the bindings, their end-to-end check
   and the Go binding wait for binding, which refuses to generate the contract for every target. `make docs-check` runs

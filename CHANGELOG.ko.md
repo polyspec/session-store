@@ -1,7 +1,13 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: a6e7f6b5285ce95a720b85ba955d04f79e4ae2eecc248d76e099b59dcd8708af -->
+<!-- source-sha256: ce7315e9d25a4f71b0372c57788480d685396bb886552e46d09acec1708247a6 -->
 
 ## Unreleased
+
+- `Cargo.lock`은 binding 3b4bc6b를 고정하고, `binding scaffold`가 바인딩 패키지를 다시 쓴다. 바인딩 crate의 allow는
+  자기 규칙 id를 이유로 주고, Go crate의 manifest에는 새 줄이 있다. 그 binding의 검사는 fault 주입점을 가지면서 자기
+  시험이 feature `fault-test`로 그것을 받지 않는 코어를 실패시킨다(CK-65, GN-5). 그래서 코어, 파일 저장소, Redis
+  저장소처럼 `packages/rust/Cargo.toml`이 라이브러리 자신을 `fault-test`와 함께 dev-dependency로 적는다.
+  `make binding-check`는 통과하고, `make test`는 통과 154, 실패 0, 무시 13을 낸다.
 
 - 저장소에는 계획도 checklist도 문서 검사도 없었다. `docs/plans/rust-core`가 계획과 checklist를 한국어 쌍과 함께
   담는다. 끝난 단계는 자기 commit을 적고, 바인딩과 그 end-to-end 검사와 Go 바인딩은 binding을 기다린다. binding이 모든

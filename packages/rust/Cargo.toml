@@ -31,5 +31,10 @@ polyspec-session-store-core = { path = "../core/rust" }
 polyspec-session-store-file = { path = "../file/rust", optional = true }
 polyspec-session-store-redis = { path = "../redis/rust", optional = true }
 
+[dev-dependencies]
+# GN-5: the fault injection points fire in a cargo test without flags, because the tests take the library with the
+# feature fault-test.
+polyspec-session-store = { path = ".", features = ["fault-test"] }
+
 [lints]
 workspace = true

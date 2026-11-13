@@ -1320,5 +1320,101 @@
     "message": null
    }
   }
+ ],
+ "file_session.close.made": [
+  {
+   "id": "a_new_session_file_that_the_system_does_not_create_fails_the_close_with_io",
+   "label": "the close of a new session that set a value creates its file, which the fault injection point session_store.create fails with EIO, a failure of the file system that no input reaches, and fails with io (SF-4.4, SF-9.2)",
+   "rules": [
+    "SF-4.4",
+    "SF-9.2",
+    "SE-9.6"
+   ],
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.new",
+     "args": {
+      "directory": "/",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": null,
+     "cancel": {
+      "cancel": "open"
+     }
+    },
+    "then": [
+     {
+      "call": "file_session.set",
+      "args": {
+       "key": "a",
+       "value": "i:1;"
+      }
+     }
+    ]
+   },
+   "faults": [
+    {
+     "point": "session_store.create",
+     "kind": "io",
+     "errno": "EIO"
+    }
+   ],
+   "raises": {
+    "kind": "io",
+    "status": 500,
+    "category": "io",
+    "message": null,
+    "errno": "EIO"
+   }
+  },
+  {
+   "id": "a_new_session_file_that_exists_fails_the_close_with_identifier_taken",
+   "label": "the close of a new session that set a value creates its file, which the fault injection point session_store.create finds existing (EEXIST), an identifier that another process took, and fails with identifier_taken (SF-4.4)",
+   "rules": [
+    "SF-4.4",
+    "SE-9.6"
+   ],
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.new",
+     "args": {
+      "directory": "/",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": null,
+     "cancel": {
+      "cancel": "open"
+     }
+    },
+    "then": [
+     {
+      "call": "file_session.set",
+      "args": {
+       "key": "a",
+       "value": "i:1;"
+      }
+     }
+    ]
+   },
+   "faults": [
+    {
+     "point": "session_store.create",
+     "kind": "io",
+     "errno": "EEXIST"
+    }
+   ],
+   "raises": {
+    "kind": "identifier_taken",
+    "status": 500,
+    "category": "io",
+    "message": null
+   }
+  }
  ]
 }

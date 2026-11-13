@@ -302,6 +302,7 @@ fn errno_of(raises: &Value) -> Result<Option<i32>, Failed> {
     match raises.get("errno").and_then(Value::as_str) {
         None => Ok(None),
         Some("EIO") => Ok(Some(rustix::io::Errno::IO.raw_os_error())),
+        Some("EEXIST") => Ok(Some(rustix::io::Errno::EXIST.raw_os_error())),
         Some(symbol) => Err(format!("the runner knows no errno {symbol}").into()),
     }
 }
@@ -377,7 +378,34 @@ fn made_session(value: &Value) -> Result<FileSession, Failed> {
     let args = value.get("args").ok_or("an opening has no args")?;
     let (_trigger, cancel) = cancel_of(args.get("cancel").ok_or("an opening has no cancel")?)?;
     let cookie = cookie_of(args)?;
-    store.open(ProcessWait::for_generated_call(), cookie.as_deref(), Some(&cancel)).map_err(failed)
+    let mut session =
+        store.open(ProcessWait::for_generated_call(), cookie.as_deref(), Some(&cancel)).map_err(failed)?;
+    for then in value.get("then").and_then(Value::as_array).into_iter().flatten() {
+        let name =
+            str_of(then, "call")?.strip_prefix("file_session.").ok_or("a call of then is no call of a session")?;
+        let mut arguments = Vec::new();
+        for key in ["key", "value"] {
+            if let Some(argument) = then.get("args").and_then(|args| args.get(key)) {
+                arguments.push(argument.clone());
+            }
+        }
+        let pair = Value::Array(vec![Value::String(name.to_owned()), Value::Array(arguments)]);
+        if let Err(error) = call(&mut session, &pair)? {
+            return Err(format!("a call of then fails: {error}").into());
+        }
+    }
+    Ok(session)
+}
+
+/// SF-4.4: the close of a session that `open` made and `then` gave a value, with the faults of the case; only
+/// `file_session.close` reads the group.
+fn made_close(case: &Value) -> Result<(), Failed> {
+    let raises = case.get("raises").ok_or("the case has no raises")?;
+    let session = made_session(case.get("receiver").ok_or("the case has no receiver")?)?;
+    match armed(case, "file_session.close", || session.close(Io::for_generated_call()))? {
+        Ok(id) => Err(format!("the session is closed as {id:?}").into()),
+        Err(error) => expect_failure(&error, raises),
+    }
 }
 
 /// SE-5.4, SE-7.2: one call of a record session of a session that `open` made, with the faults of the case; the group
@@ -418,7 +446,7 @@ fn main() {
         Ok(contract) => contract,
         Err(error) => panic!("contracts/file-sessions.json is no JSON: {error}"),
     };
-    let groups: [(&str, Group); 9] = [
+    let groups: [(&str, Group); 10] = [
         ("requests", requests),
         ("open", open),
         ("openFaults", open_faults),
@@ -428,6 +456,7 @@ fn main() {
         ("file_session.remove.made", |case| made_call(case, "remove")),
         ("file_session.renew.made", |case| made_call(case, "renew")),
         ("file_sessions.open.cancel", open_cancel),
+        ("file_session.close.made", made_close),
     ];
     let mut trials = Vec::new();
     for (group, run) in groups {

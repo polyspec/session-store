@@ -1729,6 +1729,11 @@
       "member": "redis_session.close",
       "file": "contracts/redis-sessions.json",
       "group": "redis_session.close.made"
+    },
+    {
+      "member": "file_session.close",
+      "file": "contracts/file-sessions.json",
+      "group": "file_session.close.made"
     }
   ]
 }

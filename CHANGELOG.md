@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The checklist `docs/plans/rust-core/checklist.md` had no row for the structure of a release. The rows T1.10 to T1.14
+  name the GitHub workflows and the test of their rules, the classification of the manifests for the release, the owners
+  of the tracked paths, the text of the license and the release 0.0.1, and the plan names them as its sixth step. T1.13
+  waits for the text of the license, and T1.14 for the branch `main` of origin. `make docs-check` passes: 6 document
+  pairs, 1 checklist and 1 change log.
+
 - The rows of `docs/plans/rust-core/checklist.md` and two entries of this change log named Git commits, which no
   tracked file does (AGENTS.md, "Commits"). The rows state their tasks alone, and the entries name no commit.
 

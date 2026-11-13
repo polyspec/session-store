@@ -1,7 +1,12 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 308c43837a7419503fe3a358f6092a6a80b653eb9e88e267af64bf4471cccb59 -->
+<!-- source-sha256: abfa7cc796e15d972ba71b12f43931e9f715beb279182d9d14ba51f698ded5f4 -->
 
 ## Unreleased
+
+- checklist `docs/plans/rust-core/checklist.md`에는 릴리스의 구조에 대한 행이 없었다. 행 T1.10부터 T1.14는 GitHub
+  workflow와 그 규칙의 시험, manifest의 릴리스 분류, 추적되는 경로의 소유자, 라이선스 본문, 0.0.1 릴리스를 적고, 계획은
+  그것을 여섯째 단계로 적는다. T1.13은 라이선스 본문을, T1.14는 origin의 branch `main`을 기다린다. `make docs-check`는
+  통과한다: 문서 쌍 6개, checklist 1개, 변경 기록 1개.
 
 - `docs/plans/rust-core/checklist.md`의 행과 이 변경 기록의 두 항목이 Git commit을 적고 있었다. 추적되는 파일은 Git commit을
   적지 않는다(AGENTS.md, "Commits"). 이제 행은 자기 task만 적고, 두 항목은 commit을 적지 않는다.

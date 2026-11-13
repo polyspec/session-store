@@ -22,3 +22,6 @@ The checklist follows the order in which each step needs the one before it:
 5. The bindings that binding generates, each tested by the tests that binding generates and by the contract cases on
    the standard runner of its language (T1.7), the end-to-end check of binding on this repository (T1.8) and the Go
    binding (T1.9). They wait for binding, which refuses to generate this contract for every target.
+6. The structure of a release: the GitHub workflows `ci` and `release` and the script test of their rules (T1.10), the
+   classification of every manifest for the release (T1.11), the owners of every tracked path (T1.12), the text of the
+   license (T1.13) and the release 0.0.1 (T1.14), which waits for the branch `main` of origin.

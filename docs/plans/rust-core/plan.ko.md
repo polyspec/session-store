@@ -1,5 +1,5 @@
 <!-- doc-id: plan-rust-core -->
-<!-- source-sha256: 118f48572caee0eb041b6c7c7acff228451a2caf8c8a4b5b3dfed621c668cae6 -->
+<!-- source-sha256: 6242a5b1cd4080848b8eab1dfeb7a967fbc44c18776a154cb4ebc2f487c16ff6 -->
 # Rust 코어
 
 [English](plan.md)
@@ -22,3 +22,6 @@ checklist는 각 단계가 앞 단계를 필요로 하는 순서를 따른다.
 5. binding이 생성하는 바인딩. 각각 binding이 생성하는 시험과 contract case로 그 언어의 표준 runner에서 시험되며(T1.7),
    이 저장소에 대한 binding의 end-to-end 검사(T1.8)와 Go 바인딩(T1.9)이 있다. binding이 모든 target에서 이 계약의
    생성을 거부하므로 셋은 binding을 기다린다.
+6. 릴리스의 구조. GitHub workflow `ci`와 `release`, 그 규칙의 스크립트 시험(T1.10), 모든 manifest의 릴리스 분류(T1.11),
+   추적되는 모든 경로의 소유자(T1.12), 라이선스 본문(T1.13), 그리고 origin의 branch `main`을 기다리는 0.0.1
+   릴리스(T1.14)다.

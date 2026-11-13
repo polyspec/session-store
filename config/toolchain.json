@@ -12,13 +12,13 @@
   },
   "bay": {
     "comment": "The release of bay that CI installs (make install-bay), with the sha256 of its archive of each platform: a runner holds no bay, and a download is used only by its pinned digest. No run reads this pin; a run starts the bay of its machine and fails a document of bay whose schemaVersion is not the one that the harness reads (SE-10.4). The pin is raised to a later release that the tests of CI need, and it is removed when a runner gives bay or the tests start no server.",
-    "version": "v0.0.2",
+    "version": "v0.0.5",
     "releases": "https://github.com/polyspec/bay/releases",
     "sha256": {
-      "darwin-arm64": "49a2577ceba7c090db8f23cb0d8c338c1b4d10fc39be51e0631221e49a6d4741",
-      "darwin-x64": "e0c1d853f2c4ba55301a3b709a8f99d490dc82b38c5819032ed3717f488b331d",
-      "linux-x64": "2d160b3677ad5c0e067d6e4790eea8e3a6256577de86d2e1a2e5797e56d5fddf",
-      "linux-arm64": "f1f6affdc191908bf3727fb4d3c0b0c1eaad66f21b89590ffeaa119338c45907"
+      "darwin-arm64": "5cf546145353802b378d84c4c914c3e95b9e430556472732b1ce8b6ce4f9f9ca",
+      "darwin-x64": "247bf172c2bd5362e66cc4cf44a06f25e57759cbc7736572bada2287c3e95c14",
+      "linux-x64": "e8aec2fa24c1b9ed6c2cfd8bdcc367e5fc35f41f66ab6fb544da534bb9ab308d",
+      "linux-arm64": "5e67ed0a1b6aad45dd15a4f8653beed58ab0496896d9cbaefe8f8088bf1b099e"
     }
   }
 }

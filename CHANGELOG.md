@@ -7,7 +7,7 @@
   is: a run starts `bay` of PATH, compares no version, writes the output of `bay version` as its first line, and the
   harness fails a document of bay whose `schemaVersion` is not 1, because the contract of the output that the harness
   reads changes its result and the number of a release does not. `config/toolchain.json` pins the release that CI
-  installs, bay v0.0.2, with the sha256 of its archive of each platform, because a runner holds no bay and a download
+  installs, bay v0.0.5, with the sha256 of its archive of each platform, because a runner holds no bay and a download
   is used only by its pinned digest; `make install-bay` (`scripts/install-bay.mts`) downloads the archive of the
   platform, refuses another sha256 and puts `bay` and `bayd` into `var/tools/bay`, and no path of a run reads the
   pin. `BAY` of the Makefile is the one value that says how bay is started, which `scripts/servers.sh` alone reads:
@@ -16,7 +16,7 @@
   `make install-bay`, then `make setup-bay` (`bay install`, the one target that changes the setup of a machine),
   `make redis-image` and `make test` with `BAY_SUDO=1`. `make servers-test` gives 15 passed, `make install-bay-test`
   4 passed, `make tool-pins-test` 9 passed and `make workflows-test` 6 passed; before the change of each script the
-  tests of its commit failed. On this Mac `make install-bay` installs v0.0.2, whose version command gives v0.0.2,
+  tests of its commit failed. On this Mac `make install-bay` installs v0.0.5, whose version command gives v0.0.5,
   and `scripts/test-run.sh true` writes the version line of bay and ends with status 0. Not run: `make setup-bay`,
   `make test` on this tree, and the workflow. Not confirmed until the first run of CI: that `bay install` completes on
   the runner, that the test process reads the authority file of a bay that root runs, and that a signal of the run

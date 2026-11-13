@@ -1,3 +1,4 @@
+<!-- doc-id: sessions -->
 # session-store: rules
 
 This document is the specification of session-store. A rule is a list item `**SE-n**` (the store and its record, crate

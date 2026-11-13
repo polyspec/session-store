@@ -1,3 +1,4 @@
+<!-- doc-id: agents -->
 # AGENTS.md
 
 Rules for every change of session-store. The rules of the library are in [docs/spec/sessions.md](docs/spec/sessions.md).

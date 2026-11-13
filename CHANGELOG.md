@@ -1,3 +1,4 @@
+<!-- doc-id: changelog -->
 
 - The repository depends on `polyspec-binding-core` of the repository binding (`binding_core`, the Git dependency
   `https://github.com/polyspec/binding.git`, which `Cargo.lock` pins), the new name of bindgen, and runs its tool with
@@ -27,3 +28,8 @@
   identifier that an opening found (`found`, SE-7.1) and the directory of a made store (`store_directory`). SE-10.2 and
   SE-10.4 state the new keys of a case (`{"nested": n}`, `found`, `store_directory`, `setting`, `errorReplies`), and
   SE-10.4 names `REDIS_SERVER`, the variable that the tests read, in place of `REDIS_URL`.
+- Every tracked document is a pair of an English file `X.md` and a Korean file `X.ko.md`. `AGENTS.ko.md` and
+  `docs/spec/sessions.ko.md` are new, and `README.ko.md` links to the Korean specification. The first line of both files
+  of a pair is the marker `doc-id` with the same name, and the second line of the Korean file is the marker
+  `source-sha256`, the sha256 of its English file, so a Korean file whose English file changed after it is found by
+  comparing the two values. No check of this repository reads the markers.

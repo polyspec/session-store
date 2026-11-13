@@ -1,3 +1,5 @@
+<!-- doc-id: changelog -->
+<!-- source-sha256: b85df1ae35da6ebdc0d4e912cf2a37f17cd8c3460b6cde5e7af607a43ef5a6f3 -->
 
 - 레포는 binding 레포(bindgen의 새 이름)의 `polyspec-binding-core`(`binding_core`, `Cargo.lock`이 고정하는 Git 의존 `https://github.com/polyspec/binding.git`)에 의존하고 그 도구를 `scripts/binding.mts`로 실행한다. 바인딩 package는 `binding scaffold`가 쓰는 것이다. crate `polyspec-session-store`는 계약이 `php_value`를 가리키는 `polyspec-php-serialization`에 의존하고, `Cargo.lock`은 같은 `binding_core`를 쓰는 `polyspec-php-serialization` 커밋을 받는다. 레포 이름에 약어 낱말이 없으므로 오류 클래스는 모든 언어에서 `SessionStore<Category>Error`다(설계 N-2).
 - 계약은 `memory_store.renew`의 raises에 `Internal`을 둔다. u64를 넘는 갱신 횟수는 kind `internal`이고(`packages/core/rust/src/memory.rs`의 `MemoryStore::renew`), internal kind는 raises에 남는다(X-1).
@@ -6,3 +8,4 @@
 - kind `random`과 `identifier_taken`은 category `internal`이 아니라 `io`다(SE-9.5). 운영체제의 난수원과 다른 프로세스가 만든 파일은 구현의 결함이 아니라 프로세스의 환경이므로, 그 오류는 `SessionStoreIoError`다. category `internal`에는 kind `internal`만 있다.
 - `make test`는 실행 파일을 찾은 peer(`PHP`, `REDIS_SERVER`, `REDIS_CLI`, `OPENSSL`)만 시험에 알린다. 전에는 찾지 못한 peer를 빈 변수로 넘겼고, Redis 시험이 그것을 시작할 `redis-server`로 읽어 Redis가 없는 기계에서 실패했다. 이제 그런 기계에서는 무시된 시험으로 보고된다.
 - 생성 unit의 모든 public member가 자기 case를 가리키고(binding CK-22, 설계 K-1), 입력으로 닿는 모든 kind에 case가 있다. 새 case: `contracts/sessions.json`의 group `created`(`new_identifier`, SE-5.3), 레코드로 쓰기에 너무 깊은 값이 두 저장소에서 close를 `record_write`로 실패시키는 case(SE-6.8), Redis 저장소에서 배열이 아닌 레코드와 unserialize가 거부하는 레코드(`record_not_array`, `record`), `GET`과 `SETEX`의 오류 응답(`redis`, SR-5.2), 거부되는 연결 설정 넷(`invalid_setting`, SR-6.1). case는 열 때 찾은 식별자(`found`, SE-7.1)와 만든 저장소의 디렉터리(`store_directory`)를 적는다. SE-10.2와 SE-10.4는 case의 새 키(`{"nested": n}`, `found`, `store_directory`, `setting`, `errorReplies`)를 적고, SE-10.4는 `REDIS_URL` 대신 시험이 읽는 변수 `REDIS_SERVER`를 적는다.
+- 추적하는 모든 문서는 영어 파일 `X.md`와 한국어 파일 `X.ko.md`의 쌍이다. `AGENTS.ko.md`와 `docs/spec/sessions.ko.md`가 새로 생겼고, `README.ko.md`는 한국어 명세로 링크한다. 쌍의 두 파일의 첫 줄은 같은 이름의 marker `doc-id`이고, 한국어 파일의 둘째 줄은 영어 파일의 sha256인 marker `source-sha256`이다. 그래서 영어 파일이 나중에 바뀐 한국어 파일은 두 값을 비교해 찾는다. 이 레포의 어떤 검사도 marker를 읽지 않는다.

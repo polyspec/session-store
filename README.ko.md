@@ -1,10 +1,12 @@
+<!-- doc-id: readme -->
+<!-- source-sha256: a64d89c027af4e567942411f20fd88887674c1ba7b3c811f64f9ab912ffb47d2 -->
 # session-store
 
 [English](README.md)
 
 브라우저 세션의 값을 Rust 구현 한 벌로 저장한다: 메모리, PHP files handler 형식의 디렉터리 파일, 또는 phpredis의 키와 잠금을 쓰는
 Redis. 라이브러리는 세션에 무엇이 담기는지 모른다: key는 텍스트이고 값은 php-serialization의 PHP 값이다. 규칙은
-[docs/spec/sessions.md](docs/spec/sessions.md)에 있고, 모든 구현이 통과하는 case는 [contracts/](contracts/)에 있다.
+[docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있고, 모든 구현이 통과하는 case는 [contracts/](contracts/)에 있다.
 
 - `polyspec-session-store-core`: 애플리케이션이 자기 언어로 구현할 수도 있는 저장소 인터페이스(`Store`), 메모리 저장소, 세션 식별자,
   세션 레코드(`php_serialize`), 처음 쓸 때 시작하고 저장소가 쓸 것을 내주는 요청 하나의 레코드 세션.

@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: beb48c8dd5f67a36c16d357adb1892fe4db56f5a1b2bf4f725d4005bb28c612f -->
+<!-- source-sha256: a882e832257a69401d703af4c47ecbe25fa0ef9ab30c2e8b2319b7d2973d3248 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -364,8 +364,8 @@
   시험으로 보고되지 않는다. 시험은 자기 container의 주소에 연결하고, 서버가 연결을 받는다고 알리는 줄(Sentinel은
   감시하는 primary, Cluster는 각 node의 state ok)을 기다리며, 시간을 기다리지 않는다. `make test`는 시험을
   `scripts/test-run.sh`로 실행하고, 이 script는 run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때 그 run의
-  container와 임시 디렉터리를 지운다. `textReplies`를 가진 case(모델이 각 레코드를 status 응답으로 준다, SR-5.1)나
-  `errorReplies`를 가진 case(모델이 한 이름의 모든 명령에 적힌 오류 응답을 준다, SR-5.2)는 모델에 대해서만 실행되고
+  container와 임시 디렉터리를 지운다. `text_replies`를 가진 case(모델이 각 레코드를 status 응답으로 준다, SR-5.1)나
+  `error_replies`를 가진 case(모델이 한 이름의 모든 명령에 적힌 오류 응답을 준다, SR-5.2)는 모델에 대해서만 실행되고
   서버에 대한 trial이 없다. 실제 서버는 이 key에 대한 이 명령에 둘 중 어느 것도 주지 않기 때문이다.
   <a id="SE-10.5"></a> `faults`를 가진 case는 생성된 바인딩 시험처럼 SE-9.6의 실패 주입점을 자기 한 호출에
   장전한다(binding 설계 G-5): Rust 시험은 그 목록을 member에 장전하고, member의 entry point가 받는 장전으로 호출을

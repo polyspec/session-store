@@ -1,7 +1,12 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: ce7315e9d25a4f71b0372c57788480d685396bb886552e46d09acec1708247a6 -->
+<!-- source-sha256: 1968424982e1b08cc96d0be7763f0ad449b1021d25686ef061a28bd576b07020 -->
 
 ## Unreleased
+
+- `contracts/redis-sessions.json`의 group `requests`의 case 키 `textReplies`와 `errorReplies`는 snake_case가 아니었다.
+  그래서 binding의 end-to-end 검사가 모든 target에서 case 파일을 거부했다(G-5). 이제 그것은 Redis 저장소의 시험이 읽는
+  `text_replies`와 `error_replies`이고, 코어 시험의 trial `convention::case_keys`는 인터페이스 계약의 `cases`가 가리키는
+  group의 case 키가 모두 snake_case이기를 요구한다.
 
 - `Cargo.lock`은 binding 3b4bc6b를 고정하고, `binding scaffold`가 바인딩 패키지를 다시 쓴다. 바인딩 crate의 allow는
   자기 규칙 id를 이유로 주고, Go crate의 manifest에는 새 줄이 있다. 그 binding의 검사는 fault 주입점을 가지면서 자기

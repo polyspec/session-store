@@ -366,7 +366,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   waits for the line in which the server reports that it accepts connections (Sentinel: the primary that it monitors,
   Cluster: the state ok of each node) and never for a time. `make test` runs the tests through `scripts/test-run.sh`,
   which deletes the containers and the temporary directory of the run when it ends, fails or is stopped by SIGINT or
-  SIGTERM. A case with `textReplies` (the model gives each record as a status reply, SR-5.1) or with `errorReplies` (the
+  SIGTERM. A case with `text_replies` (the model gives each record as a status reply, SR-5.1) or with `error_replies` (the
   model gives the stated error reply to every command of a name, SR-5.2) runs against the model only and has no trial
   against a server, because a real server gives neither to these commands on these keys.
   <a id="SE-10.5"></a> A case with `faults` arms the fault injection points of SE-9.6 for its one call, as a generated

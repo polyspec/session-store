@@ -270,8 +270,8 @@ fn model(case: &Value) -> Result<(), Failed> {
             .into_iter()
             .map(|(key, value)| Ok((latin1(&key)?, latin1(&value)?)))
             .collect::<Result<_, Failed>>()?,
-        text_replies: case.get("textReplies").is_some(),
-        error_replies: match case.get("errorReplies") {
+        text_replies: case.get("text_replies").is_some(),
+        error_replies: match case.get("error_replies") {
             Some(Value::Object(replies)) => replies
                 .iter()
                 .map(|(name, message)| Ok((name.as_bytes().to_vec(), message.as_str().ok_or("no text")?.to_owned())))
@@ -682,7 +682,7 @@ fn main() {
         trials.push(Trial::test(format!("model::{id}"), move || model(&model_case)));
         // A reply that is not bytes and an error reply to a command that the case names come only from a model, so such
         // a case has no trial against a server (SE-10.4).
-        if case.get("textReplies").is_some() || case.get("errorReplies").is_some() {
+        if case.get("text_replies").is_some() || case.get("error_replies").is_some() {
             continue;
         }
         let server_case_value = case.clone();

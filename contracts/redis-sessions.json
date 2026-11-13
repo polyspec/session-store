@@ -250,7 +250,7 @@
      "a:1:{s:1:\"n\";i:0;}"
     ]
    ],
-   "textReplies": true,
+   "text_replies": true,
    "steps": [
     {
      "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -918,7 +918,7 @@
      "a:0:{}"
     ]
    ],
-   "errorReplies": {
+   "error_replies": {
     "GET": "WRONGTYPE Operation against a key holding the wrong kind of value"
    },
    "steps": [
@@ -983,7 +983,7 @@
      "a:1:{s:1:\"n\";i:0;}"
     ]
    ],
-   "errorReplies": {
+   "error_replies": {
     "SETEX": "OOM command not allowed when used memory > 'maxmemory'."
    },
    "steps": [

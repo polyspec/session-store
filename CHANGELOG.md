@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The keys `textReplies` and `errorReplies` of the cases of the group `requests` of `contracts/redis-sessions.json`
+  were not in snake_case, so the end-to-end check of binding refused the case files for every target (G-5). They are
+  `text_replies` and `error_replies`, which the tests of the store of Redis read, and the trial
+  `convention::case_keys` of the tests of the core requires every key of a case of a group that the `cases` of the
+  interface contract name to be in snake_case.
+
 - `Cargo.lock` pins binding 3b4bc6b, and `binding scaffold` writes the binding packages again: the allow of a binding
   crate gives its rule id as its reason, and the Go crate holds a new line of its manifest. The check of that binding
   fails a core that has fault injection points and whose tests do not take it with the feature `fault-test` (CK-65,

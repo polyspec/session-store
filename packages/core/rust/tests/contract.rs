@@ -13,6 +13,60 @@ use serde_json::Value;
 const CONTRACT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../contracts/sessions.json"));
 /// The interface contract, whose `errors.kinds` give the category of each kind (SE-9.2).
 const INTERFACE: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../rust/interface.json"));
+/// The case files that the `cases` of the interface contract name, by their paths (SE-10, binding G-5).
+const CASE_FILES: [(&str, &str); 3] = [
+    ("contracts/sessions.json", CONTRACT),
+    (
+        "contracts/file-sessions.json",
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../contracts/file-sessions.json")),
+    ),
+    (
+        "contracts/redis-sessions.json",
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../contracts/redis-sessions.json")),
+    ),
+];
+
+/// SE-10, binding G-5: every key of a case of a group that the `cases` of the interface contract name is in snake_case,
+/// because the generated tests read a parameter of a member by its name in snake_case.
+fn case_keys() -> Result<(), Failed> {
+    let interface: Value = serde_json::from_str(INTERFACE).map_err(|error| Failed::from(error.to_string()))?;
+    let Some(Value::Array(rows)) = interface.get("cases") else {
+        return Err("the interface contract has no cases".into());
+    };
+    let mut found = Vec::new();
+    let mut read = 0_usize;
+    for row in rows {
+        let (Some(file), Some(group)) =
+            (row.get("file").and_then(Value::as_str), row.get("group").and_then(Value::as_str))
+        else {
+            return Err(format!("a row of cases names no file and group: {row}").into());
+        };
+        let Some((_, text)) = CASE_FILES.iter().find(|(path, _)| *path == file) else {
+            return Err(format!("{file} is no case file of the tests").into());
+        };
+        let document: Value = serde_json::from_str(text).map_err(|error| Failed::from(format!("{file}: {error}")))?;
+        let Some(Value::Array(cases)) = document.get(group) else {
+            return Err(format!("{file} has no group {group}").into());
+        };
+        for case in cases {
+            let Value::Object(keys) = case else { return Err(format!("{file}#{group}: a case is no object").into()) };
+            read += 1;
+            for key in keys.keys() {
+                if key.chars().any(|character| character.is_ascii_uppercase()) {
+                    found.push(format!("{file}#{group}: {key} of {} is not in snake_case", case["id"]));
+                }
+            }
+        }
+    }
+    if read == 0 {
+        return Err("no case was read".into());
+    }
+    if found.is_empty() {
+        Ok(())
+    } else {
+        Err(found.join("\n").into())
+    }
+}
 
 /// The bytes of a byte string of a case: each character U+0000 to U+00FF is its byte (SE-10.2).
 fn latin1(text: &str) -> Result<Vec<u8>, Failed> {
@@ -366,5 +420,6 @@ fn main() {
             trials.push(Trial::test(name, move || run(&case)));
         }
     }
+    trials.push(Trial::test("convention::case_keys", case_keys));
     libtest_mimic::run(&arguments, trials).exit();
 }

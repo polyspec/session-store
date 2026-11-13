@@ -1,5 +1,5 @@
 <!-- doc-id: readme -->
-<!-- source-sha256: b175ccc98cca6f7bd3d186df18c762b20f78fd05426144df635b0f2666c12ab1 -->
+<!-- source-sha256: f78ea06a4c934cdbd320d0141dc3bb79f068e822a09c153a18d473a0f8757bd5 -->
 # session-store
 
 [English](README.md)
@@ -21,7 +21,7 @@ Redis. 라이브러리는 세션에 무엇이 담기는지 모른다: key는 텍
 use binding_core::{Io, ProcessWait};
 use polyspec_session_store::{FileSessions, Store};
 
-let store = FileSessions::new(io, "/var/lib/sessions".as_ref(), None)?;
+let store = FileSessions::in_directory(io, "/var/lib/sessions".as_ref(), None)?;
 let mut session = store.open(wait, cookie.as_deref(), None)?;
 let value = session.get("cart")?;
 let created = session.close(io)?; // 새 식별자. 호출자가 세션 쿠키로 쓴다

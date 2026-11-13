@@ -765,13 +765,15 @@
       "origin": "generated",
       "core_type": "polyspec_session_store::FileSessions",
       "final": true,
+      "constructible": false,
       "members": [
         {
-          "id": "file_sessions.new",
+          "id": "file_sessions.in_directory",
           "name": [
-            "new"
+            "in",
+            "directory"
           ],
-          "kind": "constructor",
+          "kind": "static",
           "visibility": "public",
           "parameters": [
             {
@@ -792,14 +794,16 @@
               "default_core": "polyspec_session_store::DEFAULT_LIFETIME"
             }
           ],
-          "returns": "self",
+          "returns": {
+            "unit": "file_sessions"
+          },
           "raises": [
             "polyspec_session_store::Error::InvalidDirectory",
             "polyspec_session_store::Error::InvalidLifetime"
           ],
           "wait": "blocking_io",
           "core": {
-            "path": "polyspec_session_store::FileSessions::new"
+            "path": "polyspec_session_store::FileSessions::in_directory"
           }
         },
         {
@@ -1104,6 +1108,7 @@
       "kind": "variant",
       "visibility": "public",
       "origin": "generated",
+      "core_type": "polyspec_session_store::Setting",
       "tag": [
         "kind"
       ],
@@ -1582,7 +1587,7 @@
       "group": "created"
     },
     {
-      "member": "file_sessions.new",
+      "member": "file_sessions.in_directory",
       "file": "contracts/file-sessions.json",
       "group": "open"
     },

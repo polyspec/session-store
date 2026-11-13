@@ -16,7 +16,7 @@ use rustix::fs::FlockOperation;
 const ID: &str = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
 fn store(directory: &Path) -> FileSessions {
-    match FileSessions::new(Io::for_generated_call(), directory, None) {
+    match FileSessions::in_directory(Io::for_generated_call(), directory, None) {
         Ok(store) => store,
         Err(error) => panic!("the store is not made: {error}"),
     }
@@ -168,7 +168,7 @@ fn a_request_that_waited_for_a_removed_file_starts_a_new_session() {
     let other = FileSessions::clone(&store);
     std::thread::scope(|scope| {
         // A second store of the same directory has its own queue, as another process has, so the waiter waits in flock.
-        let separate = match FileSessions::new(Io::for_generated_call(), other.directory(), None) {
+        let separate = match FileSessions::in_directory(Io::for_generated_call(), other.directory(), None) {
             Ok(separate) => separate,
             Err(error) => panic!("{error}"),
         };

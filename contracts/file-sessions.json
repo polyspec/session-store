@@ -1152,7 +1152,7 @@
    "receiver": {
     "new": "file_sessions.open",
     "receiver": {
-     "new": "file_sessions.new",
+     "new": "file_sessions.in_directory",
      "args": {
       "directory": "/",
       "lifetime": 1440
@@ -1192,7 +1192,7 @@
    "receiver": {
     "new": "file_sessions.open",
     "receiver": {
-     "new": "file_sessions.new",
+     "new": "file_sessions.in_directory",
      "args": {
       "directory": "/",
       "lifetime": 1440
@@ -1233,7 +1233,7 @@
    "receiver": {
     "new": "file_sessions.open",
     "receiver": {
-     "new": "file_sessions.new",
+     "new": "file_sessions.in_directory",
      "args": {
       "directory": "/",
       "lifetime": 1440
@@ -1273,7 +1273,7 @@
    "receiver": {
     "new": "file_sessions.open",
     "receiver": {
-     "new": "file_sessions.new",
+     "new": "file_sessions.in_directory",
      "args": {
       "directory": "/",
       "lifetime": 1440
@@ -1333,7 +1333,7 @@
    "receiver": {
     "new": "file_sessions.open",
     "receiver": {
-     "new": "file_sessions.new",
+     "new": "file_sessions.in_directory",
      "args": {
       "directory": "/",
       "lifetime": 1440
@@ -1380,7 +1380,7 @@
    "receiver": {
     "new": "file_sessions.open",
     "receiver": {
-     "new": "file_sessions.new",
+     "new": "file_sessions.in_directory",
      "args": {
       "directory": "/",
       "lifetime": 1440

@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- The contract named the constructor `file_sessions.new` with the wait `blocking_io`, and the variant `setting`
+  without its core enum. `binding generate` refused both for every target: a language whose constructor cannot be
+  awaited has no form of a constructor that waits (binding GN-6m), and a variant names its Rust enum in `core_type`
+  (binding T-9, GN-6v). SF-1.5 states the making of the store of files as the static function
+  `FileSessions::in_directory` of Rust, which replaces `FileSessions::new`, and the static member
+  `file_sessions.in_directory` of the contract, which returns the store; the class `file_sessions` has no constructor
+  (`constructible: false`). The six instance values of `contracts/file-sessions.json` that make a store name that
+  member, and the variant `setting` names `polyspec_session_store::Setting`. Two trials of
+  `packages/file/rust/tests/contract.rs` read the contract: no member that waits is a constructor or a property, and
+  `file_sessions.in_directory` is a static member that returns the store. `binding check` of a binding that holds
+  these rules reports no finding of the contract, and `binding generate` no longer refuses the two items; it still
+  refuses `file_sessions.open` (the wait `process_wait`) for every target and the waits, the cleanups and the methods
+  with the receiver `self` of the session classes for Go and WASM, which the generator does not write yet.
+  `make fmt-check` and `make docs-check` pass. Not run: `make test` and `make lint-rust`, so the changed core and its
+  tests are not compiled yet.
+
 - The tests of the store of Redis ran on macOS alone: SE-10.4 and the harness named Apple `container`, so the workflow
   `ci` ran no test. SE-10.4 names the container program by the platform, Apple `container` on Darwin and `docker` on
   Linux, with the one image that `REDIS_IMAGE` pins by its digest, so that both platforms test the same bytes of the

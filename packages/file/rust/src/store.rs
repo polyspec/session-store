@@ -98,7 +98,8 @@ fn same_file(locked: &Stat, path: &Path) -> Result<bool, Error> {
 
 impl FileSessions {
     /// The store of an absolute existing directory with a lifetime in seconds, 1440 when it is `None` (SF-1.2, SF-1.3).
-    pub fn new(_io: Io, directory: &Path, lifetime: Option<u64>) -> Result<Self, Error> {
+    /// It reads the directory, so it takes the wait token `Io` and is a static function, no constructor (SF-1.5).
+    pub fn in_directory(_io: Io, directory: &Path, lifetime: Option<u64>) -> Result<Self, Error> {
         let invalid =
             |detail: &str| Error::InvalidDirectory { path: directory.to_path_buf(), detail: detail.to_owned() };
         if !directory.is_absolute() {

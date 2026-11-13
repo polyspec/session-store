@@ -146,7 +146,7 @@ fn requests(case: &Value) -> Result<(), Failed> {
             .map_err(failed)?;
     }
     let lifetime = case.get("lifetime").and_then(Value::as_u64);
-    let store = FileSessions::new(Io::for_generated_call(), directory.path(), lifetime).map_err(failed)?;
+    let store = FileSessions::in_directory(Io::for_generated_call(), directory.path(), lifetime).map_err(failed)?;
     let raises = case.get("raises");
     let failing_step = raises.and_then(|raises| raises.get("step")).and_then(Value::as_u64);
     let mut created: Vec<String> = Vec::new();
@@ -238,7 +238,7 @@ fn open(case: &Value) -> Result<(), Failed> {
     std::fs::write(temporary.path().join("file"), b"").map_err(failed)?;
     let directory = str_of(case, "directory")?.replace("<temporary>", &temporary.path().to_string_lossy());
     let lifetime = case.get("lifetime").and_then(Value::as_u64);
-    match (FileSessions::new(Io::for_generated_call(), Path::new(&directory), lifetime), case.get("raises")) {
+    match (FileSessions::in_directory(Io::for_generated_call(), Path::new(&directory), lifetime), case.get("raises")) {
         (Err(error), Some(raises)) => {
             expect_eq("category", &"value", &str_of(raises, "category")?)?;
             expect_raises(error.kind(), error.status(), &error.to_string(), raises)
@@ -318,7 +318,7 @@ fn expect_failure(error: &polyspec_session_store_core::Error, raises: &Value) ->
 
 /// The store of the directory of a case of one call (SE-10.5), which the armed point fails before the directory is read.
 fn store_of(case: &Value) -> Result<FileSessions, Failed> {
-    FileSessions::new(Io::for_generated_call(), Path::new(str_of(case, "directory")?), None).map_err(failed)
+    FileSessions::in_directory(Io::for_generated_call(), Path::new(str_of(case, "directory")?), None).map_err(failed)
 }
 
 /// SE-9.6: `open` whose open of the session file fails; only `file_sessions.open` reads the group.
@@ -363,18 +363,19 @@ fn cookie_of(args: &Value) -> Result<Option<Vec<u8>>, Failed> {
     }
 }
 
-/// The store of the arguments of `file_sessions.new`.
+/// The store of the arguments of `file_sessions.in_directory`.
 fn store_with(args: &Value) -> Result<FileSessions, Failed> {
     let directory = Path::new(str_of(args, "directory")?);
-    FileSessions::new(Io::for_generated_call(), directory, args.get("lifetime").and_then(Value::as_u64)).map_err(failed)
+    FileSessions::in_directory(Io::for_generated_call(), directory, args.get("lifetime").and_then(Value::as_u64))
+        .map_err(failed)
 }
 
 /// A session of a request that earlier calls made (binding GN-13f): `{"new": "file_sessions.open", "receiver":
-/// {"new": "file_sessions.new", "args": {...}}, "args": {"cookie", "cancel"}}`.
+/// {"new": "file_sessions.in_directory", "args": {...}}, "args": {"cookie", "cancel"}}`.
 fn made_session(value: &Value) -> Result<FileSession, Failed> {
     expect_eq("new", &str_of(value, "new")?, &"file_sessions.open")?;
     let store = value.get("receiver").ok_or("an opening has no receiver")?;
-    expect_eq("new", &str_of(store, "new")?, &"file_sessions.new")?;
+    expect_eq("new", &str_of(store, "new")?, &"file_sessions.in_directory")?;
     let store = store_with(store.get("args").ok_or("a store has no args")?)?;
     let args = value.get("args").ok_or("an opening has no args")?;
     let (_trigger, cancel) = cancel_of(args.get("cancel").ok_or("an opening has no cancel")?)?;

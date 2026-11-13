@@ -24,7 +24,7 @@ holds: a key is a text and a value is a PHP value of php-serialization. The rule
 use binding_core::{Io, ProcessWait};
 use polyspec_session_store::{FileSessions, Store};
 
-let store = FileSessions::new(io, "/var/lib/sessions".as_ref(), None)?;
+let store = FileSessions::in_directory(io, "/var/lib/sessions".as_ref(), None)?;
 let mut session = store.open(wait, cookie.as_deref(), None)?;
 let value = session.get("cart")?;
 let created = session.close(io)?; // the new identifier, which the caller sets as its session cookie

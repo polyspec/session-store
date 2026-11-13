@@ -1,7 +1,21 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 73dde5ee88899fc7d33fd1c2abac6f15ae70f7578ef472dd435d276bacb44bd2 -->
+<!-- source-sha256: 94760f4e1eba55f002395becafbdc51cce72ceb6c9c8957d2c4f94cec2357007 -->
 
 ## Unreleased
+
+- 계약은 생성자 `file_sessions.new`를 wait `blocking_io`로 적었고, variant `setting`을 코어 enum 없이 적었다.
+  `binding generate`는 둘을 모든 target에서 거부했다. 생성자를 await할 수 없는 언어에는 기다리는 생성자의 꼴이
+  없고(binding GN-6m), variant는 `core_type`에 자기 Rust enum을 적기 때문이다(binding T-9, GN-6v). SF-1.5가 파일
+  저장소를 만드는 일을 `FileSessions::new`를 대신하는 Rust static 함수 `FileSessions::in_directory`와, 저장소를
+  돌려주는 계약의 static member `file_sessions.in_directory`로 적는다. 클래스 `file_sessions`에는 생성자가
+  없다(`constructible: false`). `contracts/file-sessions.json`에서 저장소를 만드는 instance 값 여섯 개가 그 member를
+  적고, variant `setting`은 `polyspec_session_store::Setting`을 적는다. `packages/file/rust/tests/contract.rs`의 trial
+  두 개가 계약을 읽는다. 기다리는 member는 생성자도 property도 아니고, `file_sessions.in_directory`는 저장소를
+  돌려주는 static member다. 이 규칙을 가진 binding의 `binding check`는 계약의 발견을 보고하지 않고,
+  `binding generate`는 두 항목을 더는 거부하지 않는다. 생성기가 아직 쓰지 않는 것은 계속 거부한다. 모든 target의
+  `file_sessions.open`(wait `process_wait`), 그리고 Go와 WASM에서 세션 클래스의 wait, cleanup, receiver `self`
+  메서드다. `make fmt-check`와 `make docs-check`는 통과한다. 실행하지 않음: `make test`, `make lint-rust`. 그래서 바뀐
+  코어와 그 시험은 아직 compile되지 않았다.
 
 - Redis 저장소의 시험은 macOS에서만 실행됐다. SE-10.4와 harness가 Apple `container`를 적었고, 그래서 workflow
   `ci`는 시험을 실행하지 않았다. SE-10.4는 container 프로그램을 플랫폼으로 정한다. Darwin은 Apple `container`,

@@ -1,5 +1,5 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: f5d45ac2ecfd6d690a7d9fab20e0b6417b883b1c0b23d92e89d23d853c4cbb57 -->
+<!-- source-sha256: 6db6a2e75599ac7c181a16e49327fe0358c2a542397c92f7f92170d3834e8367 -->
 
 ## Unreleased
 
@@ -17,7 +17,11 @@
   `BAY_SUDO=1`로 실행한다. `make servers-test`는 15개, `make install-bay-test`는 4개, `make tool-pins-test`는 9개,
   `make workflows-test`는 6개가 통과한다. 각 script를 바꾸기 전에는 그 commit의 시험이 실패했다. 이 Mac에서
   `make install-bay`는 v0.0.5를 설치하고 그 version 명령은 v0.0.5를 주며, `scripts/test-run.sh true`는 bay의 version
-  줄을 쓰고 status 0으로 끝난다. 미실행: `make setup-bay`, 이 tree의 `make test`, workflow. CI의 첫 run까지 미확인:
+  줄을 쓰고 status 0으로 끝난다. 이 Mac에서, CI의 릴리스를 v0.0.5로 올리기 전인 이 변경의 깨끗한
+  tree에서 `make test`가 세 번 연속 status 0으로 끝났다. 서버의 모든 시험이 병렬 실행 그대로 통과했고, run 뒤에 bay의
+  container와 프로젝트가 남지 않았다. `make -k lint-rust fmt-check`도 status 0으로 끝났다. 로그는 추적하지 않는 실행
+  기록에 있다. 그 tree 뒤에 바뀐 것은 CI가 설치하는 릴리스의 값과 문서뿐이고, 어떤 run도 그 값을 읽지 않는다.
+  미실행: `make setup-bay`, Linux에서의 시험, workflow. CI의 첫 run까지 미확인:
   runner에서 `bay install`이 끝나는 것, root가 실행한 bay의 authority 파일을 시험 process가 읽는 것, run의 신호가
   `sudo`가 시작한 bay에 닿는 것.
 
@@ -47,8 +51,8 @@
   status 0으로 실행하고, 그 직후 한 node는 state ok의 줄을 아직 쓰지 않았다. 이름으로 만든 cluster의 node는 IPv6
   주소를 알린다. SIGTERM이 멈춘 `up`은 status 143으로 끝나고 container도 프로젝트도 남기지 않는다. port가 없고 이미
   끝난 service가 있는 `up`은 status 0으로 끝난다. 끝난 service의 `logs -f`는 끝난다. 설치되지 않은 image의
-  `up -no-pull`은 실패하고 `bay pull`을 적으며 프로젝트를 남기지 않는다. 미실행: worktree에 설치된 도구가 없어 `make servers-test`와 `make docs-check`를 실행하지
-  않았고, `make test`와 `make lint-rust`를 실행하지 않았으므로 바뀐 harness는 compile하지 않았다.
+  `up -no-pull`은 실패하고 `bay pull`을 적으며 프로젝트를 남기지 않는다. `make servers-test`, `make docs-check`, `make lint-rust`, `make test`는 위
+  항목의 변경과 함께 실행했고, 그 결과는 위 항목이 적는다.
 
 - 계약은 생성자 `file_sessions.new`를 wait `blocking_io`로 적었고, variant `setting`을 코어 enum 없이 적었다.
   `binding generate`는 둘을 모든 target에서 거부했다. 생성자를 await할 수 없는 언어에는 기다리는 생성자의 꼴이

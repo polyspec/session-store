@@ -17,8 +17,13 @@
   `make redis-image` and `make test` with `BAY_SUDO=1`. `make servers-test` gives 15 passed, `make install-bay-test`
   4 passed, `make tool-pins-test` 9 passed and `make workflows-test` 6 passed; before the change of each script the
   tests of its commit failed. On this Mac `make install-bay` installs v0.0.5, whose version command gives v0.0.5,
-  and `scripts/test-run.sh true` writes the version line of bay and ends with status 0. Not run: `make setup-bay`,
-  `make test` on this tree, and the workflow. Not confirmed until the first run of CI: that `bay install` completes on
+  and `scripts/test-run.sh true` writes the version line of bay and ends with status 0. On this Mac, on the clean tree of
+  this change before the release of CI was raised to v0.0.5, `make test` ended with status 0 three times in a row:
+  every test of the servers passed with the tests in parallel, and no container and no project of bay remained after
+  a run; `make -k lint-rust fmt-check` ended with status 0. The logs are in the record of the runs, which is not
+  tracked. Only the values of the release that CI installs and documents changed after that tree, and no run reads
+  those values. Not run: `make setup-bay`, the tests on Linux, and the workflow. Not confirmed until the first run of
+  CI: that `bay install` completes on
   the runner, that the test process reads the authority file of a bay that root runs, and that a signal of the run
   reaches a bay that `sudo` started.
 
@@ -52,8 +57,8 @@
   nodes of a cluster that is created by names tell IPv6 addresses; an `up` that SIGTERM stops ends with status 143
   and leaves no container and no project; `up` with a service without a port that has ended ends with status 0;
   `logs -f` of an ended service ends; `up -no-pull` with an image that is not installed fails, names `bay pull` and
-  leaves no project. Not run: `make servers-test` and `make docs-check`, because the worktree holds no installed tools, and
-  `make test` and `make lint-rust`, so the changed harness is not compiled.
+  leaves no project. `make servers-test`, `make docs-check`, `make lint-rust` and `make test` ran with the change of the entry
+  above, which states their results.
 
 - The contract named the constructor `file_sessions.new` with the wait `blocking_io`, and the variant `setting`
   without its core enum. `binding generate` refused both for every target: a language whose constructor cannot be

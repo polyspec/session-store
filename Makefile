@@ -46,7 +46,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap docs-check documents-stamp check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap docs-check documents-stamp workflows-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go
 
 check: lint-rust fmt-check test binding-check docs-check
@@ -68,6 +68,10 @@ docs-check:
 # again; with no PATHS it lists each twin whose source moved.
 documents-stamp:
 	$(NODE) $(KIT)/documents-stamp.mjs $(PATHS)
+
+# The rules of the GitHub workflows (AGENTS.md, "CI and release"), on the installed test runner of kit.
+workflows-test:
+	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/workflows.test.mts
 
 # scripts/test-run.sh owns the containers and the temporary directory of the run and removes them when the run ends,
 # fails or is stopped by SIGINT or SIGTERM. A peer that is not found is passed empty, and the test that needs it fails.

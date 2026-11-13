@@ -25,6 +25,8 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
 - `scripts/workflows.test.mts`: the test of the rules of the GitHub workflows, which `make workflows-test` runs.
+- `scripts/check-commit-names.mts`: the check of `make commit-names-check`, with its test
+  `scripts/commit-names.test.mts`, which `make commit-names-test` runs.
 - `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/actions/bootstrap`: CI, the release and the
   bootstrap of their jobs. `.node-version` names the Node.js that the bootstrap sets up; a development machine runs its
   own Node.js within the `engines` of kit.
@@ -117,8 +119,8 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   `Makefile` defines, so that the settings of the Makefile apply to every command of CI. `make workflows-test` fails a
   workflow or an action that breaks one of these rules.
 - The workflow `ci` starts on a push of `main` and on `workflow_dispatch` alone. Its job `shared` runs
-  `make ci-shared` (`CI_SHARED` of the Makefile: `make docs-check`, `make owner-validate`, `make workflows-test` and
-  `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
+  `make ci-shared` (`CI_SHARED` of the Makefile: `make docs-check`, `make owner-validate`, `make workflows-test`,
+  `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
   (`CI_RUST`: `make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
 - The last job of the workflow `ci` is `ci-passed`. It runs after every other job, also after a failed one, needs each
@@ -147,4 +149,9 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
 
 - A commit message is `<type>(<scope>): <Subject> (#id)`, factual and concise, with a body that states what changed and
   why. Unrelated changes are separate commits.
-- No tracked file names a Git commit, except the pin of an action in a workflow.
+- No tracked file names a Git commit, of this repository or of another, except the pin of an action in a workflow. A
+  release and a lock pin the name of a commit, and a name written in a document is a wrong value once the history
+  changes; a record states the fact instead: the input, the behavior, the expected behavior and the count of the tests.
+  Enforced by: `make commit-names-check`, which reads the tracked Markdown files; a commit named in another tracked
+  file is found by review. `scripts/check-commit-names.mts` is a copy of the check that fsm and php-serialization hold,
+  kept until kit releases the check as a utility.

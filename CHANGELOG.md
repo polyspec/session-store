@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- No check read the tracked documents for the name of a Git commit, which is a wrong value once the history changes.
+  `make commit-names-check` runs `scripts/check-commit-names.mts`, which fails with `<file>:<line>: <name>` for every
+  word of 7 to 40 lowercase hexadecimal digits with a digit and a letter in a tracked Markdown file; a digest of 64
+  digits, a number, a path and an identifier are no commit names. `make commit-names-test` gives 3 passed and 0 failed;
+  before the checker existed it ended with no test that ran. On this tree the check finds no name. Both are targets of
+  `make ci-shared`, which runs 6 targets, and of `make check`. The checker is a copy of the check that fsm and
+  php-serialization hold and is removed once kit releases the check as a utility.
+
 - No job of the workflow `ci` stated the result of a run: a run with a failed job had no one job to read. The job
   `ci-passed` is the last job of the workflow. It runs after every other job, also after a failed one
   (`if: ${{ always() }}`), needs `shared` and `rust`, and runs `make ci-passed FAIL_SKIPPED=1` with `RESULTS`, the JSON

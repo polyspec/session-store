@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 863664cde09392a9ae386fe910f123b3c0e560e5c3c7954cb37f91587cdafc11 -->
+<!-- source-sha256: 4fae6e7750f5a033097b3a27af4705d7e7cf4f06aded30918a623123264ed184 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -25,6 +25,8 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 - 루트의 `Cargo.toml`은 crate 넷과 다섯 target의 바인딩 crate의 workspace이며 `Cargo.lock`은 하나다.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: case다(SE-10).
 - `scripts/workflows.test.mts`: GitHub workflow의 규칙의 시험이며, `make workflows-test`가 실행한다.
+- `scripts/check-commit-names.mts`: `make commit-names-check`의 검사다. 그 시험은 `scripts/commit-names.test.mts`이며,
+  `make commit-names-test`가 실행한다.
 - `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/actions/bootstrap`: CI, 릴리스, 그 job의
   bootstrap이다. `.node-version`은 bootstrap이 설치하는 Node.js를 적는다. 개발 장비는 kit의 `engines` 안에서 자기
   Node.js를 쓴다.
@@ -115,7 +117,8 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
   workflow와 action을 실패시킨다.
 - workflow `ci`는 `main`의 push와 `workflow_dispatch`에서만 시작한다. job `shared`는 `make ci-shared`(Makefile의
-  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make release-coverage`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
+  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make commit-names-check`,
+  `make commit-names-test`, `make release-coverage`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
   보고서 `var/report/ci-targets`를 올린다.
 - workflow `ci`의 마지막 job은 `ci-passed`다. 이 job은 다른 모든 job 뒤에, 실패한 job 뒤에도 실행되고, 그 job을 모두
@@ -143,4 +146,9 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
 
 - commit 메시지는 `<type>(<scope>): <Subject> (#id)`이고, 사실만 간결하게 적으며, 본문은 무엇이 왜 바뀌었는지를
   적는다. 서로 관련 없는 변경은 별도의 commit으로 한다.
-- 어떤 추적 파일도 Git commit을 지정하지 않는다. workflow의 action 고정만 예외다.
+- 어떤 추적 파일도 이 저장소나 다른 저장소의 Git commit을 적지 않는다. workflow의 action 고정만 예외다. commit의
+  이름은 릴리스와 lock이 고정하고, 문서에 적은 이름은 이력이 바뀌면 틀린 값이 된다. 기록은 그 대신 사실을 적는다.
+  곧 입력, 동작, 기대한 동작, 시험의 수다.
+  Enforced by: `make commit-names-check`. 이 검사는 추적되는 Markdown 파일을 읽는다. 다른 추적 파일에 적힌 commit은
+  검토로 찾는다. `scripts/check-commit-names.mts`는 fsm과 php-serialization이 가진 검사의 복사본이고, kit이 이
+  검사를 utility로 릴리스할 때까지 둔다.

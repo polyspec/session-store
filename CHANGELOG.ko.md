@@ -1,7 +1,15 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: c7c16c51433ea410bfc58c1b5095ad3d1ec6e507372d8dcf22b8160456fa1d19 -->
+<!-- source-sha256: c84fa341afd7b73b36db69dd093ed9f3f4859bb3dcabfe7d41e3e3dc4ee71bb6 -->
 
 ## Unreleased
+
+- 추적되는 문서에서 Git commit의 이름을 읽는 검사가 없었다. 그 이름은 이력이 바뀌면 틀린 값이 된다.
+  `make commit-names-check`는 `scripts/check-commit-names.mts`를 실행한다. 이 검사는 추적되는 Markdown 파일에서
+  숫자와 글자를 모두 가진 소문자 16진수 7~40자리 단어마다 `<file>:<line>: <name>`으로 실패한다. 64자리 digest, 숫자,
+  경로, 식별자는 commit 이름이 아니다. `make commit-names-test`는 3개 통과, 0개 실패다. 검사가 있기 전에는 실행된
+  시험 없이 끝났다. 이 tree에서 검사는 이름을 찾지 않는다. 둘 다 target 6개를 실행하는 `make ci-shared`와
+  `make check`의 target이다. 이 검사는 fsm과 php-serialization이 가진 검사의 복사본이고, kit이 이 검사를 utility로
+  릴리스하면 지운다.
 
 - workflow `ci`의 어떤 job도 run의 결과를 말하지 않았다. 실패한 job이 있는 run에서 읽을 job 하나가 없었다. job
   `ci-passed`가 workflow의 마지막 job이다. 이 job은 다른 모든 job 뒤에, 실패한 job 뒤에도 실행되고

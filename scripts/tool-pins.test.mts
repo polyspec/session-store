@@ -133,7 +133,7 @@ test('config/toolchain.json names the release of mise with the sha256 of its arc
   }
 });
 
-test('config/toolchain.json names the release of bay with the sha256 of its archive of each platform, and the Makefile starts bay by one value', () => {
+test('config/toolchain.json names the release of bay that CI installs with the sha256 of its archive of each platform, and the Makefile starts bay by one value and reads no version of it', () => {
   const config: unknown = JSON.parse(read('config/toolchain.json'));
   const bay = (config as { bay?: { version?: unknown; releases?: unknown; sha256?: Record<string, unknown> } }).bay;
   assert.match(typeof bay?.version === 'string' ? bay.version : '', /^v[0-9]+\.[0-9]+\.[0-9]+$/, 'config/toolchain.json names no exact release of bay');
@@ -145,6 +145,7 @@ test('config/toolchain.json names the release of bay with the sha256 of its arch
   // bay of PATH by default, and the bay of var/tools behind sudo -n when BAY_SUDO is set; no recipe names bay itself.
   const makefile = read('Makefile');
   assert.match(makefile, /^BAY \?= \$\(if \$\(BAY_SUDO\),sudo -n \$\(VAR_TOOLS\)\/bay\/bay,bay\)$/m, 'BAY of the Makefile is not bay of PATH or the bay of var/tools behind sudo -n');
+  assert.doesNotMatch(makefile, /BAY_VERSION|BAY_RELEASE|toolchain\.json"\)\.bay/, 'the Makefile reads the pin of bay, which only the install of CI reads');
   const started = makefile.split('\n').filter((line) => /^\t(?:.*[ ;|&])?bay(?: |$)/.test(line));
   assert.deepEqual(started, [], 'a recipe starts bay by its name, not by BAY');
 });

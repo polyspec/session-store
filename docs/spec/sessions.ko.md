@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 4dcfaf2d7cce470ebc3414764fb3f92f5e7e6d074a8de441ba9d5a169ec805ff -->
+<!-- source-sha256: cc0b1f1c9f758fff1990d3ff6934b4a7e1b6347ad717120aa96060b2236309b8 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -135,7 +135,10 @@
   적는다. `N;/path`나 `N;MODE;/path` 형식의 PHP `session.save_path`(식별자의 앞 문자로 나눈
   하위 디렉터리)는 절대 경로가 아니므로 그렇게 실패한다: 저장소는 모든 파일을 자신의 디렉터리에 둔다.
   <a id="SF-1.3"></a> 수명은 양의 초 수이고, 호출자가 적지 않으면 PHP `session.gc_maxlifetime`의
-  기본값인 1440이다. 0은 kind `invalid_lifetime`으로 실패한다.
+  기본값인 1440이다. 0은 kind `invalid_lifetime`으로 실패한다. <a id="SF-1.4"></a> 파일 저장소에는 WASM 바인딩이
+  없다: 브라우저에는 서버 프로세스가 함께 쓰는 디렉터리가 없고, 저장소는 파일 I/O와 다른 프로세스의 lock을 기다리는데
+  브라우저의 WebAssembly는 그것을 할 수 없다(binding Q-4). 클래스 `FileSessions`와 `FileSession`은 PHP, Python,
+  Node, Go의 클래스다.
 - **SF-2** <a id="SF-2.1"></a> 세션은 디렉터리의 파일 `sess_<id>`이고, 그 바이트는 세션의 레코드이며(SE-6),
   저장소가 파일을 만들 때 그 mode는 0600이다: PHP 세션 모듈 files handler의 파일 이름, 레코드,
   mode다. <a id="SF-2.2"></a> 바이트가 없는 파일은 값이 없는 세션이다(SE-6.2). <a id="SF-2.3"></a>

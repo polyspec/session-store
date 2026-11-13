@@ -134,7 +134,10 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   path. A `session.save_path` of PHP in the form `N;/path` or `N;MODE;/path` (subdirectories by the first characters of
   the identifier) is not an absolute path and fails so: the store keeps every file in its directory.
   <a id="SF-1.3"></a> The lifetime is a positive number of seconds, 1440 when the caller states none, the default of
-  `session.gc_maxlifetime` of PHP; 0 fails with the kind `invalid_lifetime`.
+  `session.gc_maxlifetime` of PHP; 0 fails with the kind `invalid_lifetime`. <a id="SF-1.4"></a> The store of files
+  has no WASM binding: a browser has no directory that server processes share, and the store waits on file I/O and on
+  a lock of another process, which WebAssembly in a browser cannot do (binding Q-4). The classes `FileSessions` and
+  `FileSession` are classes of PHP, Python, Node and Go.
 - **SF-2** <a id="SF-2.1"></a> A session is the file `sess_<id>` of the directory, whose bytes are its record (SE-6)
   and whose mode is 0600 when the store creates it: the file name, the record and the mode of the files handler of the
   PHP session module. <a id="SF-2.2"></a> A file without bytes is a session without values (SE-6.2). <a id="SF-2.3"></a>

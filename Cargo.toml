@@ -11,7 +11,9 @@ members = [
   "packages/redis/rust",
   "packages/python",
   "packages/ts",
+  "packages/ts/wasm",
   "packages/php-ext",
+  "packages/go/internal/ffi",
 ]
 
 [workspace.package]

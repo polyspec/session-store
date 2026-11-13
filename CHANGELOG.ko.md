@@ -1,5 +1,18 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 500737f6da2e521a099772d080a3a060f41cae4e9896c62c960eb4698a8c4ced -->
+<!-- source-sha256: 04679b9798fb99684b80faf93d363b40014d02a4a264057feb2b658b40904105 -->
+
+- 계약이 binding의 다섯 target을 적는다(BD-27): `packages/rust/interface.json`의 `targets`는 php, python, node,
+  go, wasm이고, `packages.go`는 Go 모듈 `github.com/polyspec/session-store/packages/go`를 적으며, npm 패키지의 entry
+  `.`는 조건 `{node: napi, browser: wasm}`을 받고, 각 오류 클래스는 WASM 클래스로 Node의 것을 적으며,
+  `errors.fixed`는 Node처럼 WASM에도 `TypeError`를 적는다. 전에는 계약이 php, python, node만 적어 Go와 WASM 바인딩이
+  생성되지 않았다. 파일 저장소에는 WASM 바인딩이 없다(SF-1.4, binding Q-4): unit `file_sessions`와 `file_session`은
+  `only` php, python, node, go이며, 계약 검사는 blocking I/O나 프로세스를 기다리거나 경로를 받는 member에 이것을
+  요구한다(CK-15). 추적되는 바인딩 패키지에 binding scaffold가 두 target을 위해 쓰는 것(`packages/go/go.mod`,
+  `packages/go/internal/ffi`, `packages/ts/wasm`, `packages/ts/package.json`의 브라우저 exports)이 더해지고, 두
+  crate가 workspace의 member가 된다. 계약 검사는 이 변경 전부터 있던 CK-22 finding 18개를 그대로 낸다(case 없는 raise
+  kind, 그리고 `session_store.internal`을 broken으로 켜는 case가 없음, X-1). Go와 WASM 바인딩을 빌드하거나 시험하는
+  make target은 아직 없다. `make fmt-check`는 `packages/go/internal/ffi/src/lib.rs`에서 실패한다: binding scaffold가
+  그 `allow` 속성을 125자의 한 줄로 쓰는데 `rustfmt.toml`의 `max_width = 120`을 넘고, 이 파일은 손으로 고치지 않는다.
 
 - `scripts/binding.mts`는 Cargo가 고정 commit으로 만든 binding checkout을 `var/binding/<commit>`에 clone하고, 그 `packages/ts`의 파일을 더는 복사하지 않는다. `binding check`는 자기 Git checkout에서 자기 commit을 읽어 `Cargo.lock`의 commit과 비교한다(CK-20). 파일의 복사본에는 commit이 없고, 검사는 계약에 다른 지적이 없어지면 그것을 지적한다.
 - `Cargo.lock`은 값 alias, 실패 주입, 오류 unit의 생성기를 한 개발 줄기에 가진 binding을 고정하고, 바인딩 package는 그 scaffold가 쓰는 것이다. 각 바인딩 crate는 `polyspec-binding-core`를 feature `construct`와 `lock`과 함께 받고, lock에는 `polyspec-binding-core`의 의존으로 `tokio`가 더해진다. `make binding-check`는 여전히 실패하며, 31건이던 CK-22 지적이 18건이 되었고, 그 때문에 `make bindings`는 아무것도 쓰지 않는다. 17건은 어떤 case도 입력이나 실패 주입점으로 내지 않는 member와 kind(`random`, `io`, `cancelled`, `connection`, `identifier_taken`)를 가리키고, 1건은 주입점 `session_store.internal`을 `broken`으로 장전하는 case를 요구한다. 계약은 실패 주입점을 선언하지 않고 crate에도 없다.

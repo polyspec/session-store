@@ -14,12 +14,14 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 - `packages/file/rust/`: the crate `polyspec-session-store-file`, the store of files (SF-1 to SF-9).
 - `packages/redis/rust/`: the crate `polyspec-session-store-redis`, the store of Redis: its protocol without I/O and its
   connection (SR-1 to SR-9).
-- `packages/php-ext/`, `packages/python/`, `packages/ts/`: the binding packages, whose tracked files `binding scaffold`
-  writes and the contract check compares (binding CK-19). They are members of the workspace; `make bindings` writes
-  their `generated/`, which is not tracked, and builds of them come after it. The targets of the core name the core
-  crates with `-p`, so they need no generated source.
+- `packages/php-ext/`, `packages/python/`, `packages/ts/`, `packages/ts/wasm/`, `packages/go/`: the binding packages
+  of the five targets that every contract names (binding BD-27), the C ABI of Go in `packages/go/internal/ffi`, whose
+  tracked files `binding scaffold` writes and the contract check compares (binding CK-19). They are members of the
+  workspace; `make bindings` writes their `generated/`, which is not tracked, and builds of them come after it. The
+  targets of the core name the core crates with `-p`, so they need no generated source.
 - `scripts/binding.mts`: runs binding at the commit of `polyspec-binding-core` that `Cargo.lock` pins.
-- `Cargo.toml` of the root is the workspace of the four crates and the three binding crates with one `Cargo.lock`.
+- `Cargo.toml` of the root is the workspace of the four crates and the binding crates of the five targets with one
+  `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
 - `docs/spec/`: the specification. Root: `AGENTS.md`, `README.md`, `CHANGELOG.md` and their Korean translations
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`.

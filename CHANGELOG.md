@@ -1,5 +1,19 @@
 <!-- doc-id: changelog -->
 
+- The contract names the five targets of binding (BD-27): `targets` of `packages/rust/interface.json` is php, python,
+  node, go and wasm, `packages.go` names the Go module `github.com/polyspec/session-store/packages/go`, the entry `.` of
+  the npm package takes the conditions `{node: napi, browser: wasm}`, each error class names its WASM class, the Node
+  one, and `errors.fixed` names `TypeError` for WASM as for Node. Before, the contract named php, python and node, so
+  no Go or WASM binding was generated. The store of files has no WASM binding (SF-1.4, binding Q-4): the units
+  `file_sessions` and `file_session` are `only` php, python, node and go, which the contract check requires of a member
+  that waits on blocking I/O or on a process or takes a path (CK-15). The tracked binding packages gain what binding
+  scaffold writes for the two targets (`packages/go/go.mod`, `packages/go/internal/ffi`, `packages/ts/wasm`, the browser
+  exports of `packages/ts/package.json`), and both crates are members of the workspace. The contract check keeps its 18
+  CK-22 findings from before this change (raised kinds without a case, and no case that arms
+  `session_store.internal` as broken, X-1). No make target builds or tests the Go and WASM bindings yet. `make
+  fmt-check` fails on `packages/go/internal/ffi/src/lib.rs`: binding scaffold writes its `allow` attribute in one line of
+  125 characters, beyond `max_width = 120` of `rustfmt.toml`, and the file is not edited by hand.
+
 - `scripts/binding.mts` clones the checkout that Cargo made of the pinned binding commit into `var/binding/<commit>`
   and no longer copies the files of its `packages/ts`. `binding check` reads its own commit from its Git checkout and
   compares it with the commit of `Cargo.lock` (CK-20); a copy of the files has no commit, which the check reports once

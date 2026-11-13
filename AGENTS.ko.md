@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: f9b93bb074b35c595ac034655e372e7481c79c229f74650c2d26932ff0f3714b -->
+<!-- source-sha256: b92f99fb14eb0810b63d31c3d2450daf6d66988c989a838ec204d76189644e6c -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -15,12 +15,13 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 - `packages/file/rust/`: crate `polyspec-session-store-file`, 곧 파일 저장소다(SF-1부터 SF-9).
 - `packages/redis/rust/`: crate `polyspec-session-store-redis`, 곧 Redis 저장소다: I/O 없는 프로토콜과 그
   연결이다(SR-1부터 SR-9).
-- `packages/php-ext/`, `packages/python/`, `packages/ts/`: 바인딩 package다. 그 추적 파일은 `binding scaffold`가
+- `packages/php-ext/`, `packages/python/`, `packages/ts/`, `packages/ts/wasm/`, `packages/go/`: 모든 계약이 적는 다섯
+  target(binding BD-27)의 바인딩 package이며, Go의 C ABI는 `packages/go/internal/ffi`에 있다. 그 추적 파일은 `binding scaffold`가
   쓰고 계약 검사가 비교한다(binding CK-19). 이 package들은 workspace의 member다. `make bindings`가 추적하지 않는
   `generated/`를 쓰고, 바인딩 package의 빌드는 그 뒤에 한다. 코어의 target은 코어 crate를 `-p`로 지정하므로
   생성된 소스가 필요 없다.
 - `scripts/binding.mts`: `Cargo.lock`이 고정하는 `polyspec-binding-core`의 commit에서 binding을 실행한다.
-- 루트의 `Cargo.toml`은 crate 넷과 바인딩 crate 셋의 workspace이며 `Cargo.lock`은 하나다.
+- 루트의 `Cargo.toml`은 crate 넷과 다섯 target의 바인딩 crate의 workspace이며 `Cargo.lock`은 하나다.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: case다(SE-10).
 - `docs/spec/`: 명세다. 루트: `AGENTS.md`, `README.md`, `CHANGELOG.md`와 그 한국어 번역
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`.

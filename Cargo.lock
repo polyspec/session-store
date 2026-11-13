@@ -1414,6 +1414,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "polyspec-session-store-go"
+version = "0.0.0"
+dependencies = [
+ "polyspec-binding-core",
+ "polyspec-session-store",
+]
+
+[[package]]
 name = "polyspec-session-store-node"
 version = "0.0.0"
 dependencies = [
@@ -1458,6 +1466,16 @@ dependencies = [
  "serde_json",
  "tempfile",
  "tokio",
+]
+
+[[package]]
+name = "polyspec-session-store-wasm"
+version = "0.0.0"
+dependencies = [
+ "js-sys",
+ "polyspec-binding-core",
+ "polyspec-session-store",
+ "wasm-bindgen",
 ]
 
 [[package]]

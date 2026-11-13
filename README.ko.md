@@ -1,5 +1,5 @@
 <!-- doc-id: readme -->
-<!-- source-sha256: a64d89c027af4e567942411f20fd88887674c1ba7b3c811f64f9ab912ffb47d2 -->
+<!-- source-sha256: 7435d13d6d6887994473afd8ebf73507604e091cf235e8144004083be71ccc82 -->
 # session-store
 
 [English](README.md)
@@ -30,7 +30,7 @@ let created = session.close(io)?; // 새 식별자. 호출자가 세션 쿠키�
 기다림 토큰 `Io`와 `ProcessWait`는 생성된 바인딩이 만든다. 블로킹 함수를 부르는 Rust 호출자는 그것을 실행하는 바인딩 층에서
 토큰을 받는다.
 
-crate `polyspec-session-store`(`packages/rust`)가 세 crate의 항목을 한 라이브러리로 내보낸다. PHP, Python, Node 바인딩은 그 패키지가
+crate `polyspec-session-store`(`packages/rust`)가 세 crate의 항목을 한 라이브러리로 내보낸다. 모든 계약이 적는 다섯 target인 PHP, Python, Node, 브라우저(WASM), Go 바인딩은 그 패키지가
 담은 인터페이스 계약 `packages/rust/interface.json`에서 생성할 예정이며, 아직 바인딩은 없다.
 
 ## 검사

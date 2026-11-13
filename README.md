@@ -33,9 +33,9 @@ let created = session.close(io)?; // the new identifier, which the caller sets a
 The wait tokens `Io` and `ProcessWait` are made by the generated bindings; a Rust caller of a blocking function gets them
 from the binding layer that runs it.
 
-The crate `polyspec-session-store` (`packages/rust`) gives the items of the three crates as one library; PHP, Python and
-Node bindings will be generated from its interface contract `packages/rust/interface.json`, which its package holds;
-there is no binding yet.
+The crate `polyspec-session-store` (`packages/rust`) gives the items of the three crates as one library; PHP,
+Python, Node, browser (WASM) and Go bindings, the five targets that every contract names, will be generated from its
+interface contract `packages/rust/interface.json`, which its package holds; there is no binding yet.
 
 ## Checks
 

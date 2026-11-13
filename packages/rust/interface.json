@@ -8,7 +8,9 @@
   "targets": [
     "php",
     "python",
-    "node"
+    "node",
+    "go",
+    "wasm"
   ],
   "packages": {
     "php": {
@@ -23,12 +25,19 @@
       "package": "@polyspec/session-store",
       "entries": {
         ".": {
+          "conditions": {
+            "node": "napi",
+            "browser": "wasm"
+          },
           "formats": [
             "import",
             "require"
           ]
         }
       }
+    },
+    "go": {
+      "module": "github.com/polyspec/session-store/packages/go"
     }
   },
   "naming": {
@@ -45,32 +54,38 @@
       "value": {
         "php": "Polyspec\\SessionStore\\SessionStoreValueError",
         "python": "SessionStoreValueError",
-        "node": "SessionStoreValueError"
+        "node": "SessionStoreValueError",
+        "wasm": "SessionStoreValueError"
       },
       "type": {
         "php": "Polyspec\\SessionStore\\SessionStoreTypeError",
         "python": "SessionStoreTypeError",
-        "node": "SessionStoreTypeError"
+        "node": "SessionStoreTypeError",
+        "wasm": "SessionStoreTypeError"
       },
       "io": {
         "php": "Polyspec\\SessionStore\\SessionStoreIoError",
         "python": "SessionStoreIoError",
-        "node": "SessionStoreIoError"
+        "node": "SessionStoreIoError",
+        "wasm": "SessionStoreIoError"
       },
       "store": {
         "php": "Polyspec\\SessionStore\\SessionStoreStoreError",
         "python": "SessionStoreStoreError",
-        "node": "SessionStoreStoreError"
+        "node": "SessionStoreStoreError",
+        "wasm": "SessionStoreStoreError"
       },
       "busy": {
         "php": "Polyspec\\SessionStore\\SessionStoreBusyError",
         "python": "SessionStoreBusyError",
-        "node": "SessionStoreBusyError"
+        "node": "SessionStoreBusyError",
+        "wasm": "SessionStoreBusyError"
       },
       "internal": {
         "php": "Polyspec\\SessionStore\\SessionStoreInternalError",
         "python": "SessionStoreInternalError",
-        "node": "SessionStoreInternalError"
+        "node": "SessionStoreInternalError",
+        "wasm": "SessionStoreInternalError"
       }
     },
     "fixed": [
@@ -88,6 +103,10 @@
       },
       {
         "lang": "node",
+        "class": "TypeError"
+      },
+      {
+        "lang": "wasm",
         "class": "TypeError"
       }
     ],
@@ -536,6 +555,15 @@
       "module": "",
       "kind": "class",
       "visibility": "public",
+      "only": {
+        "targets": [
+          "php",
+          "python",
+          "node",
+          "go"
+        ],
+        "reason": "SF-1.4"
+      },
       "origin": "generated",
       "core_type": "polyspec_session_store::FileSessions",
       "final": true,
@@ -686,6 +714,15 @@
       "module": "",
       "kind": "class",
       "visibility": "public",
+      "only": {
+        "targets": [
+          "php",
+          "python",
+          "node",
+          "go"
+        ],
+        "reason": "SF-1.4"
+      },
       "origin": "generated",
       "core_type": "polyspec_session_store::FileSession",
       "final": true,

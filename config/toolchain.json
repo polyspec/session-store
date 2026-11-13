@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "comment": "The toolchains of session-store that no other file declares. npm is declared in the devEngines.packageManager of package.json and Rust in rust-toolchain.toml. mise is the release that make install-tools TOOLS=npm installs with the sha256 of each platform; mise.toml declares the tools it installs and mise.lock locks them. bay is the release that make install-bay installs with the sha256 of each platform.",
+  "comment": "The toolchains of session-store that no other file declares. npm is declared in the devEngines.packageManager of package.json and Rust in rust-toolchain.toml. mise is the release that make install-tools TOOLS=npm installs with the sha256 of each platform; mise.toml declares the tools it installs and mise.lock locks them. bay is the release that make install-bay installs for CI with the sha256 of each platform.",
   "mise": {
     "version": "2026.10.8",
     "sha256": {
@@ -11,7 +11,7 @@
     }
   },
   "bay": {
-    "comment": "The release of bay that starts the Redis servers of the tests (SE-10.4), with the sha256 of its archive of each platform. A run fails at its start when the bay that it starts is of another version, because a server that another build starts is not the result that another machine repeats; make install-bay installs this release into var/tools/bay. The pin is raised to a later release that the tests need; it is removed with the servers of the tests.",
+    "comment": "The release of bay that CI installs (make install-bay), with the sha256 of its archive of each platform: a runner holds no bay, and a download is used only by its pinned digest. No run reads this pin; a run starts the bay of its machine and fails a document of bay whose schemaVersion is not the one that the harness reads (SE-10.4). The pin is raised to a later release that the tests of CI need, and it is removed when a runner gives bay or the tests start no server.",
     "version": "v0.0.2",
     "releases": "https://github.com/polyspec/bay/releases",
     "sha256": {

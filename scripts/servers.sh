@@ -3,9 +3,8 @@
 # Apple container on Darwin and on Docker on Linux, gives their names and addresses and pulls and finds the image; this
 # file holds no command of an engine.
 #
-#   scripts/servers.sh check                          fails unless bay is the release that BAY_VERSION names and
-#                                                     the machine setup that a project needs is in place; names
-#                                                     BAY_RELEASE, the address of that release; changes nothing
+#   scripts/servers.sh check                          prints the version of bay and fails unless the machine setup
+#                                                     that a project needs is in place; changes nothing
 #   scripts/servers.sh pull <image>                   pulls the image
 #   scripts/servers.sh plan <compose file>            prints as JSON the name and the certificate paths of each service,
 #                                                     as up will create them; changes nothing
@@ -43,25 +42,16 @@ esac
 bay=${BAY:-bay}
 program=${bay%% *}
 if ! command -v "$program" >/dev/null 2>&1; then
-	echo "scripts/servers.sh: $program is not found on PATH: install the pinned release of bay, which config/toolchain.json names (\`make install-bay\` puts it into var/tools/bay), and apply its machine setup with \`bay install\`; BAY names the words that start bay" >&2
+	echo "scripts/servers.sh: $program is not found on PATH: install bay, which runs the Compose projects of the servers (https://github.com/polyspec/bay), and apply its machine setup with \`bay install\`; BAY names the words that start bay" >&2
 	exit 1
 fi
 case "$verb" in
 check)
-	if [ -z "${BAY_VERSION:-}" ] || [ -z "${BAY_RELEASE:-}" ]; then
-		echo 'scripts/servers.sh: BAY_VERSION and BAY_RELEASE are not set: `make test` and `make redis-image` name the pinned release of config/toolchain.json' >&2
-		exit 1
-	fi
-	# A server that another build of bay starts is not the result that another machine repeats.
+	# The first line of a run: the bay that starts its servers. A run compares no version; the harness fails a
+	# document of bay of another contract than the one that it reads.
 	# shellcheck disable=SC2086 # BAY is words
-	document=$($bay version --json 2>&1 </dev/null) || document=
-	version=$(printf '%s\n' "$document" | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')
-	if [ -z "$version" ]; then
-		echo "scripts/servers.sh: bay gives no version: install the pinned release $BAY_VERSION (config/toolchain.json) from $BAY_RELEASE" >&2
-		exit 1
-	fi
-	if [ "$version" != "$BAY_VERSION" ]; then
-		echo "scripts/servers.sh: bay is $version and the pinned release is $BAY_VERSION (config/toolchain.json): install it from $BAY_RELEASE" >&2
+	if ! $bay version </dev/null; then
+		echo 'scripts/servers.sh: bay gives no version: install a release of bay that has the command version' >&2
 		exit 1
 	fi
 	# up names a missing part of the setup too; this check gives a run one failure before its build.

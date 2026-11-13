@@ -1,5 +1,5 @@
-// Installs the pinned release of bay into var/tools/bay (SE-10.4), for a machine that holds no bay, such as a runner
-// of CI: `make install-bay`. config/toolchain.json names the version, the address of the releases and the sha256 of
+// Installs the release of bay that is pinned for CI into var/tools/bay (SE-10.4), for a machine that holds no bay,
+// such as a runner of CI: `make install-bay`. No run reads the pin. config/toolchain.json names the version, the address of the releases and the sha256 of
 // the archive of each platform. The archive is used only when its sha256 is the pinned one; bay and bayd are then put
 // into the directory, each by one rename, so that a failed install leaves the directory as it was. The install
 // changes no setup of the machine: `bay install` does, which `make setup-bay` runs.

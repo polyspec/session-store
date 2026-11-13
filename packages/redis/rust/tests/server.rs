@@ -1,9 +1,10 @@
 //! The connection against real Redis servers, each a service of a Compose project of its test that bay runs from the
-//! pinned image (`tests/servers`, SE-10.4): the queue of one process (SR-3.2), an ACL user (SR-6.1, SR-6.4), TLS
-//! (SR-6.1), Sentinel (SR-6.2) and Cluster (SR-6.3). The certificate of the server of TLS is the one that bay issues
-//! for its name.
+//! pinned image (`tests/servers`, SE-10.4): the queue of one process (SR-3.2), an ACL user (SR-6.1, SR-6.4), Sentinel
+//! (SR-6.2) and Cluster (SR-6.3). The trials run in parallel in this process, so none changes its environment; the
+//! test of TLS is `tests/tls.rs`.
 
 mod servers;
+mod store;
 
 use std::sync::Arc;
 
@@ -11,12 +12,9 @@ use binding_core::{Failure, Kinds};
 use libtest_mimic::{Arguments, Failed, Trial};
 use polyspec_php_serialization::{Node, PhpValue};
 use polyspec_session_store_core::Store;
-use polyspec_session_store_redis::{RedisSessions, Setting, StoreOptions};
+use polyspec_session_store_redis::{RedisSessions, Setting};
 use servers::{Address, Project, Service, MOUNT, PLAIN, PORT};
-
-fn failed(error: impl std::fmt::Display) -> Failed {
-    Failed::from(error.to_string())
-}
+use store::{failed, integer, options, round_trip, runtime};
 
 /// A started project of one server with the arguments of every server and `arguments`, and the address of that
 /// server. The server runs until the project is dropped.
@@ -27,40 +25,6 @@ fn plain(arguments: &[&str]) -> Result<(Project, Address), Failed> {
     project.start().map_err(Failed::from)?;
     let address = project.address("server").map_err(Failed::from)?.clone();
     Ok((project, address))
-}
-
-fn integer(value: i64) -> PhpValue {
-    let mut php = PhpValue::new();
-    match php.set_root(Node::Int(value)) {
-        Ok(()) => php,
-        Err(error) => panic!("{error}"),
-    }
-}
-
-/// The options of every test: the lock expiry, which has no default (SR-1.2), and the defaults.
-fn options() -> StoreOptions {
-    StoreOptions { lifetime: None, prefix: None, lock_expire: 30, lock_retries: None, lock_wait: None }
-}
-
-fn runtime() -> Result<tokio::runtime::Runtime, Failed> {
-    tokio::runtime::Builder::new_multi_thread().worker_threads(4).enable_all().build().map_err(failed)
-}
-
-/// Writes a session with `n` = 1 and reads it back through a store of the setting.
-async fn round_trip(setting: Setting) -> Result<(), Failed> {
-    let store = RedisSessions::new(setting, options()).map_err(failed)?;
-    let mut opened = store.open(None).await.map_err(failed)?;
-    opened.set("n", &integer(1)).map_err(|error| failed(format!("{error:?}")))?;
-    let Some(id) = opened.close().await.map_err(failed)? else {
-        return Err("no identifier is created".into());
-    };
-    let mut opened = store.open(Some(id.as_bytes())).await.map_err(failed)?;
-    let value = opened.get("n").map_err(|error| failed(format!("{error:?}")))?;
-    opened.close().await.map_err(failed)?;
-    match value.as_ref().map(PhpValue::root) {
-        Some(Node::Int(1)) => Ok(()),
-        other => Err(format!("n is {other:?}").into()),
-    }
 }
 
 fn the_requests_of_one_session_in_one_process_lose_no_write() -> Result<(), Failed> {
@@ -138,46 +102,6 @@ fn an_acl_user_connects_and_a_wrong_password_tells_nothing() -> Result<(), Faile
     }
 }
 
-fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
-    // SR-6.1: rediss:// to a server that accepts TLS alone, with the certificate that bay issues for its name. The
-    // plan of the project gives the paths of the certificate in the container and the file of the authority, which
-    // the trust store of the process (SSL_CERT_FILE) holds.
-    let mut project = Project::new(vec![Service::new("server", PORT, &PLAIN)]).map_err(Failed::from)?;
-    let certificate = project.planned("server").map_err(Failed::from)?.certificate.clone();
-    let port = PORT.to_string();
-    project
-        .extend(
-            "server",
-            &[
-                "--port",
-                "0",
-                "--tls-port",
-                &port,
-                "--tls-cert-file",
-                &certificate.server_certificate,
-                "--tls-key-file",
-                &certificate.server_key,
-                "--tls-ca-cert-file",
-                &certificate.server_authority,
-                "--tls-auth-clients",
-                "no",
-            ],
-        )
-        .map_err(Failed::from)?;
-    project.start().map_err(Failed::from)?;
-    let server = project.address("server").map_err(Failed::from)?;
-    // The trust store of rustls-native-certs reads SSL_CERT_FILE; no other test of this binary uses TLS.
-    std::env::set_var("SSL_CERT_FILE", &certificate.authority);
-    // A failure of the client tells nothing of its cause (SR-6.4), so the test adds what the server wrote.
-    runtime()?.block_on(round_trip(Setting::Server { url: format!("rediss://{}/", server.name) })).map_err(|error| {
-        let message = match error.message() {
-            Some(message) => message.to_owned(),
-            None => String::new(),
-        };
-        Failed::from(format!("{message}\nthe server at {} wrote:\n{}", server.name, project.output("server")))
-    })
-}
-
 fn sentinel_names_the_primary() -> Result<(), Failed> {
     // SR-6.2: the store asks Sentinel for the primary of the service. The configuration of Sentinel names the
     // primary by the name that the plan of the project gives, so one start runs both.
@@ -247,7 +171,6 @@ fn main() {
             "an_acl_user_connects_and_a_wrong_password_tells_nothing",
             an_acl_user_connects_and_a_wrong_password_tells_nothing,
         ),
-        Trial::test("a_tls_connection_reads_and_writes", a_tls_connection_reads_and_writes),
         Trial::test("sentinel_names_the_primary", sentinel_names_the_primary),
         Trial::test("a_cluster_keeps_sessions", a_cluster_keeps_sessions),
     ];

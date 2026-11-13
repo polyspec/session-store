@@ -1,5 +1,5 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 0eb244c6859764fd57bb583bf409d9e1e48d14f1e0b20eed05d6c58d78af2cd3 -->
+<!-- source-sha256: a40714ca97159414fa643c8e66690295e2050b353cf5079748928a16b1c7456f -->
 
 ## Unreleased
 
@@ -14,7 +14,7 @@
   기본값은 `bay`이고, `BAY_SUDO=1`이면 `sudo -n` 뒤의 `var/tools/bay`의 bay다. Linux에서는 bay의 설정과 명령이 root로
   실행되고 bay는 자기 상태를 실행한 사용자의 home 아래에 두기 때문이다. job `test`는 `make install-bay`를 실행한 뒤
   `make setup-bay`(`bay install`. 장비의 설정을 바꾸는 target은 이것 하나다), `make redis-image`, `make test`를
-  `BAY_SUDO=1`로 실행한다. `make servers-test`는 15개, `make install-bay-test`는 4개, `make tool-pins-test`는 9개,
+  `BAY_SUDO=1`로 실행한다. `make servers-test`는 16개, `make install-bay-test`는 4개, `make tool-pins-test`는 9개,
   `make workflows-test`는 6개가 통과한다. 각 script를 바꾸기 전에는 그 commit의 시험이 실패했다. 이 Mac에서
   `make install-bay`는 v0.0.6을 설치하고 그 version 명령은 v0.0.6을 주며, `scripts/test-run.sh true`는 bay의 version
   줄을 쓰고 status 0으로 끝난다. 이 Mac에서, CI의 릴리스를 v0.0.2 위로 올리기 전인 이 변경의 깨끗한
@@ -22,10 +22,16 @@
   container와 프로젝트가 남지 않았다. `make -k lint-rust fmt-check`도 status 0으로 끝났다. 로그는 추적하지 않는 실행
   기록에 있다. 그 tree 뒤에 바뀐 것은 CI가 설치하는 릴리스의 값과 문서뿐이고, 어떤 run도 그 값을 읽지 않는다.
   이 Mac의 bay v0.0.6에서 `make test`는 다섯 번 중 한 번 status 2로 끝났다. TLS의 시험이 저장소의 말,
-  곧 the connection to Redis failed: I/O error만 적고 실패했고, 서버의 프로젝트가 시험과 함께 지워졌으므로 원인은
-  알지 못한다. 같은 방법으로 손으로 시작한 TLS 서버는 certificate를 검증한 client 32개 모두에 응답했다. TLS의 시험은
-  이제 client가 실패하면 서버가 쓴 것을 실패에 덧붙이고(`scripts/servers.sh output`), 그 변경 뒤의 세 run은 status
-  0으로 끝났다. 미실행: `make setup-bay`, Linux에서의 시험, workflow. CI의 첫 run까지 미확인:
+  곧 the connection to Redis failed: I/O error만 적고 실패했고, 같은 방법으로 손으로 시작한 TLS 서버는 certificate를
+  검증한 client 32개 모두에 응답했다. 원인은 시험 binary에 있었다. `tests/server.rs`의 TLS 시도가 같은 process의 다른
+  시도 네 개가 실행되는 동안 `set_var`로 `SSL_CERT_FILE`에 bay의 authority를 적었고, 그 시도들은 프로그램을 시작하고
+  이름을 풀 때 환경을 읽으므로 그 옆의 쓰기는 정의되지 않는다. SE-10.4는 시도가 병렬로 실행되는 process의 환경을
+  어떤 시험도 바꾸지 않는다고 적는다. 이제 `tests/tls.rs`는 그 시도 하나만 가진 별도의 시험 binary다. 그 `main`은
+  프로젝트의 plan을 읽고 둘째 thread가 시작하기 전에 `SSL_CERT_FILE`에 authority 파일을 적으며, 시도는 client가
+  실패하면 서버가 쓴 것을 실패에 덧붙인다(`scripts/servers.sh output`). `tests/server.rs`는 나머지 시도 네 개를 갖고
+  환경을 바꾸지 않는다. 이를 요구하는 `scripts/servers.test.mts`의 시험은 그 commit에서 실패했고(`make
+  servers-test`: 15개 통과, 1개 실패) 변경 뒤에 통과한다(16개 통과). 변경의 깨끗한 tree에서 `make test`는 열 번
+  연속 status 0으로 끝났고, 각 run에서 TLS의 시험을 포함한 157개가 통과하고 실패는 없었다. 미실행: `make setup-bay`, Linux에서의 시험, workflow. CI의 첫 run까지 미확인:
   runner에서 `bay install`이 끝나는 것, root가 실행한 bay의 authority 파일을 시험 process가 읽는 것, run의 신호가
   `sudo`가 시작한 bay에 닿는 것.
 

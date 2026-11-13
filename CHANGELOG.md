@@ -14,7 +14,7 @@
   `bay` by default, and with `BAY_SUDO=1` the bay of `var/tools/bay` behind `sudo -n`, because on Linux the setup and
   the commands of bay run as root and bay keeps its state below the home of the user who runs it. The job `test` runs
   `make install-bay`, then `make setup-bay` (`bay install`, the one target that changes the setup of a machine),
-  `make redis-image` and `make test` with `BAY_SUDO=1`. `make servers-test` gives 15 passed, `make install-bay-test`
+  `make redis-image` and `make test` with `BAY_SUDO=1`. `make servers-test` gives 16 passed, `make install-bay-test`
   4 passed, `make tool-pins-test` 9 passed and `make workflows-test` 6 passed; before the change of each script the
   tests of its commit failed. On this Mac `make install-bay` installs v0.0.6, whose version command gives v0.0.6,
   and `scripts/test-run.sh true` writes the version line of bay and ends with status 0. On this Mac, on the clean tree of
@@ -23,11 +23,18 @@
   a run; `make -k lint-rust fmt-check` ended with status 0. The logs are in the record of the runs, which is not
   tracked. Only the values of the release that CI installs and documents changed after that tree, and no run reads
   those values. With bay v0.0.6 on this Mac `make test` ended with status 2 once in five
-  runs: the test of TLS failed with the words of the store alone, the connection to Redis failed: I/O error, and the
-  cause is not known, because the project of the server was removed with the test; a server of TLS that was started
-  by hand in the same way answered every one of 32 clients that verified its certificate. The test of TLS now adds
-  what its server wrote to a failure of its client (`scripts/servers.sh output`), and the three runs after that
-  change ended with status 0. Not run: `make setup-bay`, the tests on Linux, and the workflow. Not confirmed until the first run of
+  runs: the test of TLS failed with the words of the store alone, the connection to Redis failed: I/O error, while a
+  server of TLS that was started by hand in the same way answered every one of 32 clients that verified its
+  certificate. The cause was in the test binary: the trial of TLS in `tests/server.rs` named the authority of bay in
+  `SSL_CERT_FILE` with `set_var` while four other trials of the same process ran, and those trials read the
+  environment when they start programs and resolve names, so a write beside them is not defined. SE-10.4 states
+  that no test changes the environment of a process whose trials run in parallel. `tests/tls.rs` is now a test
+  binary of its own with that one trial: its `main` reads the plan of the project and names the authority file in
+  `SSL_CERT_FILE` before a second thread starts, and the trial adds what its server wrote to a failure of its client
+  (`scripts/servers.sh output`); `tests/server.rs` holds the four other trials and changes no environment. The test
+  of `scripts/servers.test.mts` that requires this failed on its commit (`make servers-test`: 15 passed, 1 failed) and
+  passes after the change (16 passed). On the clean tree of the change `make test` ended with status 0 ten times in
+  a row, each run with 157 tests passed and none failed, the test of TLS among them. Not run: `make setup-bay`, the tests on Linux, and the workflow. Not confirmed until the first run of
   CI: that `bay install` completes on
   the runner, that the test process reads the authority file of a bay that root runs, and that a signal of the run
   reaches a bay that `sudo` started.

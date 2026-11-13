@@ -91,6 +91,7 @@
     {
       "paths": [
         ".gitignore",
+        "LICENSE",
         ".npmrc",
         ".node-version",
         "package-lock.json"

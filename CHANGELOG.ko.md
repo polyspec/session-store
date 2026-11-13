@@ -1,7 +1,12 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: a242974a1fc6a4271343e06f9f0d3bd193e886906379e0e90aea85111af88ec2 -->
+<!-- source-sha256: ce9b8c82d5707ea33a292ca5ebaf796c6b39ceb0fecdb6d82d8d8a1f74e7f0d3 -->
 
 ## Unreleased
+
+- manifest는 라이선스 `MIT`를 적었고 저장소에는 그 본문이 없었다. `LICENSE`는 MIT 라이선스의 본문을 polyspec
+  저장소의 저작권 줄 `Copyright (c) 2026 Polyspec`과 함께 둔다. `config/owner-checks.json`이 이 경로를 소유한다.
+  파일이 있고 그 규칙이 없으면 `make owner-validate`는 `LICENSE: the path matches no owner`로 실패하고, 규칙이
+  있으면 추적되는 경로 83개를 통과한다.
 
 - 추적되는 경로를 소유하는 검사를 적은 파일이 없었다. `config/owner-checks.json`은 추적되는 경로 82개 각각에 make
   target을 준다. 문서는 `make docs-check`, 라이브러리의 crate와 case는 `make lint-rust`, `make fmt-check`,

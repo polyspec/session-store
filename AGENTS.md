@@ -34,6 +34,8 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 - `config/release.json`: the classification of every manifest for the release, which the release utilities of kit read.
 - `docs/spec/`: the specification. Root: `AGENTS.md`, `README.md`, `CHANGELOG.md` and their Korean translations
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`, `.cargo/config.toml`.
+- `LICENSE`: the text of the MIT license, which the manifests name (`license` of `[workspace.package]` of `Cargo.toml`,
+  of `package.json`, of `packages/php-ext/composer.json` and of `packages/ts/package.json`).
 
 ## Changes
 

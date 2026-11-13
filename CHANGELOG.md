@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The manifests named the license `MIT` and the repository held no text of it. `LICENSE` holds the text of the MIT
+  license with the copyright line of the polyspec repositories, `Copyright (c) 2026 Polyspec`.
+  `config/owner-checks.json` owns the path: with the file and without its rule `make owner-validate` fails with
+  `LICENSE: the path matches no owner`, and with the rule it passes the 83 tracked paths.
+
 - No file named the checks that own the tracked paths. `config/owner-checks.json` gives each of the 82 tracked paths its
   make targets: the documents `make docs-check`, the crates of the library and the cases `make lint-rust`,
   `make fmt-check` and `make test`, the binding packages `make binding-check`, the workflows `make workflows-test`

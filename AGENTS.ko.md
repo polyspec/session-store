@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 068242c51a7e84adc107826fe0fc5ed1d4ec460296058b913e1a52e284981cec -->
+<!-- source-sha256: 5632cb9fc51385af8075b91fc7de75a377e9b3069597cdffc77e80ffe2262c3e -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -34,6 +34,8 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 - `config/release.json`: 모든 manifest의 릴리스 분류이며, kit의 릴리스 유틸리티가 읽는다.
 - `docs/spec/`: 명세다. 루트: `AGENTS.md`, `README.md`, `CHANGELOG.md`와 그 한국어 번역
   (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`, `.cargo/config.toml`.
+- `LICENSE`: manifest가 적는 MIT 라이선스의 본문이다(`Cargo.toml`의 `[workspace.package]`, `package.json`,
+  `packages/php-ext/composer.json`, `packages/ts/package.json`의 `license`).
 
 ## 변경
 

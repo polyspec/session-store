@@ -24,6 +24,7 @@
         "contracts/*.json",
         "scripts/test-run.sh",
         "scripts/container.sh",
+        "scripts/servers.sh",
         "Cargo.toml",
         "Cargo.lock",
         "clippy.toml",
@@ -76,11 +77,12 @@
     },
     {
       "paths": [
-        "scripts/container.test.mts",
-        "scripts/container.sh"
+        "scripts/servers.test.mts",
+        "scripts/servers.sh",
+        "scripts/test-run.sh"
       ],
       "targets": [
-        "container-test"
+        "servers-test"
       ]
     },
     {

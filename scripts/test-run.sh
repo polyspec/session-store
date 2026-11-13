@@ -11,8 +11,8 @@
 # down for every Compose file that the directory still holds and removes the directory of the run. A project that
 # down does not remove fails the run, which then keeps the directory and names the file.
 #
-# scripts/servers.sh holds the commands. When bay, the engine of the platform or the machine setup of bay is missing,
-# the run fails before the command starts, with what is missing and what gives it.
+# scripts/servers.sh holds the commands. When bay or a part of the machine setup that a project needs is missing, the
+# run fails before the command starts, with what is missing and what gives it.
 set -u
 if [ "$#" -lt 1 ]; then
 	echo "usage: scripts/test-run.sh <command> [<argument> ...]" >&2

@@ -29,12 +29,11 @@ LIBRARY := polyspec-session-store
 TARGETS := php python node go wasm
 # binding at the commit of Cargo.lock (scripts/binding.mts).
 BINDING := $(NODE) scripts/binding.mts
-# The real peers of the tests, each required: PHP reads the records back (SE-10.3), bay runs the Redis servers of the
+# The real peers of the tests, each required: PHP reads the records back (SE-10.3), and bay runs the Redis servers of the
 # stores of Redis from the image REDIS_IMAGE as Compose projects, on Apple container on Darwin and on Docker on Linux,
-# whose commands scripts/servers.sh holds, and openssl makes their certificates of TLS (SE-10.4). A test whose peer is
-# not given fails and names what gives it.
+# whose commands scripts/servers.sh holds, and issues their certificates of TLS (SE-10.4). A test whose peer is not
+# given fails and names what gives it.
 PHP ?= $(shell command -v php)
-OPENSSL ?= $(shell command -v openssl)
 # Redis 8.10.3, the highest stable release of Redis, in the official image of Debian trixie, pinned by the digest of its
 # index; make redis-image pulls it, and the tests fail while it is not installed, so that no test pulls an image.
 REDIS_IMAGE := docker.io/library/redis:8.10.3-trixie@sha256:de1068af6f552240dfab67bcc9bfef99bfc60f776bb4580ef077ea4c8c97e848
@@ -147,8 +146,8 @@ workflows-test:
 tool-pins-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/tool-pins.test.mts
 
-# The commands of scripts/servers.sh and the run of scripts/test-run.sh (SE-10.4), against stand-ins of bay and of the
-# engine of each platform that the test writes, so it needs neither bay nor a container runtime.
+# The commands of scripts/servers.sh and the run of scripts/test-run.sh (SE-10.4), against a stand-in of bay that the
+# test writes, so it needs neither bay nor a container runtime.
 servers-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/servers.test.mts
 
@@ -160,14 +159,13 @@ commit-names-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/commit-names.test.mts
 
 # scripts/test-run.sh owns the servers and the temporary directory of the run and removes them when the run ends,
-# fails or is stopped by SIGINT or SIGTERM; it fails before the tests when bay, the engine of the platform or the
-# machine setup of bay is missing. PHP or openssl that is not found is passed empty, and the test that needs it fails.
+# fails or is stopped by SIGINT or SIGTERM; it fails before the tests when bay or a part of its machine setup is
+# missing. PHP that is not found is passed empty, and the test that needs it fails.
 test:
-	scripts/test-run.sh env PHP='$(PHP)' REDIS_IMAGE='$(REDIS_IMAGE)' OPENSSL='$(OPENSSL)' \
+	scripts/test-run.sh env PHP='$(PHP)' REDIS_IMAGE='$(REDIS_IMAGE)' \
 		$(CARGO) test $(CARGOFLAGS) $(CORE) --locked
 
-# Pulls the pinned Redis image of the tests (SE-10.4), the only step that pulls. It pulls with the engine of the
-# platform, Apple container on Darwin and docker on Linux, until bay has a command that pulls.
+# Pulls the pinned Redis image of the tests with bay (SE-10.4), the only step that pulls.
 redis-image:
 	scripts/servers.sh pull '$(REDIS_IMAGE)'
 

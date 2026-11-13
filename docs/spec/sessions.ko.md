@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: ba61cb71daaaf2e0f7a01fb0d81e4ca22cf56602266861dbd59283ab0019416a -->
+<!-- source-sha256: beb48c8dd5f67a36c16d357adb1892fe4db56f5a1b2bf4f725d4005bb28c612f -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -139,7 +139,9 @@
   thread도 시작하지 않으므로, 각 주입점은 그 점에 닿는 호출의 장전을 받는다. record session의 `get`, `set`,
   `remove`(`file_session`과 `redis_session`의 호출)가 닿는 kind `internal`의 모든 불변식 분기는 바로 앞에 주입점을
   가지며, 그 주입점은 실패한 불변식을 `broken`으로 흉내 낸다. 복사의 주입점은 같은 복사로 레코드를 쓰는 `close`도
-  닿는다. `MemoryStore`의 `get`, `set`, `remove`와 `random_hex`에는 kind `internal`의 분기가 없다.
+  닿는다. `MemoryStore`의 `get`, `set`, `remove`와 `random_hex`에는 kind `internal`의 분기가 없다. 그 member `memory_store.get`, `memory_store.set`,
+  `memory_store.remove`는 kind를 내지 않지만, 코어 경로는 `Result`를 돌려주는 trait `Store`의 메서드이므로 인터페이스
+  계약은 그것들에 `core.result: true`를 적는다(binding CK-21).
 
   | Id | 자리(함수) | 주입 | 채우는 kind | 조건의 규칙 | 장전을 받는가 |
   |---|---|---|---|---|---|

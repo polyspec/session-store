@@ -1,7 +1,12 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 38f69b28bad489cf33be827990312a4d46146ed6a78daa3297ad3f1f5e487fdc -->
+<!-- source-sha256: dea1da4bb557e1cab3664886c354e0fff437cd24f8ccfb40a542fd3375fba7c5 -->
 
 ## Unreleased
+
+- 인터페이스 계약은 `memory_store.get`, `memory_store.set`, `memory_store.remove`에 `core.result: true`를 적는다
+  (binding CK-21). 그것들은 kind를 내지 않으므로, 그것 없이는 계약이 그 코어 경로를 `Result`를 돌려주지 않는 것으로
+  읽었다. 그러나 그 경로는 `Result`를 돌려주는 trait `Store`의 메서드이므로, 생성된 crate는 그것에 대해 컴파일되지
+  않았을 것이다.
 
 - `file_session`의 `close`에서 새 세션 파일의 배타적 생성이 fault 주입점 `session_store.create`를 가진다(SE-9.6,
   SF-4.4, SF-9.2). 그래서 `file_session.close`의 `io`와 `identifier_taken`이 case를 가진다. 전에는 어떤 주입점도

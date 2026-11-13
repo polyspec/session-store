@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The interface contract states `core.result: true` for `memory_store.get`, `memory_store.set` and
+  `memory_store.remove` (binding CK-21). They raise no kind, so without it the contract read their core paths as
+  returning no `Result`, but the paths are the methods of the trait `Store`, which return a `Result`; a generated
+  crate would not compile against them.
+
 - The exclusive creation of the file of a new session, in `close` of `file_session`, has the fault injection point
   `session_store.create` (SE-9.6, SF-4.4, SF-9.2), so `io` and `identifier_taken` of `file_session.close` have their
   cases. Before, no point and no input reached them, and `make binding-check` gave these two CK-22 findings. The point

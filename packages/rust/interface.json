@@ -556,7 +556,8 @@
           "wait": "none",
           "core": {
             "path": "polyspec_session_store::Store::get",
-            "receiver": "&mut self"
+            "receiver": "&mut self",
+            "result": true
           },
           "optional_reason": "SE-2.1"
         },
@@ -588,7 +589,8 @@
           "wait": "none",
           "core": {
             "path": "polyspec_session_store::Store::set",
-            "receiver": "&mut self"
+            "receiver": "&mut self",
+            "result": true
           }
         },
         {
@@ -612,7 +614,8 @@
           "wait": "none",
           "core": {
             "path": "polyspec_session_store::Store::remove",
-            "receiver": "&mut self"
+            "receiver": "&mut self",
+            "result": true
           }
         },
         {

@@ -140,7 +140,9 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   of the kind `internal` that `get`, `set` and `remove` of a record session reach, the calls of `file_session` and
   `redis_session`, has a point just before it, which imitates the failed invariant as `broken`; the points of the copy
   are also reached by `close`, which writes the record with the same copy. `get`, `set` and `remove` of `MemoryStore`
-  and `random_hex` have no branch of the kind `internal`.
+  and `random_hex` have no branch of the kind `internal`. Their members `memory_store.get`, `memory_store.set` and
+  `memory_store.remove` raise no kind, but their core paths are the methods of the trait `Store`, which return a
+  `Result`, so the interface contract states `core.result: true` for them (binding CK-21).
 
   | Id | Place (function) | Inject | Fills | Rule of the condition | Takes the arming |
   |---|---|---|---|---|---|

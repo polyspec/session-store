@@ -7,7 +7,10 @@
 //   - no job and no step sets timeout-minutes;
 //   - every run step is one make target that the Makefile defines, with arguments NAME=value or one expression alone,
 //     so that the settings and the checks of the Makefile apply to every command of CI;
-//   - the workflow ci starts on a push of main and on workflow_dispatch alone.
+//   - the workflow ci starts on a push of main and on workflow_dispatch alone;
+//   - the last job of the workflow ci is ci-passed, which runs after every other job, also after a failed one
+//     (`if: ${{ always() }}`), needs each of them and runs `make ci-passed FAIL_SKIPPED=1` with RESULTS, the JSON of
+//     its needs, so that it passes only when every other job succeeded.
 //
 // The test reads the files as text, line by line: the workflows hold one key on a line, and a run step whose command
 // continues on a later line is a finding.
@@ -22,6 +25,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const RUNNER = 'ubuntu-26.04-arm';
 const CI = '.github/workflows/ci.yml';
 const RELEASE = '.github/workflows/release.yml';
+const LAST = 'ci-passed';
 
 // A run step: make, one target, then arguments NAME=value or expressions ${{ ... }}.
 const RUN = /^make ([a-z][a-z0-9-]*)((?: (?:[A-Z][A-Z0-9_]*=[A-Za-z0-9_.-]+|\$\{\{[^}]*\}\}))*)$/;
@@ -106,7 +110,47 @@ function triggerFindings(file: string, text: string): string[] {
   return found;
 }
 
-const TARGETS = new Set(['docs-check', 'release-tag']);
+/** The jobs of a workflow in their order: the keys of its block `jobs:`, each with the lines of its mapping. */
+function jobsOf(text: string): Map<string, string[]> {
+  const lines = text.split('\n');
+  const jobs = new Map<string, string[]>();
+  let current: string[] | undefined;
+  for (const line of lines.slice(lines.indexOf('jobs:') + 1)) {
+    if (/^\S/.test(line) && !line.startsWith('#')) break;
+    const name = /^ {2}([A-Za-z0-9_-]+): *$/.exec(line)?.[1];
+    if (name !== undefined) {
+      current = [];
+      jobs.set(name, current);
+    } else if (current !== undefined && !line.trim().startsWith('#')) current.push(line);
+  }
+  return jobs;
+}
+
+/**
+ * The findings of the last job of the workflow ci: it is ci-passed, runs after a failed job, needs every other job and
+ * judges the results of its needs with `make ci-passed FAIL_SKIPPED=1`.
+ */
+function lastJobFindings(file: string, text: string): string[] {
+  const jobs = jobsOf(text);
+  const names = [...jobs.keys()];
+  const last = names.at(-1);
+  if (last === undefined) return [`${file}: has no job`];
+  if (last !== LAST) return [`${file}: the last job is ${last}, not ${LAST}`];
+  const lines = jobs.get(LAST) ?? [];
+  const value = (key: string): string | undefined => lines.map((line) => valueOf(line, key)).find((found) => found !== undefined);
+  const found: string[] = [];
+  const condition = value('if');
+  if (condition !== '${{ always() }}') found.push(`${file}: the job ${LAST} has the condition ${condition ?? 'none'}, not \${{ always() }}`);
+  const needs = /^\[(.*)\]$/.exec(value('needs') ?? '')?.[1]?.split(',').map((name) => name.trim()).filter((name) => name !== '') ?? [];
+  const others = names.filter((name) => name !== LAST);
+  if ([...needs].sort().join(' ') !== [...others].sort().join(' '))
+    found.push(`${file}: the job ${LAST} needs ${needs.join(', ') || 'no job'}, not every other job: ${others.join(', ') || 'none'}`);
+  if (value('RESULTS') !== '${{ toJSON(needs) }}') found.push(`${file}: the job ${LAST} does not pass RESULTS, the JSON of its needs`);
+  if (!lines.some((line) => valueOf(line, 'run') === `make ${LAST} FAIL_SKIPPED=1`)) found.push(`${file}: the job ${LAST} does not run make ${LAST} FAIL_SKIPPED=1`);
+  return found;
+}
+
+const TARGETS = new Set(['docs-check', 'release-tag', 'ci-passed']);
 const ACTIONS = new Set(['./.github/actions/bootstrap']);
 const GOOD = `# actions/checkout v7.0.1: the checkout.
 name: ci
@@ -163,6 +207,42 @@ test('each trigger of the workflow ci other than a push of main and workflow_dis
   assert.deepEqual(triggerFindings(CI, GOOD.replace('on:\n', 'on: [push]\n')), [`${CI}: has no block on:`]);
 });
 
+const LAST_JOB = `  rust:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - run: make docs-check
+  ci-passed:
+    if: \${{ always() }}
+    needs: [shared, rust]
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: ./.github/actions/bootstrap
+      - name: every job passed
+        env:
+          RESULTS: \${{ toJSON(needs) }}
+        run: make ci-passed FAIL_SKIPPED=1
+`;
+
+test('the last job of the workflow ci is ci-passed, which needs every other job and judges their results', () => {
+  const good = GOOD + LAST_JOB;
+  assert.deepEqual(findings(CI, good, TARGETS, ACTIONS), []);
+  assert.deepEqual(lastJobFindings(CI, good), []);
+  const broken = (from: string, to: string): string[] => {
+    assert.ok(good.includes(from), `the sample holds no ${from}`);
+    return lastJobFindings(CI, good.replace(from, to));
+  };
+  assert.deepEqual(lastJobFindings(CI, GOOD), [`${CI}: the last job is shared, not ci-passed`]);
+  assert.deepEqual(lastJobFindings(CI, `${good}  later:\n    runs-on: ubuntu-26.04-arm\n`), [`${CI}: the last job is later, not ci-passed`]);
+  assert.deepEqual(lastJobFindings(CI, 'name: ci\njobs:\n'), [`${CI}: has no job`]);
+  assert.deepEqual(broken('    if: ${{ always() }}\n', ''), [`${CI}: the job ci-passed has the condition none, not \${{ always() }}`]);
+  assert.deepEqual(broken('if: ${{ always() }}', 'if: ${{ success() }}'), [`${CI}: the job ci-passed has the condition \${{ success() }}, not \${{ always() }}`]);
+  assert.deepEqual(broken('needs: [shared, rust]', 'needs: [shared]'), [`${CI}: the job ci-passed needs shared, not every other job: shared, rust`]);
+  assert.deepEqual(broken('    needs: [shared, rust]\n', ''), [`${CI}: the job ci-passed needs no job, not every other job: shared, rust`]);
+  assert.deepEqual(broken('needs: [shared, rust]', 'needs: [shared, rust, other]'), [`${CI}: the job ci-passed needs shared, rust, other, not every other job: shared, rust`]);
+  assert.deepEqual(broken('          RESULTS: ${{ toJSON(needs) }}\n', ''), [`${CI}: the job ci-passed does not pass RESULTS, the JSON of its needs`]);
+  assert.deepEqual(broken('run: make ci-passed FAIL_SKIPPED=1', 'run: make ci-passed'), [`${CI}: the job ci-passed does not run make ci-passed FAIL_SKIPPED=1`]);
+});
+
 test('the Makefile rules name their targets', () => {
   assert.deepEqual([...makeTargets('A := b\n.PHONY: x\nx y: z\n\trun: it\nbindings-%: w\ntest-php: export PHP := php\n')].sort(), ['test-php', 'x', 'y']);
 });
@@ -177,5 +257,6 @@ test('the workflows and the actions of the repository keep the rules', () => {
   const actions = new Set(actionFiles.map((file) => `./${dirname(file)}`));
   const found = [...workflows, ...actionFiles].flatMap((file) => findings(file, readFileSync(join(root, file), 'utf8'), targets, actions));
   found.push(...triggerFindings(CI, readFileSync(join(root, CI), 'utf8')));
+  found.push(...lastJobFindings(CI, readFileSync(join(root, CI), 'utf8')));
   assert.deepEqual(found, []);
 });

@@ -320,6 +320,17 @@ impl Project {
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     }
 
+    /// What a started service wrote so far, for a failure that names the cause that the server saw.
+    #[allow(dead_code, reason = "SE-10.4: tests/server.rs shows the output of a server whose client fails")]
+    pub fn output(&self, service: &str) -> String {
+        match run(Command::new(SERVERS).arg("output").arg(self.file()).arg(service)) {
+            Ok(output) => {
+                format!("{}{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr))
+            }
+            Err(error) => format!("the output of the service {service} is not read: {error}"),
+        }
+    }
+
     /// The output of a started service from its first line, which a reader follows until the project is dropped.
     #[allow(dead_code, reason = "SE-10.4: tests/server.rs waits for a line of a node, tests/contract.rs for none")]
     pub fn follow(&mut self, service: &str) -> Result<Lines, String> {

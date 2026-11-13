@@ -17,6 +17,8 @@
 #                                                     its status
 #   scripts/servers.sh logs <compose file> <service>  prints the output of the service from its first line and follows
 #                                                     it until the service or the caller ends
+#   scripts/servers.sh output <compose file> <service>
+#                                                     prints the output of the service so far and ends
 #   scripts/servers.sh down <compose file>            removes the services of the project
 #
 # bay names a project after the directory of its Compose file. The tests, scripts/test-run.sh and make redis-image
@@ -26,14 +28,14 @@
 # is empty.
 set -u
 usage() {
-	echo "usage: scripts/servers.sh check | pull <image> | plan <compose file> | up <compose file> | images <compose file> | exec <compose file> <service> <command> ... | logs <compose file> <service> | down <compose file>" >&2
+	echo "usage: scripts/servers.sh check | pull <image> | plan <compose file> | up <compose file> | images <compose file> | exec <compose file> <service> <command> ... | logs <compose file> <service> | output <compose file> <service> | down <compose file>" >&2
 	exit 2
 }
 [ "$#" -ge 1 ] || usage
 verb=$1
 shift
 case "$verb:$#" in
-check:0 | pull:1 | plan:1 | up:1 | images:1 | down:1 | logs:2) ;;
+check:0 | pull:1 | plan:1 | up:1 | images:1 | down:1 | logs:2 | output:2) ;;
 exec:0 | exec:1 | exec:2) usage ;;
 exec:*) ;;
 *) usage ;;
@@ -93,6 +95,10 @@ exec)
 logs)
 	# shellcheck disable=SC2086 # BAY is words
 	exec $bay -f "$1" logs -f "$2" </dev/null
+	;;
+output)
+	# shellcheck disable=SC2086 # BAY is words
+	exec $bay -f "$1" logs "$2" </dev/null
 	;;
 down)
 	# shellcheck disable=SC2086 # BAY is words

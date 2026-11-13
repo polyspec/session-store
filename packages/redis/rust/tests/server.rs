@@ -168,7 +168,14 @@ fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
     let server = project.address("server").map_err(Failed::from)?;
     // The trust store of rustls-native-certs reads SSL_CERT_FILE; no other test of this binary uses TLS.
     std::env::set_var("SSL_CERT_FILE", &certificate.authority);
-    runtime()?.block_on(round_trip(Setting::Server { url: format!("rediss://{}/", server.name) }))
+    // A failure of the client tells nothing of its cause (SR-6.4), so the test adds what the server wrote.
+    runtime()?.block_on(round_trip(Setting::Server { url: format!("rediss://{}/", server.name) })).map_err(|error| {
+        let message = match error.message() {
+            Some(message) => message.to_owned(),
+            None => String::new(),
+        };
+        Failed::from(format!("{message}\nthe server at {} wrote:\n{}", server.name, project.output("server")))
+    })
 }
 
 fn sentinel_names_the_primary() -> Result<(), Failed> {

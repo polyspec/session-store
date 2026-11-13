@@ -7,7 +7,7 @@
   is: a run starts `bay` of PATH, compares no version, writes the output of `bay version` as its first line, and the
   harness fails a document of bay whose `schemaVersion` is not 1, because the contract of the output that the harness
   reads changes its result and the number of a release does not. `config/toolchain.json` pins the release that CI
-  installs, bay v0.0.5, with the sha256 of its archive of each platform, because a runner holds no bay and a download
+  installs, bay v0.0.6, with the sha256 of its archive of each platform, because a runner holds no bay and a download
   is used only by its pinned digest; `make install-bay` (`scripts/install-bay.mts`) downloads the archive of the
   platform, refuses another sha256 and puts `bay` and `bayd` into `var/tools/bay`, and no path of a run reads the
   pin. `BAY` of the Makefile is the one value that says how bay is started, which `scripts/servers.sh` alone reads:
@@ -16,9 +16,9 @@
   `make install-bay`, then `make setup-bay` (`bay install`, the one target that changes the setup of a machine),
   `make redis-image` and `make test` with `BAY_SUDO=1`. `make servers-test` gives 15 passed, `make install-bay-test`
   4 passed, `make tool-pins-test` 9 passed and `make workflows-test` 6 passed; before the change of each script the
-  tests of its commit failed. On this Mac `make install-bay` installs v0.0.5, whose version command gives v0.0.5,
+  tests of its commit failed. On this Mac `make install-bay` installs v0.0.6, whose version command gives v0.0.6,
   and `scripts/test-run.sh true` writes the version line of bay and ends with status 0. On this Mac, on the clean tree of
-  this change before the release of CI was raised to v0.0.5, `make test` ended with status 0 three times in a row:
+  this change before the release of CI was raised above v0.0.2, `make test` ended with status 0 three times in a row:
   every test of the servers passed with the tests in parallel, and no container and no project of bay remained after
   a run; `make -k lint-rust fmt-check` ended with status 0. The logs are in the record of the runs, which is not
   tracked. Only the values of the release that CI installs and documents changed after that tree, and no run reads

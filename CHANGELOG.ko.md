@@ -1,5 +1,5 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 6db6a2e75599ac7c181a16e49327fe0358c2a542397c92f7f92170d3834e8367 -->
+<!-- source-sha256: c2a8645875e444f9ca1a82d296b56f1f5b4468d5c1d3c2c69151c00b3b54a72d -->
 
 ## Unreleased
 
@@ -7,7 +7,7 @@
   실패했으며, `scripts/servers.sh`는 PATH의 bay만 시작했다. bay는 make처럼 장비가 주는 도구다. run은 PATH의 `bay`를
   시작하고, version을 비교하지 않고, `bay version`의 출력을 첫 줄로 쓰며, harness는 `schemaVersion`이 1이 아닌 bay의
   문서를 실패시킨다. harness의 결과를 바꾸는 것은 harness가 읽는 출력의 계약이고 릴리스의 번호가 아니기 때문이다.
-  `config/toolchain.json`은 CI가 설치하는 릴리스인 bay v0.0.5를 플랫폼별 archive의 sha256과 함께 고정한다. runner에는
+  `config/toolchain.json`은 CI가 설치하는 릴리스인 bay v0.0.6을 플랫폼별 archive의 sha256과 함께 고정한다. runner에는
   bay가 없고, 받은 것은 고정한 digest로만 쓰기 때문이다. `make install-bay`(`scripts/install-bay.mts`)는 그 플랫폼의
   archive를 받고, 다른 sha256을 거부하며, `bay`와 `bayd`를 `var/tools/bay`에 둔다. run의 어떤 경로도 그 고정 값을
   읽지 않는다. Makefile의 `BAY`가 bay를 시작하는 방법을 정하는 값 하나이고, `scripts/servers.sh`만 그 값을 읽는다.
@@ -16,8 +16,8 @@
   `make setup-bay`(`bay install`. 장비의 설정을 바꾸는 target은 이것 하나다), `make redis-image`, `make test`를
   `BAY_SUDO=1`로 실행한다. `make servers-test`는 15개, `make install-bay-test`는 4개, `make tool-pins-test`는 9개,
   `make workflows-test`는 6개가 통과한다. 각 script를 바꾸기 전에는 그 commit의 시험이 실패했다. 이 Mac에서
-  `make install-bay`는 v0.0.5를 설치하고 그 version 명령은 v0.0.5를 주며, `scripts/test-run.sh true`는 bay의 version
-  줄을 쓰고 status 0으로 끝난다. 이 Mac에서, CI의 릴리스를 v0.0.5로 올리기 전인 이 변경의 깨끗한
+  `make install-bay`는 v0.0.6을 설치하고 그 version 명령은 v0.0.6을 주며, `scripts/test-run.sh true`는 bay의 version
+  줄을 쓰고 status 0으로 끝난다. 이 Mac에서, CI의 릴리스를 v0.0.2 위로 올리기 전인 이 변경의 깨끗한
   tree에서 `make test`가 세 번 연속 status 0으로 끝났다. 서버의 모든 시험이 병렬 실행 그대로 통과했고, run 뒤에 bay의
   container와 프로젝트가 남지 않았다. `make -k lint-rust fmt-check`도 status 0으로 끝났다. 로그는 추적하지 않는 실행
   기록에 있다. 그 tree 뒤에 바뀐 것은 CI가 설치하는 릴리스의 값과 문서뿐이고, 어떤 run도 그 값을 읽지 않는다.

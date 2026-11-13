@@ -571,9 +571,10 @@ static SERVER: OnceLock<Result<Shared, String>> = OnceLock::new();
 fn server() -> Result<&'static Shared, String> {
     SERVER
         .get_or_init(|| {
-            let mut project = Project::new()?;
-            let address = project.start(Service::new("server", PORT, &PLAIN))?;
-            Ok(Shared { address: address.name, server: std::sync::Mutex::new(Some(project)) })
+            let mut project = Project::new(vec![Service::new("server", PORT, &PLAIN)])?;
+            project.start()?;
+            let address = project.address("server")?.name.clone();
+            Ok(Shared { address, server: std::sync::Mutex::new(Some(project)) })
         })
         .as_ref()
         .map_err(String::clone)

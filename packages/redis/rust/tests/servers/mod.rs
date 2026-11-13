@@ -1,11 +1,12 @@
 //! The Redis servers of the tests (SE-10.4): each runs as `redis-server` of the pinned image (`REDIS_IMAGE`) in a
 //! service of a Compose project, which bay starts and removes on Apple `container` on Darwin and on Docker on Linux.
-//! `scripts/servers.sh` holds the commands; this file starts that script alone. A test owns a [`Project`]: its
-//! Compose file is in a directory of its own below the directory of the run (`SESSION_STORE_PROJECTS`) and is written
-//! before the servers start, so that `make test` removes every project of its run when the run ends or is stopped by a
-//! signal. The return of a start is its event: bay returns after the server accepts connections. A test connects to
-//! the address that bay gives for the service and waits for a later report of a server by its line, never by a time.
-//! A peer that is not given is a failure that names the make target which gives it.
+//! `scripts/servers.sh` holds the commands of bay; this file starts that script alone. A test owns a [`Project`]: its
+//! Compose file is in a directory of its own below the directory of the run (`SESSION_STORE_PROJECTS`), whose name is
+//! the name of the project, and is written before the servers start, so that `make test` removes every project of its
+//! run when the run ends or is stopped by a signal. bay gives every name: the plan of a project gives the host name
+//! and the certificate of each service before the start, and the start gives the addresses. The return of a start is
+//! its event: bay returns after every server accepts connections. A test waits for a later report of a server by its
+//! line, never by a time. A peer that is not given is a failure that names the make target which gives it.
 
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -25,8 +26,11 @@ pub const PLAIN: [&str; 6] = ["--save", "", "--appendonly", "no", "--protected-m
 #[allow(dead_code, reason = "SE-10.4: tests/server.rs mounts a directory, tests/contract.rs does not")]
 pub const MOUNT: &str = "/mnt/session-store";
 
-/// The script that holds the commands of the servers (SE-10.4).
+/// The script that holds the commands of bay (SE-10.4).
 const SERVERS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../scripts/servers.sh");
+
+/// The version of the contract of bay whose documents this file reads.
+const SCHEMA: u64 = 1;
 
 fn peer(name: &str) -> Result<String, String> {
     match std::env::var(name) {
@@ -60,6 +64,27 @@ fn quote(text: &str) -> Result<String, String> {
         return Err(format!("{text:?} is not written into a Compose file: it holds a control character or `$`"));
     }
     Ok(format!("\"{}\"", text.replace('\\', "\\\\").replace('"', "\\\"")))
+}
+
+/// The services of a JSON document that `command` of bay printed, of the contract version that this file reads.
+fn services(command: &str, output: &[u8]) -> Result<Vec<Value>, String> {
+    let document: Value =
+        serde_json::from_slice(output).map_err(|error| format!("`bay {command}` gives no JSON: {error}"))?;
+    if document.get("schemaVersion").and_then(Value::as_u64) != Some(SCHEMA) {
+        return Err(format!("`bay {command}` gives no document of schemaVersion {SCHEMA}: {document}"));
+    }
+    match document.get("services").and_then(Value::as_array) {
+        Some(services) => Ok(services.clone()),
+        None => Err(format!("`bay {command}` gives no services: {document}")),
+    }
+}
+
+/// A text field of a service in a document of `command` of bay.
+fn field(command: &str, service: &Value, name: &str) -> Result<String, String> {
+    match service.get(name).and_then(Value::as_str) {
+        Some(value) if !value.is_empty() => Ok(value.to_owned()),
+        _ => Err(format!("`bay {command}` gives no {name}: {service}")),
+    }
 }
 
 /// A server of a project: `redis-server` with its arguments, the port on which it accepts connections, the directory
@@ -99,24 +124,35 @@ impl Service {
     }
 }
 
+/// The certificate that bay issues for the name of a service.
+#[allow(dead_code, reason = "SE-10.4: tests/server.rs starts a server of TLS, tests/contract.rs does not")]
+#[derive(Clone)]
+pub struct Certificate {
+    /// The file of the authority on the host, which a client of the server trusts.
+    pub authority: String,
+    /// The certificate, its key and the authority in the container of the service.
+    pub server_certificate: String,
+    pub server_key: String,
+    pub server_authority: String,
+}
+
+/// What bay gives of a service before its start.
+#[allow(dead_code, reason = "SE-10.4: tests/server.rs names a server before its start, tests/contract.rs does not")]
+pub struct Planned {
+    /// The host name of the service, without a port.
+    pub host: String,
+    /// The certificate of the service.
+    pub certificate: Certificate,
+}
+
 /// The address that bay gives for a started service.
+#[derive(Clone)]
 pub struct Address {
     /// The name and the port, `<name>:<port>`.
     pub name: String,
     /// The IPv4 address of the container, for a command of Redis that takes no name.
-    #[allow(dead_code, reason = "SE-10.4: tests/server.rs introduces the nodes of a cluster by it")]
+    #[allow(dead_code, reason = "SE-10.4: tests/server.rs creates a cluster by the addresses of its nodes")]
     pub ipv4: String,
-}
-
-impl Address {
-    /// The name without the port.
-    #[allow(dead_code, reason = "SE-10.4: tests/server.rs names a server in a certificate and a configuration")]
-    pub fn host(&self) -> &str {
-        match self.name.rsplit_once(':') {
-            Some((host, _port)) => host,
-            None => &self.name,
-        }
-    }
 }
 
 /// A Compose project of one test. Dropping it removes its servers, ends the readers of their output and removes its
@@ -126,27 +162,48 @@ pub struct Project {
     directory: PathBuf,
     image: String,
     services: Vec<Service>,
+    planned: Vec<(String, Planned)>,
+    addresses: Vec<(String, Address)>,
     followers: Vec<Child>,
 }
 
 impl Project {
-    /// A project without a server, named after the run, this process and a count, with a directory of its own.
-    pub fn new() -> Result<Self, String> {
+    /// A project of `services` that is not started, in a directory of its own named after the run, this process and
+    /// a count, with what bay plans for each service.
+    pub fn new(services: Vec<Service>) -> Result<Self, String> {
         static MADE: AtomicUsize = AtomicUsize::new(0);
         let image = peer("REDIS_IMAGE")?;
         let projects = PathBuf::from(peer("SESSION_STORE_PROJECTS")?);
         let Some(prefix) = projects.file_name().and_then(std::ffi::OsStr::to_str) else {
             return Err(format!("SESSION_STORE_PROJECTS names no directory: {}", projects.display()));
         };
+        // bay names the project after this directory.
         let name = format!("{prefix}-{}-{}", std::process::id(), MADE.fetch_add(1, Ordering::Relaxed));
-        // An engine that is not found fails here, with its name and what installs it; no start pulls an image.
-        if let Err(error) = run(Command::new(SERVERS).args(["present", &image]).stdout(Stdio::null())) {
-            return Err(format!("the image {image} is not installed: `make redis-image` pulls it: {error}"));
-        }
         let directory = projects.join(&name);
         std::fs::create_dir(&directory)
             .map_err(|error| format!("the directory {} is not made: {error}", directory.display()))?;
-        Ok(Self { name, directory, image, services: Vec::new(), followers: Vec::new() })
+        let mut project = Self {
+            name,
+            directory,
+            image,
+            services,
+            planned: Vec::new(),
+            addresses: Vec::new(),
+            followers: Vec::new(),
+        };
+        for service in &project.services {
+            if let Some((mounted, _read_only)) = &service.mount {
+                let mounted = project.directory.join(mounted);
+                std::fs::create_dir_all(&mounted)
+                    .map_err(|error| format!("the directory {} is not made: {error}", mounted.display()))?;
+            }
+        }
+        project.write()?;
+        let output = run(Command::new(SERVERS).arg("plan").arg(project.file()))?;
+        for service in services_of_plan(&output.stdout)? {
+            project.planned.push(service);
+        }
+        Ok(project)
     }
 
     /// The directory of the project, whose directories a service mounts.
@@ -159,10 +216,34 @@ impl Project {
         self.directory.join("compose.yaml")
     }
 
-    /// The Compose file of the services: the name of the project, and for each service the image by its digest, the
-    /// server with its arguments, its port, its volume and the services before it. No port is published.
-    fn compose(&self) -> Result<String, String> {
-        let mut lines = vec![format!("name: {}", quote(&self.name)?), "services:".to_owned()];
+    /// What bay plans for `service`.
+    #[allow(dead_code, reason = "SE-10.4: tests/server.rs names a server before its start, tests/contract.rs does not")]
+    pub fn planned(&self, service: &str) -> Result<&Planned, String> {
+        match self.planned.iter().find(|(name, _planned)| name == service) {
+            Some((_name, planned)) => Ok(planned),
+            None => Err(format!("`bay plan` names no service {service} of the project {}", self.name)),
+        }
+    }
+
+    /// Adds `arguments` to the arguments of `service`, before the start.
+    #[allow(
+        dead_code,
+        reason = "SE-10.4: tests/server.rs gives a server the paths of its plan, tests/contract.rs none"
+    )]
+    pub fn extend(&mut self, service: &str, arguments: &[&str]) -> Result<(), String> {
+        match self.services.iter_mut().find(|other| other.name == service) {
+            Some(found) => {
+                found.arguments.extend(arguments.iter().map(|argument| (*argument).to_owned()));
+                Ok(())
+            }
+            None => Err(format!("the project {} has no service {service}", self.name)),
+        }
+    }
+
+    /// Writes the Compose file of the services: for each service the image by its digest, the server with its
+    /// arguments, its port, its volume and the services before it. No port is published.
+    fn write(&self) -> Result<(), String> {
+        let mut lines = vec!["services:".to_owned()];
         for service in &self.services {
             let arguments = service
                 .arguments
@@ -172,7 +253,7 @@ impl Project {
                 .join(", ");
             lines.push(format!("  {}:", quote(&service.name)?));
             lines.push(format!("    image: {}", quote(&self.image)?));
-            // The entry point of the image would run the server as the user redis, who cannot read the files that a
+            // The entry point of the image would run the server as the user redis, who cannot write the file that a
             // test mounts; the server runs as root of its own container.
             lines.push("    entrypoint: [\"redis-server\"]".to_owned());
             lines.push(format!("    command: [{arguments}]"));
@@ -190,49 +271,53 @@ impl Project {
             }
         }
         lines.push(String::new());
-        Ok(lines.join("\n"))
-    }
-
-    /// Starts `service`, or replaces the service of its name, and returns its address once it accepts connections.
-    /// The Compose file is written before the start; bay keeps the services of the file that did not change.
-    pub fn start(&mut self, service: Service) -> Result<Address, String> {
-        let name = service.name.clone();
-        self.services.retain(|other| other.name != name);
-        self.services.push(service);
         let file = self.file();
-        std::fs::write(&file, self.compose()?)
-            .map_err(|error| format!("{} is not written: {error}", file.display()))?;
-        run(Command::new(SERVERS).arg("up").arg(&file))?;
-        self.address(&name)
+        std::fs::write(&file, lines.join("\n")).map_err(|error| format!("{} is not written: {error}", file.display()))
     }
 
-    /// The address of a started service, which bay gives in the state of its projects.
-    fn address(&self, service: &str) -> Result<Address, String> {
-        let output = run(Command::new(SERVERS).arg("status"))?;
-        let status: Value = serde_json::from_slice(&output.stdout)
-            .map_err(|error| format!("`bay status --json` gives no JSON: {error}"))?;
-        let found = status
-            .get("groups")
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-            .filter(|group| group.get("name").and_then(Value::as_str) == Some(self.name.as_str()))
-            .filter_map(|group| group.get("services").and_then(Value::as_array))
-            .flatten()
-            .find(|entry| entry.get("name").and_then(Value::as_str) == Some(service));
-        let Some(found) = found else {
-            return Err(format!("`bay status --json` names no service {service} of the project {}", self.name));
-        };
-        let text = |field: &str| -> Result<String, String> {
-            match found.get(field).and_then(Value::as_str) {
-                Some(value) if !value.is_empty() => Ok(value.to_owned()),
-                _ => Err(format!(
-                    "`bay status --json` gives no {field} for the service {service} of the project {}: {found}",
-                    self.name
-                )),
+    /// Starts every service by one `up`, which pulls no image, and returns once each accepts connections. The
+    /// Compose file is written before the start.
+    pub fn start(&mut self) -> Result<(), String> {
+        self.write()?;
+        let file = self.file();
+        let output = match run(Command::new(SERVERS).arg("up").arg(&file)) {
+            Ok(output) => output,
+            Err(error) => {
+                // A start fails before it creates anything when the image is not installed.
+                return Err(match run(Command::new(SERVERS).arg("images").arg(&file)) {
+                    Ok(_installed) => error,
+                    Err(missing) => {
+                        format!("the image {} is not installed: `make redis-image` pulls it: {missing}", self.image)
+                    }
+                });
             }
         };
-        Ok(Address { name: text("address")?, ipv4: text("ipv4")? })
+        for service in services("up --json", &output.stdout)? {
+            let name = field("up --json", &service, "name")?;
+            let address =
+                Address { name: field("up --json", &service, "address")?, ipv4: field("up --json", &service, "ipv4")? };
+            self.addresses.push((name, address));
+        }
+        Ok(())
+    }
+
+    /// The address of a started service.
+    pub fn address(&self, service: &str) -> Result<&Address, String> {
+        match self.addresses.iter().find(|(name, _address)| name == service) {
+            Some((_name, address)) => Ok(address),
+            None => Err(format!("`bay up --json` names no service {service} of the project {}", self.name)),
+        }
+    }
+
+    /// Runs `command` in the container of a started service and returns its standard output; a command that fails is
+    /// a failure with its output.
+    #[allow(
+        dead_code,
+        reason = "SE-10.4: tests/server.rs creates a cluster with redis-cli, tests/contract.rs does not"
+    )]
+    pub fn exec(&self, service: &str, command: &[&str]) -> Result<String, String> {
+        let output = run(Command::new(SERVERS).arg("exec").arg(self.file()).arg(service).args(command))?;
+        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     }
 
     /// The output of a started service from its first line, which a reader follows until the project is dropped.
@@ -258,6 +343,29 @@ impl Project {
         self.followers.push(child);
         Ok(Lines { service: format!("{service} of the project {}", self.name), lines })
     }
+}
+
+/// The services of a plan of bay, each with its name.
+fn services_of_plan(output: &[u8]) -> Result<Vec<(String, Planned)>, String> {
+    let mut planned = Vec::new();
+    for service in services("plan --json", output)? {
+        let Some(certificate) = service.get("certificate") else {
+            return Err(format!("`bay plan --json` gives no certificate: {service}"));
+        };
+        planned.push((
+            field("plan --json", &service, "name")?,
+            Planned {
+                host: field("plan --json", &service, "host")?,
+                certificate: Certificate {
+                    authority: field("plan --json", certificate, "ca")?,
+                    server_certificate: field("plan --json", certificate, "containerCert")?,
+                    server_key: field("plan --json", certificate, "containerKey")?,
+                    server_authority: field("plan --json", certificate, "containerCa")?,
+                },
+            },
+        ));
+    }
+    Ok(planned)
 }
 
 /// The lines of the output of a service.

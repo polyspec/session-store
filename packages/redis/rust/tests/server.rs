@@ -1,11 +1,10 @@
 //! The connection against real Redis servers, each a service of a Compose project of its test that bay runs from the
 //! pinned image (`tests/servers`, SE-10.4): the queue of one process (SR-3.2), an ACL user (SR-6.1, SR-6.4), TLS
-//! (SR-6.1), Sentinel (SR-6.2) and Cluster (SR-6.3). The certificates of TLS are made by `openssl` of the host
-//! (`OPENSSL`), until bay issues a certificate to a service without a domain.
+//! (SR-6.1), Sentinel (SR-6.2) and Cluster (SR-6.3). The certificate of the server of TLS is the one that bay issues
+//! for its name.
 
 mod servers;
 
-use std::process::{Command, Stdio};
 use std::sync::Arc;
 
 use binding_core::{Failure, Kinds};
@@ -19,25 +18,15 @@ fn failed(error: impl std::fmt::Display) -> Failed {
     Failed::from(error.to_string())
 }
 
-/// A project of one server with the arguments of every server and `arguments`, and the address of that server. The
-/// server runs until the project is dropped.
+/// A started project of one server with the arguments of every server and `arguments`, and the address of that
+/// server. The server runs until the project is dropped.
 fn plain(arguments: &[&str]) -> Result<(Project, Address), Failed> {
-    let mut project = Project::new().map_err(Failed::from)?;
     let mut all = PLAIN.to_vec();
     all.extend_from_slice(arguments);
-    let address = project.start(Service::new("server", PORT, &all)).map_err(Failed::from)?;
+    let mut project = Project::new(vec![Service::new("server", PORT, &all)]).map_err(Failed::from)?;
+    project.start().map_err(Failed::from)?;
+    let address = project.address("server").map_err(Failed::from)?.clone();
     Ok((project, address))
-}
-
-/// Sends one command of Redis, `words`, to the server at `address` and takes its reply OK.
-async fn command(address: &str, words: &[&str]) -> Result<(), Failed> {
-    let Some((name, arguments)) = words.split_first() else {
-        return Err("no command is given".into());
-    };
-    let url = format!("redis://{address}/");
-    let client = redis::Client::open(url.as_str()).map_err(failed)?;
-    let mut connection = client.get_multiplexed_async_connection().await.map_err(failed)?;
-    redis::cmd(name).arg(arguments).query_async::<()>(&mut connection).await.map_err(failed)
 }
 
 fn integer(value: i64) -> PhpValue {
@@ -136,7 +125,11 @@ fn an_acl_user_connects_and_a_wrong_password_tells_nothing() -> Result<(), Faile
     match wrong {
         Err(error) if error.kind() == "connection" => {
             let message = error.to_string();
-            if message.contains("wrongword") || message.contains("alice") || message.contains(server.host()) {
+            let host = match address.rsplit_once(':') {
+                Some((host, _port)) => host,
+                None => address,
+            };
+            if message.contains("wrongword") || message.contains("alice") || message.contains(host) {
                 return Err(format!("the message tells the setting: {message}").into());
             }
             Ok(())
@@ -146,121 +139,57 @@ fn an_acl_user_connects_and_a_wrong_password_tells_nothing() -> Result<(), Faile
 }
 
 fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
-    // SR-6.1: rediss:// with a certificate of the name of the server that the trust store of the process
-    // (SSL_CERT_FILE) holds. The first start gives the name of the server, which the certificate names; the second
-    // start replaces the server by one that reads the certificate and accepts TLS alone, on the same port.
-    let openssl = match std::env::var("OPENSSL") {
-        Ok(openssl) if !openssl.is_empty() => openssl,
-        _ => {
-            return Err("OPENSSL is not set: `make test` names the openssl of PATH, which makes the certificates".into())
-        }
-    };
-    let mut project = Project::new().map_err(Failed::from)?;
-    let directory = project.directory().join("tls");
-    std::fs::create_dir(&directory).map_err(failed)?;
-    let server = project.start(Service::new("server", PORT, &PLAIN).mount("tls", true)).map_err(Failed::from)?;
-    let path = |name: &str| directory.join(name).to_string_lossy().into_owned();
-    let run = |arguments: &[&str]| -> Result<(), Failed> {
-        let output = Command::new(&openssl).args(arguments).stdin(Stdio::null()).output().map_err(failed)?;
-        if output.status.success() {
-            Ok(())
-        } else {
-            Err(format!("openssl {arguments:?} fails: {}", String::from_utf8_lossy(&output.stderr)).into())
-        }
-    };
-    run(&[
-        "req",
-        "-x509",
-        "-newkey",
-        "rsa:2048",
-        "-nodes",
-        "-days",
-        "1",
-        "-subj",
-        "/CN=sessions test CA",
-        "-keyout",
-        &path("ca.key"),
-        "-out",
-        &path("ca.pem"),
-    ])?;
-    run(&[
-        "req",
-        "-newkey",
-        "rsa:2048",
-        "-nodes",
-        "-subj",
-        "/CN=sessions test server",
-        "-keyout",
-        &path("server.key"),
-        "-out",
-        &path("server.csr"),
-    ])?;
-    std::fs::write(directory.join("ext"), format!("subjectAltName=DNS:{}\n", server.host())).map_err(failed)?;
-    run(&[
-        "x509",
-        "-req",
-        "-in",
-        &path("server.csr"),
-        "-CA",
-        &path("ca.pem"),
-        "-CAkey",
-        &path("ca.key"),
-        "-CAcreateserial",
-        "-days",
-        "1",
-        "-extfile",
-        &path("ext"),
-        "-out",
-        &path("server.pem"),
-    ])?;
+    // SR-6.1: rediss:// to a server that accepts TLS alone, with the certificate that bay issues for its name. The
+    // plan of the project gives the paths of the certificate in the container and the file of the authority, which
+    // the trust store of the process (SSL_CERT_FILE) holds.
+    let mut project = Project::new(vec![Service::new("server", PORT, &PLAIN)]).map_err(Failed::from)?;
+    let certificate = project.planned("server").map_err(Failed::from)?.certificate.clone();
     let port = PORT.to_string();
-    let certificate = format!("{MOUNT}/server.pem");
-    let key = format!("{MOUNT}/server.key");
-    let authority = format!("{MOUNT}/ca.pem");
-    let mut arguments = PLAIN.to_vec();
-    arguments.extend_from_slice(&[
-        "--port",
-        "0",
-        "--tls-port",
-        &port,
-        "--tls-cert-file",
-        &certificate,
-        "--tls-key-file",
-        &key,
-        "--tls-ca-cert-file",
-        &authority,
-        "--tls-auth-clients",
-        "no",
-    ]);
-    let server = project.start(Service::new("server", PORT, &arguments).mount("tls", true)).map_err(Failed::from)?;
+    project
+        .extend(
+            "server",
+            &[
+                "--port",
+                "0",
+                "--tls-port",
+                &port,
+                "--tls-cert-file",
+                &certificate.server_certificate,
+                "--tls-key-file",
+                &certificate.server_key,
+                "--tls-ca-cert-file",
+                &certificate.server_authority,
+                "--tls-auth-clients",
+                "no",
+            ],
+        )
+        .map_err(Failed::from)?;
+    project.start().map_err(Failed::from)?;
+    let server = project.address("server").map_err(Failed::from)?;
     // The trust store of rustls-native-certs reads SSL_CERT_FILE; no other test of this binary uses TLS.
-    std::env::set_var("SSL_CERT_FILE", path("ca.pem"));
+    std::env::set_var("SSL_CERT_FILE", &certificate.authority);
     runtime()?.block_on(round_trip(Setting::Server { url: format!("rediss://{}/", server.name) }))
 }
 
 fn sentinel_names_the_primary() -> Result<(), Failed> {
-    // SR-6.2: the store asks Sentinel for the primary of the service. Sentinel starts by a second start of the
-    // project, after bay gave the name of the primary, which its configuration names.
-    let mut project = Project::new().map_err(Failed::from)?;
-    let primary = project.start(Service::new("primary", PORT, &PLAIN)).map_err(Failed::from)?;
-    let directory = project.directory().join("sentinel");
-    std::fs::create_dir(&directory).map_err(failed)?;
+    // SR-6.2: the store asks Sentinel for the primary of the service. The configuration of Sentinel names the
+    // primary by the name that the plan of the project gives, so one start runs both.
+    let configuration = format!("{MOUNT}/sentinel.conf");
+    let mut project = Project::new(vec![
+        Service::new("primary", PORT, &PLAIN),
+        Service::new("sentinel", 26379, &[&configuration, "--sentinel"]).mount("sentinel", false).after("primary"),
+    ])
+    .map_err(Failed::from)?;
+    let primary = project.planned("primary").map_err(Failed::from)?.host.clone();
     // Sentinel writes its state into its configuration file, which is in the mounted directory.
     std::fs::write(
-        directory.join("sentinel.conf"),
-        format!(
-            "protected-mode no\nsentinel resolve-hostnames yes\nsentinel monitor service {} {PORT} 1\n",
-            primary.host()
-        ),
+        project.directory().join("sentinel").join("sentinel.conf"),
+        format!("protected-mode no\nsentinel resolve-hostnames yes\nsentinel monitor service {primary} {PORT} 1\n"),
     )
     .map_err(failed)?;
-    let configuration = format!("{MOUNT}/sentinel.conf");
     // Sentinel reads the primary of its configuration before it accepts connections.
-    let sentinel = project
-        .start(
-            Service::new("sentinel", 26379, &[&configuration, "--sentinel"]).mount("sentinel", false).after("primary"),
-        )
-        .map_err(Failed::from)?;
+    project.start().map_err(Failed::from)?;
+    let sentinel = project.address("sentinel").map_err(Failed::from)?;
     runtime()?.block_on(round_trip(Setting::Sentinel {
         urls: vec![format!("redis://{}/", sentinel.name)],
         service: "service".to_owned(),
@@ -271,41 +200,33 @@ fn sentinel_names_the_primary() -> Result<(), Failed> {
 }
 
 fn a_cluster_keeps_sessions() -> Result<(), Failed> {
-    // SR-6.3: three primaries; a session and its lock may live on different primaries. The test forms the cluster
-    // with the commands of Redis, in the order of `redis-cli --cluster create`: each node takes a third of the slots
-    // and an epoch of its own, and every other node meets the first by its address, because CLUSTER MEET takes no
-    // name. A node learns its own address from the MEET or the PING that it receives.
-    let mut project = Project::new().map_err(Failed::from)?;
-    let mut nodes = Vec::new();
+    // SR-6.3: three primaries; a session and its lock may live on different primaries. `redis-cli --cluster create`
+    // of the image creates the cluster in the container of the first node, by the IPv4 addresses of the nodes: a
+    // node tells a client the addresses that the command gave, and a name gives the command more than one address.
+    let names = ["node-0", "node-1", "node-2"];
+    let mut arguments = PLAIN.to_vec();
+    arguments.extend_from_slice(&["--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf"]);
+    let mut project =
+        Project::new(names.iter().map(|name| Service::new(name, PORT, &arguments)).collect()).map_err(Failed::from)?;
+    project.start().map_err(Failed::from)?;
     let mut reports = Vec::new();
-    for name in ["node-0", "node-1", "node-2"] {
-        let mut arguments = PLAIN.to_vec();
-        arguments.extend_from_slice(&["--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf"]);
-        nodes.push(project.start(Service::new(name, PORT, &arguments)).map_err(Failed::from)?);
+    let mut nodes = Vec::new();
+    let mut addresses = Vec::new();
+    for name in names {
         reports.push(project.follow(name).map_err(Failed::from)?);
+        let node = project.address(name).map_err(Failed::from)?;
+        nodes.push(format!("redis://{}/", node.name));
+        addresses.push(format!("{}:{PORT}", node.ipv4));
     }
-    let Some(first) = nodes.first() else {
-        return Err("no node is started".into());
-    };
-    let port = PORT.to_string();
-    let runtime = runtime()?;
-    runtime.block_on(async {
-        let slots = [("0", "5460", "1"), ("5461", "10922", "2"), ("10923", "16383", "3")];
-        for (node, (low, high, epoch)) in nodes.iter().zip(slots) {
-            command(&node.name, &["CLUSTER", "ADDSLOTSRANGE", low, high]).await?;
-            command(&node.name, &["CLUSTER", "SET-CONFIG-EPOCH", epoch]).await?;
-        }
-        for node in nodes.iter().skip(1) {
-            command(&node.name, &["CLUSTER", "MEET", &first.ipv4, &port]).await?;
-        }
-        Ok::<(), Failed>(())
-    })?;
+    let mut create = vec!["redis-cli", "--cluster", "create"];
+    create.extend(addresses.iter().map(String::as_str));
+    create.extend(["--cluster-replicas", "0", "--cluster-yes"]);
+    project.exec("node-0", &create).map_err(Failed::from)?;
     // Each node reports the state of the cluster when it changes; the cluster serves when every node reports ok.
     for report in &mut reports {
         report.wait_for("Cluster state changed: ok").map_err(Failed::from)?;
     }
-    let urls = nodes.iter().map(|node| format!("redis://{}/", node.name)).collect();
-    runtime.block_on(round_trip(Setting::Cluster { urls }))
+    runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes }))
 }
 
 fn main() {

@@ -61,17 +61,17 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
 
 # The targets of each job of .github/workflows/ci.yml, which ci-targets of kit runs past failures into CI_REPORT. The
 # job test runs make redis-image and make test, one target each.
-CI_SHARED := docs-check owner-validate workflows-test tool-pins-test servers-test commit-names-check commit-names-test release-coverage
+CI_SHARED := docs-check owner-validate workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test release-coverage
 CI_RUST := lint-rust fmt-check binding-check
 CI_REPORT ?= var/report/ci-targets
 
-check: lint-rust fmt-check test binding-check docs-check owner-validate workflows-test tool-pins-test servers-test commit-names-check commit-names-test release-coverage
+check: lint-rust fmt-check test binding-check docs-check owner-validate workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test release-coverage
 
 # The npm that devEngines of package.json names installs the lock, @polyspec/kit included, before the tools of the
 # checkout exist, since install-tools TOOLS=npm runs the bootstrap of the installed kit. It runs on the node of the
@@ -150,6 +150,11 @@ tool-pins-test:
 # test writes, so it needs neither bay nor a container runtime.
 servers-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/servers.test.mts
+
+# The install of the pinned release of bay (scripts/install-bay.mts), with an archive that the test packs, so it
+# downloads nothing.
+install-bay-test:
+	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/install-bay.test.mts
 
 # No tracked Markdown file names a Git commit (AGENTS.md, "Commits"); commit-names-test tests the checker.
 commit-names-check:

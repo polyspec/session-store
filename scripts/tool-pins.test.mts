@@ -133,6 +133,22 @@ test('config/toolchain.json names the release of mise with the sha256 of its arc
   }
 });
 
+test('config/toolchain.json names the release of bay with the sha256 of its archive of each platform, and the Makefile starts bay by one value', () => {
+  const config: unknown = JSON.parse(read('config/toolchain.json'));
+  const bay = (config as { bay?: { version?: unknown; releases?: unknown; sha256?: Record<string, unknown> } }).bay;
+  assert.match(typeof bay?.version === 'string' ? bay.version : '', /^v[0-9]+\.[0-9]+\.[0-9]+$/, 'config/toolchain.json names no exact release of bay');
+  assert.match(typeof bay?.releases === 'string' ? bay.releases : '', /^https:\/\/github\.com\/polyspec\/bay\/releases$/, 'config/toolchain.json names no address of the releases of bay');
+  for (const platform of MISE_PLATFORMS) {
+    const digest = bay?.sha256?.[platform];
+    assert.match(typeof digest === 'string' ? digest : '', /^[0-9a-f]{64}$/, `config/toolchain.json holds no sha256 of bay for ${platform}`);
+  }
+  // bay of PATH by default, and the bay of var/tools behind sudo -n when BAY_SUDO is set; no recipe names bay itself.
+  const makefile = read('Makefile');
+  assert.match(makefile, /^BAY \?= \$\(if \$\(BAY_SUDO\),sudo -n \$\(VAR_TOOLS\)\/bay\/bay,bay\)$/m, 'BAY of the Makefile is not bay of PATH or the bay of var/tools behind sudo -n');
+  const started = makefile.split('\n').filter((line) => /^\t(?:.*[ ;|&])?bay(?: |$)/.test(line));
+  assert.deepEqual(started, [], 'a recipe starts bay by its name, not by BAY');
+});
+
 test('the bootstrap action sets up the Node.js of mise.toml, and no .node-version is tracked', () => {
   assert.ok(!tracked.has('.node-version'), '.node-version is tracked beside mise.toml, a second pin of Node.js');
   const lines = read('.github/actions/bootstrap/action.yml').split('\n').filter((line) => /^ *node-version/.test(line)).map((line) => line.trim());

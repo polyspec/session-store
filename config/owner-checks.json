@@ -86,6 +86,16 @@
     },
     {
       "paths": [
+        "scripts/install-bay.test.mts",
+        "scripts/install-bay.mts",
+        "config/toolchain.json"
+      ],
+      "targets": [
+        "install-bay-test"
+      ]
+    },
+    {
+      "paths": [
         "scripts/tool-pins.test.mts",
         "mise.toml",
         "mise.lock",

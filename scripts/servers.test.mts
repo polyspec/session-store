@@ -22,7 +22,15 @@ interface Machine {
   bay: boolean;
   /** The exit status of the stand-in bay for each command that is named; 0 for the others. */
   status?: Record<string, number>;
+  /** The version that the stand-in bay gives; the pinned one when it is undefined. */
+  version?: string;
 }
+
+/** The pin of bay that the Makefile gives a run, and the address of its release. */
+const PIN = 'v1.2.3';
+const RELEASE = 'https://example.invalid/bay/releases/tag/v1.2.3';
+/** The two commands of a check that passes. */
+const CHECKED = [['bay', 'version', '--json'], ['bay', 'check', '-scope', 'run']];
 
 /** The directory of the stand-in, with the commands that it received. */
 interface Stand {
@@ -58,15 +66,19 @@ function stand(t: TestContext, machine: Machine): Stand {
       `exec) if [ -p /dev/stdin ]; then echo pipe; else cat; fi > '${join(directory, 'input')}' ;;`,
       `plan | up) echo "{\\"command\\":\\"$1\\"}" ;;`,
       `check) echo 'ok       dns agent' ;;`,
+      `version) echo '{"version":"${machine.version ?? PIN}","commit":"00","modified":false,"schemaVersion":1}' ;;`,
       'esac',
       'exit 0',
       '',
     ].join('\n'));
     chmodSync(join(bin, 'bay'), 0o755);
   }
+  // A program that starts another one, as sudo does: it records its words and runs the words after its option.
+  writeFileSync(join(bin, 'wrap'), `#!/bin/sh\nline=wrap\nfor word in "$@"; do line="$line\t$word"; done\nprintf '%s\\n' "$line" >> '${calls}'\nshift\nexec "$@"\n`);
+  chmodSync(join(bin, 'wrap'), 0o755);
   return {
     directory,
-    env: { PATH: `${bin}:/usr/bin:/bin` },
+    env: { PATH: `${bin}:/usr/bin:/bin`, BAY_VERSION: PIN, BAY_RELEASE: RELEASE },
     calls: () => (existsSync(calls) ? readFileSync(calls, 'utf8').split('\n').filter((line) => line !== '').map((line) => line.split('\t')) : []),
   };
 }
@@ -80,8 +92,8 @@ interface Run {
 }
 
 /** Runs scripts/servers.sh with `args` on `machine`; `made` are the stand-ins when the test reads their files. */
-function run(t: TestContext, machine: Machine, args: string[], made: Stand = stand(t, machine)): Run {
-  const result = spawnSync('/bin/sh', [servers, ...args], { encoding: 'utf8', env: made.env });
+function run(t: TestContext, machine: Machine, args: string[], made: Stand = stand(t, machine), env: Record<string, string> = {}): Run {
+  const result = spawnSync('/bin/sh', [servers, ...args], { encoding: 'utf8', env: { ...made.env, ...env } });
   return { status: result.status, stdout: result.stdout, stderr: result.stderr, calls: made.calls() };
 }
 
@@ -129,10 +141,30 @@ test('pull fetches the image through bay, as the image of a project that the scr
   assert.equal(run(t, { bay: true, status: { pull: 1 } }, ['pull', IMAGE]).status, 1);
 });
 
-test('check passes when bay and the machine setup that a run needs are in place, and changes nothing', (t) => {
+test('check passes when bay is the pinned release and the machine setup that a run needs is in place, and changes nothing', (t) => {
   const checked = run(t, present, ['check']);
   assert.deepEqual([checked.status, checked.stdout, checked.stderr], [0, '', '']);
-  assert.deepEqual(checked.calls, [['bay', 'check', '-scope', 'run']]);
+  assert.deepEqual(checked.calls, CHECKED);
+});
+
+test('a bay of another version than the pin fails check before the setup is asked, with the address of the pinned release', (t) => {
+  for (const version of ['v1.2.4', 'v0.0.0-20261113203055-ef9e1e9780e0+dirty']) {
+    const other = run(t, { bay: true, version }, ['check']);
+    assert.equal(other.status, 1, version);
+    assert.equal(other.stderr, `scripts/servers.sh: bay is ${version} and the pinned release is ${PIN} (config/toolchain.json): install it from ${RELEASE}\n`);
+    assert.deepEqual(other.calls, [['bay', 'version', '--json']]);
+  }
+  const failed = run(t, { bay: true, status: { version: 1 } }, ['check']);
+  assert.equal(failed.status, 1);
+  assert.match(failed.stderr, /^scripts\/servers\.sh: bay gives no version: install the pinned release v1\.2\.3 /);
+});
+
+test('a check without the pin fails and names what gives it', (t) => {
+  const made = stand(t, present);
+  const result = spawnSync('/bin/sh', [servers, 'check'], { encoding: 'utf8', env: { PATH: made.env.PATH ?? '' } });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /^scripts\/servers\.sh: BAY_VERSION and BAY_RELEASE are not set: `make test` and `make redis-image` name the pinned release of config\/toolchain\.json\n$/);
+  assert.deepEqual(made.calls(), []);
 });
 
 test('a machine setup of bay that is not in place fails check and names bay install', (t) => {
@@ -140,14 +172,27 @@ test('a machine setup of bay that is not in place fails check and names bay inst
   assert.equal(missing.status, 1);
   assert.match(missing.stderr, /^scripts\/servers\.sh: the machine setup of bay is not in place: `bay install` applies it\n/);
   assert.match(missing.stderr, /bay: check fails\n$/);
-  assert.deepEqual(missing.calls, [['bay', 'check', '-scope', 'run']]);
+  assert.deepEqual(missing.calls, CHECKED);
+});
+
+test('BAY names the words that start bay, and every verb starts bay by them', (t) => {
+  const down = run(t, present, ['down', FILE], undefined, { BAY: 'wrap -n bay' });
+  assert.deepEqual([down.status, down.calls], [0, [['wrap', '-n', 'bay', '-f', FILE, 'down'], ['bay', '-f', FILE, 'down']]]);
+  const checked = run(t, present, ['check'], undefined, { BAY: 'wrap -n bay' });
+  assert.deepEqual([checked.status, checked.calls.filter(([program]) => program === 'bay')], [0, CHECKED]);
+  const pulled = run(t, present, ['pull', IMAGE], undefined, { BAY: 'wrap -n bay' });
+  assert.deepEqual([pulled.status, pulled.calls.map(([program]) => program)], [0, ['wrap', 'bay']]);
+  const missing = run(t, present, ['down', FILE], undefined, { BAY: 'absent -n bay' });
+  assert.equal(missing.status, 1);
+  assert.match(missing.stderr, /^scripts\/servers\.sh: absent is not found on PATH: /);
+  assert.deepEqual(missing.calls, []);
 });
 
 test('bay that PATH does not hold fails every verb, with its name and what installs it', (t) => {
   for (const args of [['check'], ['pull', IMAGE], ['plan', FILE], ['up', FILE], ['images', FILE], ['exec', FILE, 'a', 'true'], ['logs', FILE, 'a'], ['down', FILE]]) {
     const missing = run(t, { bay: false }, args);
     assert.equal(missing.status, 1, args.join(' '));
-    assert.match(missing.stderr, /^scripts\/servers\.sh: bay is not found on PATH: install bay, /);
+    assert.match(missing.stderr, /^scripts\/servers\.sh: bay is not found on PATH: install the pinned release of bay, /);
     assert.deepEqual([missing.stdout, missing.calls], ['', []]);
   }
 });
@@ -179,7 +224,7 @@ const leave = (names: string[]): string =>
 test('a run checks the programs, gives the tests a directory of projects named after the run and removes it', (t) => {
   const ended = runTests(t, present, `${leave([])} && test -d "$SESSION_STORE_PROJECTS" && test -d "$TMPDIR"`);
   assert.deepEqual([ended.status, ended.stderr], [0, '']);
-  assert.deepEqual(ended.calls, [['bay', 'check', '-scope', 'run']]);
+  assert.deepEqual(ended.calls, CHECKED);
   assert.match(ended.projects, /\/session-store-test-[0-9]+$/);
   assert.equal(existsSync(dirname(ended.projects)), false);
 });
@@ -189,7 +234,7 @@ test('a run that ends or fails runs down for every Compose file that its directo
     const ended = runTests(t, present, `${leave(['p-1-0', 'p-1-1'])} && exit ${status}`);
     assert.deepEqual([ended.status, ended.stderr], [status, '']);
     assert.deepEqual(ended.calls, [
-      ['bay', 'check', '-scope', 'run'],
+      ...CHECKED,
       ['bay', '-f', join(ended.projects, 'p-1-0', 'compose.yaml'), 'down'],
       ['bay', '-f', join(ended.projects, 'p-1-1', 'compose.yaml'), 'down'],
     ]);
@@ -254,7 +299,7 @@ test('a run that SIGINT or SIGTERM stops waits for its command, runs down for it
     const run = await stopped(t, signal);
     // The shell of the script reports the stopped job on standard error, in words of its own.
     assert.equal(run.status, status, signal);
-    assert.deepEqual(run.calls, [['bay', 'check', '-scope', 'run'], ['bay', '-f', join(run.projects, 'p-1-0', 'compose.yaml'), 'down']]);
+    assert.deepEqual(run.calls, [...CHECKED, ['bay', '-f', join(run.projects, 'p-1-0', 'compose.yaml'), 'down']]);
     assert.equal(existsSync(dirname(run.projects)), false);
   }
 });

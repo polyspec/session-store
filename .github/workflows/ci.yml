@@ -4,8 +4,8 @@
 # workflow succeeded.
 #
 # The job test runs make test: bay runs the Redis servers of its tests on Docker from the image that REDIS_IMAGE of the
-# Makefile pins by its digest, the same image that it runs on Apple container on a development machine (SE-10.4). No
-# step installs bay yet, so make test fails at its start and names bay.
+# Makefile pins by its digest, the same image that it runs on Apple container on a development machine (SE-10.4). The
+# job installs the pinned release of bay and applies its machine setup first.
 name: ci
 
 on:
@@ -76,10 +76,16 @@ jobs:
       - uses: ./.github/actions/bootstrap
       - name: install the Rust toolchain and the locked crates
         run: make install-rust
+      # bay of the release that config/toolchain.json pins, into var/tools/bay by the sha256 of its archive.
+      - name: install the pinned bay
+        run: make install-bay
+      # BAY_SUDO=1: every command of bay runs as root, the one user that holds its state on the runner.
+      - name: apply the machine setup of bay
+        run: make setup-bay BAY_SUDO=1
       - name: pull the pinned Redis image
-        run: make redis-image
+        run: make redis-image BAY_SUDO=1
       - name: tests
-        run: make test
+        run: make test BAY_SUDO=1
 
   # The result of the run: the job runs after every other job, also after a failed or cancelled one, and make ci-passed
   # passes only when each job of needs has the result success; a skipped job fails it (FAIL_SKIPPED=1). make

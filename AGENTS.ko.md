@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 91526a177089e9ba84334400b25ab0896f3543e531e806a5493e67cdedaba1c8 -->
+<!-- source-sha256: 2aabb074ebe693e0a1e5545a07ba8e77a473c90d7cdb3f38720087a124df7d6d -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -26,6 +26,9 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   script를 실행한다(SE-10.4). bay가 서버를 Compose 프로젝트로 시작하고 지우며, 서버의 이름과 certificate와 주소를 주고,
   image를 받고 찾는다. `scripts/servers.test.mts`가 두 script의 시험이며, `make servers-test`가 bay의 대역으로
   실행한다.
+- `scripts/install-bay.mts`: `config/toolchain.json`이 CI를 위해 고정한 bay의 릴리스를 archive의 sha256으로 확인하여
+  `var/tools/bay`에 설치한다(`make install-bay`). `scripts/install-bay.test.mts`가 그 시험이며,
+  `make install-bay-test`가 시험이 직접 묶은 archive로 실행한다.
 - 루트의 `Cargo.toml`은 crate 넷과 다섯 target의 바인딩 crate의 workspace이며 `Cargo.lock`은 하나다.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: case다(SE-10).
 - `scripts/workflows.test.mts`: GitHub workflow의 규칙의 시험이며, `make workflows-test`가 실행한다.
@@ -69,6 +72,17 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   (kit의 bootstrap이 mise를 sha256으로 설치하고, 그 mise가 `locked = true`에서 `mise install`로 `mise.toml`의 node와
   npm을 설치한다), `make install-packages`(`var/tools`의 npm으로 `npm ci`)를 실행한다. `mise.toml`의 릴리스가 바뀌면
   `make toolchain-lock`이 `mise.lock`을 다시 쓴다.
+- 시험의 Redis 서버를 시작하는 bay는 make처럼 장비가 주는 도구이고, run을 위해서는 고정하지 않는다. harness의
+  결과를 바꾸는 것은 릴리스의 번호가 아니라 harness가 읽는 bay 출력의 계약(`schemaVersion`. harness가 검사한다)이고,
+  개발 장비의 bay는 자주 새 빌드가 되기 때문이다. recipe는 PATH의 `bay`를 시작하고(Makefile의 `BAY`), run은
+  `bay version`의 출력을 첫 줄로 쓴다. bay의 릴리스는 CI를 위해서만 `config/toolchain.json`에 고정한다(`bay`: version,
+  릴리스의 주소, 플랫폼별 archive의 sha256). runner에는 bay가 없고, 받은 것은 고정한 digest로만 쓰기 때문이다.
+  `make install-bay`가 그것을 `var/tools/bay`에 설치하고, `BAY_SUDO=1`이면 `BAY`는 `sudo -n` 뒤의 그 bay가 된다.
+  고정 값을 올리려면 `config/toolchain.json`의 `bay`에서 `version`을 그 릴리스의 tag로, `sha256`의 각 값을 그 릴리스의
+  파일 `SHA256SUMS`에 있는 해당 archive의 줄로 바꾼다(`darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`가
+  archive `darwin_arm64`, `darwin_amd64`, `linux_amd64`, `linux_arm64`다). 다른 어떤 파일도 릴리스를 적지 않는다. 그런
+  뒤 `make tool-pins-test`와 `make install-bay`를 실행한다. CI의 시험이 더 뒤의 릴리스를 필요로 할 때 고정 값을
+  올리고, runner가 bay를 주거나 시험이 서버를 시작하지 않게 되면 고정 값을 지운다.
 - recipe는 `var/tools`의 경로로 node를 시작한다(Makefile의 `NODE`). 그 node가 있기 전에 실행되는 `make bootstrap`과
   `make install-tools`만 장비의 node를 시작한다.
   Enforced by: `make tool-pins-test`.
@@ -95,9 +109,9 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   서버는 쓰지 않는다(SE-10.4). bay가 서버를 Compose 프로젝트로 시작하고 지운다. Darwin에서는 Apple `container`로,
   Linux에서는 Docker로 실행하고, image와 digest는 둘에 하나다. 그래서 두 플랫폼이 같은 bytes의 서버를 시험한다.
   `scripts/servers.sh`가 bay의 명령을 가진 유일한 파일이고, 어떤 파일도 engine의 명령을 갖지 않는다. 어떤 시험도,
-  어떤 recipe도 bay를 직접 시작하지 않는다. bay나 그 장비 설정의 일부가 없으면 `make test`는 빌드 전, 시작할 때 없는
-  것과 그것을 주는 것을 적고 실패한다(`bay check -scope run`. `bay install`이 설정을 적용하고, 어떤 run도 설정을
-  적용하지 않는다). image는 Redis의 가장 높은 안정판의 공식 image다. `make redis-image`가 `bay pull`로 그 image를
+  어떤 recipe도 bay를 직접 시작하지 않고, 그 script는 `BAY`의 낱말로 bay를 시작한다. bay나 그 장비 설정의 일부가
+  없으면 `make test`는 빌드 전, 시작할 때 없는 것과 그것을 주는 것을 적고 실패한다(`bay check -scope run`.
+  `bay install`이 설정을 적용하고, 어떤 run도 설정을 적용하지 않는다). 어떤 run도 bay의 version을 비교하지 않는다. image는 Redis의 가장 높은 안정판의 공식 image다. `make redis-image`가 `bay pull`로 그 image를
   받고, 어떤 시험도 image를 받지 않는다. 프로젝트는 `up -no-pull`로 시작한다.
 - 시험은 자기가 필요한 서버를 Compose 프로젝트 하나로 소유한다. 서버의 인자는 시험이 적는 내용의 일부이고, 서버의
   상태는 다른 시험에 닿으면 안 되기 때문이다. 시험은 프로젝트를 시작하기 전에 `compose.yaml`을
@@ -150,7 +164,7 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
   workflow와 action을 실패시킨다.
 - workflow `ci`는 `main`의 push와 `workflow_dispatch`에서만 시작한다. job `shared`는 `make ci-shared`(Makefile의
-  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make tool-pins-test`, `make servers-test`,
+  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make tool-pins-test`, `make servers-test`, `make install-bay-test`,
   `make commit-names-check`,
   `make commit-names-test`, `make release-coverage`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
@@ -159,10 +173,12 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   `needs`에 둔다. `make ci-passed FAIL_SKIPPED=1`(kit의 ci-passed)은 각 job의 결과가 success일 때만 통과한다. 그래서
   job 하나가 run의 결과를 말한다. `make workflows-test`는 마지막 job이 다른 job이거나 `needs`가 job 하나를 빠뜨린
   workflow `ci`를 실패시킨다.
-- workflow `ci`의 job `test`는 `.php-version`의 PHP를 설치하고 `make install-rust`, `make redis-image`,
-  `make test`를 실행한다. bay가 시험의 Redis 서버를 runner의 Docker에서 `REDIS_IMAGE`의 image로 실행한다(SE-10.4).
-  아직 어떤 step도 bay를 설치하지 않으므로, 그 job이 bay를 설치할 때까지(체크리스트의 행 T1.26) job은 `make test`를
-  시작할 때 bay를 적고 실패하고, `ci-passed`도 함께 실패한다.
+- workflow `ci`의 job `test`는 `.php-version`의 PHP를 설치하고 `make install-rust`, `make install-bay`,
+  `make setup-bay`, `make redis-image`, `make test`를 실행한다. 뒤의 셋은 `BAY_SUDO=1`로 실행한다.
+  `config/toolchain.json`이 CI를 위해 고정한 bay가 시험의 Redis 서버를 runner의 Docker에서 `REDIS_IMAGE`의 image로
+  실행하고(SE-10.4), bay의 모든 명령은 그 상태를 가진 한 사용자인 root로 실행된다. CI의 첫 run까지 미확인: runner
+  `ubuntu-26.04-arm`에서 `bay install`이 끝나는 것, root가 실행한 bay의 authority 파일을 시험 process가 읽는 것, run의
+  신호가 `sudo`가 시작한 bay에 닿는 것.
 - workflow `release`는 `ci`의 run이 `main`에서 성공하면 시작하고, 그런 run의 id를 준 dispatch로도 시작한다.
   `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`, `make release-publish`,
   `make release-undraft`를 이 순서로 실행한다.

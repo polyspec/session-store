@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- No file named a release of bay, the workflow `ci` installed no bay, so its job `test` failed at the start of
+  `make test`, and `scripts/servers.sh` started the bay of PATH alone. bay is a tool that the machine gives, as make
+  is: a run starts `bay` of PATH, compares no version, writes the output of `bay version` as its first line, and the
+  harness fails a document of bay whose `schemaVersion` is not 1, because the contract of the output that the harness
+  reads changes its result and the number of a release does not. `config/toolchain.json` pins the release that CI
+  installs, bay v0.0.2, with the sha256 of its archive of each platform, because a runner holds no bay and a download
+  is used only by its pinned digest; `make install-bay` (`scripts/install-bay.mts`) downloads the archive of the
+  platform, refuses another sha256 and puts `bay` and `bayd` into `var/tools/bay`, and no path of a run reads the
+  pin. `BAY` of the Makefile is the one value that says how bay is started, which `scripts/servers.sh` alone reads:
+  `bay` by default, and with `BAY_SUDO=1` the bay of `var/tools/bay` behind `sudo -n`, because on Linux the setup and
+  the commands of bay run as root and bay keeps its state below the home of the user who runs it. The job `test` runs
+  `make install-bay`, then `make setup-bay` (`bay install`, the one target that changes the setup of a machine),
+  `make redis-image` and `make test` with `BAY_SUDO=1`. `make servers-test` gives 15 passed, `make install-bay-test`
+  4 passed, `make tool-pins-test` 9 passed and `make workflows-test` 6 passed; before the change of each script the
+  tests of its commit failed. On this Mac `make install-bay` installs v0.0.2, whose version command gives v0.0.2,
+  and `scripts/test-run.sh true` writes the version line of bay and ends with status 0. Not run: `make setup-bay`,
+  `make test` on this tree, and the workflow. Not confirmed until the first run of CI: that `bay install` completes on
+  the runner, that the test process reads the authority file of a bay that root runs, and that a signal of the run
+  reaches a bay that `sudo` started.
+
 - The harness of the Redis servers of the tests held the commands with which two engines run a server
   (`scripts/container.sh`: Apple `container` on Darwin and `docker` on Linux), took the address of a server from a
   line that its command wrote, made the certificate of TLS with `openssl` and ran `redis-cli` in containers of its
@@ -33,9 +53,7 @@
   and leaves no container and no project; `up` with a service without a port that has ended ends with status 0;
   `logs -f` of an ended service ends; `up -no-pull` with an image that is not installed fails, names `bay pull` and
   leaves no project. Not run: `make servers-test` and `make docs-check`, because the worktree holds no installed tools, and
-  `make test` and `make lint-rust`, so the changed harness is not compiled. The job `test` of the workflow `ci` fails
-  at the start of `make test` until a step installs bay on the runner (T1.26), and no file pins a release of bay
-  (T1.25).
+  `make test` and `make lint-rust`, so the changed harness is not compiled.
 
 - The contract named the constructor `file_sessions.new` with the wait `blocking_io`, and the variant `setting`
   without its core enum. `binding generate` refused both for every target: a language whose constructor cannot be

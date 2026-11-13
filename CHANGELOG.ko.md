@@ -1,7 +1,25 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: c6fe298389eed419294528e3802820fb211b1235d2552f91dd0edb91d5ddcac3 -->
+<!-- source-sha256: 37ce4536d3f52a56bacb27d4d198e2666b21dfab5f504f7235e956dc375a9612 -->
 
 ## Unreleased
+
+- 어떤 파일도 bay의 릴리스를 적지 않았고, workflow `ci`는 bay를 설치하지 않아 job `test`가 `make test`를 시작할 때
+  실패했으며, `scripts/servers.sh`는 PATH의 bay만 시작했다. bay는 make처럼 장비가 주는 도구다. run은 PATH의 `bay`를
+  시작하고, version을 비교하지 않고, `bay version`의 출력을 첫 줄로 쓰며, harness는 `schemaVersion`이 1이 아닌 bay의
+  문서를 실패시킨다. harness의 결과를 바꾸는 것은 harness가 읽는 출력의 계약이고 릴리스의 번호가 아니기 때문이다.
+  `config/toolchain.json`은 CI가 설치하는 릴리스인 bay v0.0.2를 플랫폼별 archive의 sha256과 함께 고정한다. runner에는
+  bay가 없고, 받은 것은 고정한 digest로만 쓰기 때문이다. `make install-bay`(`scripts/install-bay.mts`)는 그 플랫폼의
+  archive를 받고, 다른 sha256을 거부하며, `bay`와 `bayd`를 `var/tools/bay`에 둔다. run의 어떤 경로도 그 고정 값을
+  읽지 않는다. Makefile의 `BAY`가 bay를 시작하는 방법을 정하는 값 하나이고, `scripts/servers.sh`만 그 값을 읽는다.
+  기본값은 `bay`이고, `BAY_SUDO=1`이면 `sudo -n` 뒤의 `var/tools/bay`의 bay다. Linux에서는 bay의 설정과 명령이 root로
+  실행되고 bay는 자기 상태를 실행한 사용자의 home 아래에 두기 때문이다. job `test`는 `make install-bay`를 실행한 뒤
+  `make setup-bay`(`bay install`. 장비의 설정을 바꾸는 target은 이것 하나다), `make redis-image`, `make test`를
+  `BAY_SUDO=1`로 실행한다. `make servers-test`는 15개, `make install-bay-test`는 4개, `make tool-pins-test`는 9개,
+  `make workflows-test`는 6개가 통과한다. 각 script를 바꾸기 전에는 그 commit의 시험이 실패했다. 이 Mac에서
+  `make install-bay`는 v0.0.2를 설치하고 그 version 명령은 v0.0.2를 주며, `scripts/test-run.sh true`는 bay의 version
+  줄을 쓰고 status 0으로 끝난다. 미실행: `make setup-bay`, 이 tree의 `make test`, workflow. CI의 첫 run까지 미확인:
+  runner에서 `bay install`이 끝나는 것, root가 실행한 bay의 authority 파일을 시험 process가 읽는 것, run의 신호가
+  `sudo`가 시작한 bay에 닿는 것.
 
 - 시험의 Redis 서버 harness는 두 engine이 서버를 실행하는 명령을 갖고 있었고(`scripts/container.sh`: Darwin의 Apple
   `container`와 Linux의 `docker`), 서버의 주소를 그 명령이 쓴 줄에서 받았고, TLS의 certificate를 `openssl`로 만들었고,
@@ -30,9 +48,7 @@
   주소를 알린다. SIGTERM이 멈춘 `up`은 status 143으로 끝나고 container도 프로젝트도 남기지 않는다. port가 없고 이미
   끝난 service가 있는 `up`은 status 0으로 끝난다. 끝난 service의 `logs -f`는 끝난다. 설치되지 않은 image의
   `up -no-pull`은 실패하고 `bay pull`을 적으며 프로젝트를 남기지 않는다. 미실행: worktree에 설치된 도구가 없어 `make servers-test`와 `make docs-check`를 실행하지
-  않았고, `make test`와 `make lint-rust`를 실행하지 않았으므로 바뀐 harness는 compile하지 않았다. workflow `ci`의 job
-  `test`는 어떤 step이 runner에 bay를 설치할 때까지 `make test`를 시작할 때 실패하고(T1.26), 어떤 파일도 bay의
-  릴리스를 고정하지 않는다(T1.25).
+  않았고, `make test`와 `make lint-rust`를 실행하지 않았으므로 바뀐 harness는 compile하지 않았다.
 
 - 계약은 생성자 `file_sessions.new`를 wait `blocking_io`로 적었고, variant `setting`을 코어 enum 없이 적었다.
   `binding generate`는 둘을 모든 target에서 거부했다. 생성자를 await할 수 없는 언어에는 기다리는 생성자의 꼴이

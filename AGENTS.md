@@ -25,6 +25,9 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   `scripts/test-run.sh` and `make redis-image` run (SE-10.4): bay starts and removes the servers as Compose projects,
   gives their names, certificates and addresses, and pulls and finds the image. `scripts/servers.test.mts` is the
   test of both scripts, which `make servers-test` runs against a stand-in of bay.
+- `scripts/install-bay.mts`: installs the release of bay that `config/toolchain.json` pins for CI into `var/tools/bay`
+  by the sha256 of its archive (`make install-bay`). `scripts/install-bay.test.mts` is its test, which
+  `make install-bay-test` runs with an archive that it packs.
 - `Cargo.toml` of the root is the workspace of the four crates and the binding crates of the five targets with one
   `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
@@ -69,6 +72,19 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   machine), `make install-tools TOOLS=npm` (the bootstrap of kit installs mise by its sha256, then the node and the npm
   of `mise.toml` with `mise install` under `locked = true`) and `make install-packages` (`npm ci` with the npm of
   `var/tools`). `make toolchain-lock` writes `mise.lock` again after a release of `mise.toml` changes.
+- bay, which starts the Redis servers of the tests, is a tool that the machine gives, as make is, and is not pinned
+  for a run: what changes a result of the harness is the contract of the output of bay that it reads
+  (`schemaVersion`, which the harness checks), not the number of a release, and the bay of a development machine is
+  often a new build. The recipes start `bay` of PATH (`BAY` of the Makefile), and a run writes the output of
+  `bay version` as its first line. A release of bay is pinned for CI alone, in `config/toolchain.json` (`bay`: its
+  version, the address of its releases and the sha256 of its archive of each platform), because a runner holds no
+  bay and a download is used only by its pinned digest: `make install-bay` installs it into `var/tools/bay`, and
+  `BAY_SUDO=1` makes `BAY` that bay behind `sudo -n`. To raise the pin, set `version` of `bay` in
+  `config/toolchain.json` to the tag of the release and each value of `sha256` to the line of that archive in the
+  file `SHA256SUMS` of the release (`darwin-arm64`, `darwin-x64`, `linux-x64` and `linux-arm64` are the archives
+  `darwin_arm64`, `darwin_amd64`, `linux_amd64` and `linux_arm64`); no other file names the release. Then run
+  `make tool-pins-test` and `make install-bay`. The pin is raised when the tests of CI need a later release, and it
+  is removed when a runner gives bay or the tests start no server.
 - A recipe starts node by its path in `var/tools` (`NODE` of the Makefile). Only `make bootstrap` and
   `make install-tools`, which run before that node exists, start the node of the machine.
   Enforced by: `make tool-pins-test`.
@@ -95,9 +111,10 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   never a server installed on the machine (SE-10.4). bay starts and removes the servers as Compose projects, on Apple
   `container` on Darwin and on Docker on Linux, one image and one digest for both, so that both platforms test the
   same bytes of the server. `scripts/servers.sh` is the one file that holds the commands of bay, and no file holds a
-  command of an engine; no test and no recipe starts bay by itself. bay or a part of its machine setup that is
-  missing fails `make test` at its start, before the build, with what is missing and what gives it
-  (`bay check -scope run`; `bay install` applies the setup, and no run applies it). The image is the official image
+  command of an engine; no test and no recipe starts bay by itself, and the script starts it by the words of `BAY`.
+  bay or a part of its machine setup that is missing fails `make test` at its start, before the build, with what is
+  missing and what gives it (`bay check -scope run`; `bay install` applies the setup, and no run applies it); no run
+  compares the version of bay. The image is the official image
   of the highest stable release of Redis; `make redis-image` pulls it with `bay pull`, and no test pulls an image: a
   project starts with `up -no-pull`.
 - A test owns the servers that it needs as one Compose project, because the arguments of a server are part of what a
@@ -155,7 +172,7 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   workflow or an action that breaks one of these rules.
 - The workflow `ci` starts on a push of `main` and on `workflow_dispatch` alone. Its job `shared` runs
   `make ci-shared` (`CI_SHARED` of the Makefile: `make docs-check`, `make owner-validate`, `make workflows-test`,
-  `make tool-pins-test`, `make servers-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
+  `make tool-pins-test`, `make servers-test`, `make install-bay-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
   (`CI_RUST`: `make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
 - The last job of the workflow `ci` is `ci-passed`. It runs after every other job, also after a failed one, needs each
@@ -163,9 +180,12 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   one job states the result of the run. `make workflows-test` fails a workflow `ci` whose last job is another or whose
   `needs` leaves a job out.
 - The job `test` of the workflow `ci` sets up the PHP of `.php-version` and runs `make install-rust`,
-  `make redis-image` and `make test`: bay runs the Redis servers of the tests on Docker of the runner from the image
-  of `REDIS_IMAGE` (SE-10.4). No step installs bay yet, so the job fails at the start of `make test` and names bay,
-  and `ci-passed` fails with it, until the job installs bay (row T1.26 of the checklist).
+  `make install-bay`, `make setup-bay`, `make redis-image` and `make test`, the last three with `BAY_SUDO=1`: the bay
+  that `config/toolchain.json` pins for CI runs the Redis servers of the tests on Docker of the runner from the image
+  of `REDIS_IMAGE` (SE-10.4), and every command of bay runs as root, the one user that holds its state. Not
+  confirmed until the first run of CI: that `bay install` completes on the runner `ubuntu-26.04-arm`, that the test
+  process reads the authority file of a bay that root runs, and that a signal of the run reaches a bay that `sudo`
+  started.
 - The workflow `release` starts when a run of `ci` succeeds on `main`, or by a dispatch with the id of such a run. It
   runs `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`,
   `make release-publish` and `make release-undraft` in that order.

@@ -1,7 +1,23 @@
-# The shared tools of polyspec, which make bootstrap installs from package-lock.json into node_modules: check-documents
-# and documents-stamp of @polyspec/kit run on the Node.js of the machine, whose release the engines of kit bound.
+# The shared tools of polyspec, which make bootstrap installs from package-lock.json into node_modules: each recipe runs
+# a utility of the installed @polyspec/kit with explicit arguments.
 KIT := $(CURDIR)/node_modules/@polyspec/kit/dist
-NODE ?= node
+# The tools of every run are the releases that the tracked files name: npm in devEngines.packageManager of package.json,
+# Node.js and npm in mise.toml at the digests of mise.lock, mise in config/toolchain.json and Rust in
+# rust-toolchain.toml. make install-tools installs them into var/tools of the checkout, never into the machine; the
+# shims of mise find its installs and mise.toml through the MISE_* folders below. A recipe starts a tool by its absolute
+# path: make runs a recipe line without shell syntax directly, so a bare name would be looked up on the PATH that make
+# read at its start.
+VAR_TOOLS := $(CURDIR)/var/tools
+NODE := $(VAR_TOOLS)/bin/node
+NPM := $(VAR_TOOLS)/bin/npm
+MISE := $(VAR_TOOLS)/bin/mise
+export MISE_DATA_DIR := $(VAR_TOOLS)/mise
+export MISE_CACHE_DIR := $(VAR_TOOLS)/mise/cache
+export MISE_STATE_DIR := $(VAR_TOOLS)/mise/state
+export MISE_CONFIG_DIR := $(VAR_TOOLS)/mise/config
+export MISE_GLOBAL_CONFIG_FILE := $(CURDIR)/mise.toml
+export MISE_GLOBAL_CONFIG_ROOT := $(CURDIR)
+export PATH := $(VAR_TOOLS)/bin:$(VAR_TOOLS)/mise/shims:$(PATH)
 CARGO := cargo
 # Extra arguments of every cargo build, for example --ignore-rust-version on a machine without the pinned release.
 CARGOFLAGS ?=
@@ -46,7 +62,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-rust ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
 
@@ -58,13 +74,35 @@ CI_REPORT ?= var/report/ci-targets
 
 check: lint-rust fmt-check test binding-check docs-check owner-validate workflows-test tool-pins-test commit-names-check commit-names-test release-coverage
 
-# The npm that devEngines of package.json names installs the lock, @polyspec/kit included. It runs outside the checkout with
-# --prefix, since an npm of another release refuses a folder whose devEngines names npm 12.2.0 (EBADDEVENGINES); npm reads
-# allow-remote of the .npmrc of the checkout.
+# The npm that devEngines of package.json names installs the lock, @polyspec/kit included, before the tools of the
+# checkout exist, since install-tools TOOLS=npm runs the bootstrap of the installed kit. It runs on the node of the
+# machine, outside the checkout with --prefix, since an npm of another release refuses a folder whose devEngines names
+# npm 12.2.0 (EBADDEVENGINES); npm reads allow-remote of the .npmrc of the checkout. A fresh checkout runs make
+# bootstrap, make install-tools TOOLS=npm and make install-packages, in that order.
 BOOTSTRAP_NPM := $(abspath $(shell command -v npm))
 bootstrap:
 	root="$$PWD"; version="$$(node -p 'require("./package.json").devEngines.packageManager.version')"; \
 	cd "$${TMPDIR:-/tmp}" && npm_config_cache="$$root/var/bootstrap/npm-cache" "$(BOOTSTRAP_NPM)" exec --yes --package="npm@$$version" -- npm --prefix "$$root" ci --ignore-scripts
+
+# TOOLS=npm runs the bootstrap of kit on the node of the machine, which only starts it: it installs the mise of
+# config/toolchain.json by its sha256, then with it the node and the npm of mise.toml at the digests of mise.lock, into
+# var/tools. Any other TOOLS names tools of mise.toml; without TOOLS every tool is installed.
+install-tools:
+ifeq ($(TOOLS),npm)
+	node $(KIT)/bootstrap/bootstrap.mjs
+else
+	$(NODE) $(KIT)/install-tools.mjs --no-self-update $(TOOLS)
+endif
+
+# The packages of package-lock.json with the npm of var/tools, which reads .npmrc.
+install-packages:
+	$(NPM) ci
+
+# Writes mise.lock with mise lock for each platform that has the archives of the tools.
+TOOLCHAIN_LOCK_PLATFORMS := linux-x64,linux-arm64,macos-arm64,macos-x64,windows-x64,windows-arm64
+toolchain-lock:
+	@test -x $(MISE) || { echo "toolchain-lock: $(MISE) is missing; run make install-tools TOOLS=npm" >&2; exit 1; }
+	$(MISE) lock --global --platform $(TOOLCHAIN_LOCK_PLATFORMS)
 
 # The toolchain of rust-toolchain.toml, which rustup installs, and the crates of Cargo.lock, for a job of CI.
 install-rust:
@@ -171,8 +209,8 @@ test-python: bindings-python
 # of this machine's platform, which the package names in optionalDependencies; the recipe packs it as a release does and
 # installs both tarballs, without the other platforms' packages. The package also holds the WASM module and its glue,
 # which wasm-bindgen writes into packages/ts/wasm/generated before the package is packed (binding GN-18, P-5).
-PLATFORM := $(shell node -p 'process.platform + "-" + process.arch + (process.platform === "linux" ? "-gnu" : "")')
-NODE_ADDON := session-store.$(PLATFORM).node
+PLATFORM = $(shell $(NODE) -p 'process.platform + "-" + process.arch + (process.platform === "linux" ? "-gnu" : "")')
+NODE_ADDON = session-store.$(PLATFORM).node
 WASM_BINDGEN_RELEASE := $(shell sed -n 's/^wasm-bindgen = "=\(.*\)"$$/\1/p' packages/ts/wasm/Cargo.toml)
 node-package: bindings-node bindings-wasm
 	test "$$($(WASM_BINDGEN) --version)" = "wasm-bindgen $(WASM_BINDGEN_RELEASE)"
@@ -182,23 +220,23 @@ node-package: bindings-node bindings-wasm
 	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-node --locked --features panic-test,fault-test
 	rm -rf $(VAR)/node $(VAR)/node-platform && mkdir -p $(VAR)/node $(VAR)/node-platform
 	cp $(CARGO_TARGET_DIR)/debug/libpolyspec_session_store_node.$(CDYLIB) $(VAR)/node-platform/$(NODE_ADDON)
-	node -e 'const p = require("./packages/ts/package.json"); require("fs").writeFileSync("$(VAR)/node-platform/package.json", JSON.stringify({ name: p.name + "-$(PLATFORM)", version: p.version, os: [process.platform], cpu: [process.arch], main: "$(NODE_ADDON)", files: ["$(NODE_ADDON)"] }, null, 2) + "\n")'
-	cd $(VAR)/node-platform && npm pack --pack-destination $(VAR)/node
-	cd packages/ts && npm pack --pack-destination $(VAR)/node
+	$(NODE) -e 'const p = require("./packages/ts/package.json"); require("fs").writeFileSync("$(VAR)/node-platform/package.json", JSON.stringify({ name: p.name + "-$(PLATFORM)", version: p.version, os: [process.platform], cpu: [process.arch], main: "$(NODE_ADDON)", files: ["$(NODE_ADDON)"] }, null, 2) + "\n")'
+	cd $(VAR)/node-platform && $(NPM) pack --pack-destination $(VAR)/node
+	cd packages/ts && $(NPM) pack --pack-destination $(VAR)/node
 	echo '{ "private": true }' > $(VAR)/node/package.json
-	cd $(VAR)/node && npm install --no-audit --no-fund --omit=optional ./*.tgz
+	cd $(VAR)/node && $(NPM) install --no-audit --no-fund --omit=optional ./*.tgz
 
 # The generated tests and the contract cases of the Node binding on node --test, against the installed package.
 test-node: node-package
 	cp packages/ts/generated/tests/generated.test.mjs packages/ts/tests/cases.test.mjs $(VAR)/node/
-	cd $(VAR)/node && SESSION_STORE_CASES=$(CASES) node --test generated.test.mjs cases.test.mjs
+	cd $(VAR)/node && SESSION_STORE_CASES=$(CASES) $(NODE) --test generated.test.mjs cases.test.mjs
 
 # The generated tests and the contract cases of the WASM binding through the subpath ./wasm of the installed package
 # (binding P-5); --expose-gc serves the generated tests that collect instances (binding GN-18a).
 test-wasm: node-package
 	cp packages/ts/wasm/generated/tests/generated.test.mjs $(VAR)/node/generated.wasm.test.mjs
 	cp packages/ts/tests/cases.wasm.test.mjs $(VAR)/node/
-	cd $(VAR)/node && SESSION_STORE_CASES=$(CASES) node --expose-gc --test generated.wasm.test.mjs cases.wasm.test.mjs
+	cd $(VAR)/node && SESSION_STORE_CASES=$(CASES) $(NODE) --expose-gc --test generated.wasm.test.mjs cases.wasm.test.mjs
 
 # The extension built against PHP_CONFIG and loaded into PHP; the stub is linted, then the generated tests and the
 # contract cases run on PHPUnit.

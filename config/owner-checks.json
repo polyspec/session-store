@@ -76,6 +76,10 @@
     {
       "paths": [
         "scripts/tool-pins.test.mts",
+        "mise.toml",
+        "mise.lock",
+        ".mise/**",
+        "config/toolchain.json",
         "package.json",
         "Makefile",
         ".github/actions/**"
@@ -115,7 +119,6 @@
         ".gitignore",
         "LICENSE",
         ".npmrc",
-        ".node-version",
         "package-lock.json"
       ],
       "targets": []

@@ -51,6 +51,11 @@ export function lockEntry(text: string, key: string): string[] {
   return lines.slice(start + 1, end < 0 ? lines.length : end);
 }
 
+// A command of a recipe line whose program is the bare name node: at the start of the line or after `&&`, `;`, `|` or
+// the start of a command substitution, behind the variables NAME=value of the command. The word node as an argument,
+// such as the tool that run-tests of kit starts, is no such command.
+const BARE_NODE = /(?:^[@-]?|&&|;|\||\$\()\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S* +)*node(?: |$)/;
+
 /** The recipe lines of the text of a Makefile that start the node of the machine, each `<target>: <line>`. */
 export function machineNode(makefile: string): string[] {
   const found: string[] = [];
@@ -58,7 +63,7 @@ export function machineNode(makefile: string): string[] {
   for (const line of makefile.split('\n')) {
     const name = /^([a-z][A-Za-z0-9_.-]*)(?: +[a-z][A-Za-z0-9_.-]*)* *:(?!=)/.exec(line)?.[1];
     if (name !== undefined) target = name;
-    else if (line.startsWith('\t') && /(?<![A-Za-z0-9_$()/.-])node(?: |$)/.test(line)) found.push(`${target}: ${line.trim()}`);
+    else if (line.startsWith('\t') && BARE_NODE.test(line.trim())) found.push(`${target}: ${line.trim()}`);
   }
   return found;
 }
@@ -79,8 +84,16 @@ test('the entry of a tool is read from a mise.lock up to the next entry', () => 
 });
 
 test('a recipe line that starts the node of the machine is found with its target', () => {
-  const makefile = 'NODE := $(VAR_TOOLS)/bin/node\nPLATFORM = $(shell node -p 1)\nbootstrap:\n\tnode -p 1\ncheck: a\n\t$(NODE) x.mjs\n\tcd var && node --test\n\techo node_modules $(VAR)/node/x\n\tnode\n';
-  assert.deepEqual(machineNode(makefile), ['bootstrap: node -p 1', 'check: cd var && node --test', 'check: node']);
+  const recipe = ['$(NODE) x.mjs', 'cd var && node --test', 'echo node_modules $(VAR)/node/x', 'node', '$(NODE) run-tests.mjs node -- x.mts', 'cd var && CASES=$(CASES) node --test', 'version="$$(node -p 1)"; echo "$$version"', '@node x.mjs'];
+  const makefile = `NODE := $(VAR_TOOLS)/bin/node\nPLATFORM = $(shell node -p 1)\nbootstrap:\n\tnode -p 1\ncheck: a\n\t${recipe.join('\n\t')}\n`;
+  assert.deepEqual(machineNode(makefile), [
+    'bootstrap: node -p 1',
+    'check: cd var && node --test',
+    'check: node',
+    'check: cd var && CASES=$(CASES) node --test',
+    'check: version="$$(node -p 1)"; echo "$$version"',
+    'check: @node x.mjs',
+  ]);
 });
 
 test('mise.toml names Node.js and npm by exact releases, and npm is the release of devEngines', () => {

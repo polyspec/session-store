@@ -1,7 +1,19 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: c84fa341afd7b73b36db69dd093ed9f3f4859bb3dcabfe7d41e3e3dc4ee71bb6 -->
+<!-- source-sha256: 2b8f57537047456dabb964ad516787fdad28e76207f4b7972b5d236bbed3643c -->
 
 ## Unreleased
+
+- `.node-version` 하나가 CI의 Node.js를 적었고, 개발 장비는 자기 Node.js를 썼고, 어떤 파일도 도구의 digest를
+  고정하지 않았다. 도구를 다른 polyspec 저장소의 형식으로 고정한다. `mise.toml`은 Node.js 26.12.0과 npm 12.2.0을
+  적고, `mise.lock`은 Node.js를 platform 6개의 archive checksum으로, npm을 lock project
+  `.mise/locks/npm-npm/12.2.0`의 digest로 고정하고, `config/toolchain.json`은 mise 2026.10.8을 platform 4개의
+  archive sha256과 함께 적는다. `make install-tools TOOLS=npm`이 이 도구를 `var/tools`에 설치하고,
+  `make install-packages`가 그 npm으로 `npm ci`를 실행하고, `make toolchain-lock`이 `mise.lock`을 쓴다. Makefile의
+  `NODE`는 `var/tools/bin/node`이고, Node package의 recipe는 그 node와 그 npm을 시작한다. bootstrap action은
+  `mise.toml`을 읽고 `make bootstrap`, `make install-tools TOOLS=npm`, `make install-packages`를 실행한다.
+  `.node-version`은 지웠다. `make tool-pins-test`는 추적 파일에서 고정을 검사한다. 고정이 없을 때는 3개 통과, 5개
+  실패였고, 있으면 8개 통과, 0개 실패다. `make ci-shared`는 `var/tools`의 node 26.12.0에서 target 7개를 통과한다.
+  `config/release.json`은 mise의 lock project의 manifest를 릴리스하지 않는 것으로 분류한다.
 
 - 추적되는 문서에서 Git commit의 이름을 읽는 검사가 없었다. 그 이름은 이력이 바뀌면 틀린 값이 된다.
   `make commit-names-check`는 `scripts/check-commit-names.mts`를 실행한다. 이 검사는 추적되는 Markdown 파일에서

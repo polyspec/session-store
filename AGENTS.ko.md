@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 4fae6e7750f5a033097b3a27af4705d7e7cf4f06aded30918a623123264ed184 -->
+<!-- source-sha256: fa1a78b3186a033d79b3eac4b54b1724c6d02589ddc915ebdfb2645964f11df3 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -28,8 +28,9 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 - `scripts/check-commit-names.mts`: `make commit-names-check`의 검사다. 그 시험은 `scripts/commit-names.test.mts`이며,
   `make commit-names-test`가 실행한다.
 - `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/actions/bootstrap`: CI, 릴리스, 그 job의
-  bootstrap이다. `.node-version`은 bootstrap이 설치하는 Node.js를 적는다. 개발 장비는 kit의 `engines` 안에서 자기
-  Node.js를 쓴다.
+  bootstrap이다. bootstrap은 `make bootstrap`, `make install-tools TOOLS=npm`, `make install-packages`를 실행한다.
+- `mise.toml`, `mise.lock`, `.mise/locks`, `config/toolchain.json`: checkout의 도구 고정이다("도구").
+  `scripts/tool-pins.test.mts`가 그 시험이며, `make tool-pins-test`가 실행한다.
 - `config/owner-checks.json`: 추적되는 각 경로를 소유하는 make target이다. `make owner-validate`는 어떤 규칙도 소유하지
   않는 추적 경로와 Makefile이 정의하지 않는 target을 실패시킨다. 경로를 더하는 변경은 그 소유자를 더한다.
   `make owner-check PATHS="<paths>"`는 지정한 경로의 소유자를 실행한다.
@@ -52,6 +53,21 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   기다림 토큰(`Io`, `ProcessWait`)을 첫 인자로 받는다.
 - 명세, case, README, 이 파일, 변경 기록(영어와 한국어)은 코드와 같은 변경에서
   바뀐다.
+
+## 도구
+
+- 릴리스가 결과를 바꾸는 모든 도구는 추적 파일에 고정한다. 장비의 도구가 낸 결과는 다른 장비에서 되풀이되지 않기
+  때문이다. Node.js와 npm은 `mise.toml`에 적고 `mise.lock`의 digest로 고정하고, npm은 `package.json`의
+  `devEngines`에도 적고, mise는 `config/toolchain.json`에 platform별 archive의 sha256과 함께 적고, Rust는
+  `rust-toolchain.toml`에 적는다. Node.js의 고정이 하나이도록 `mise.toml` 옆에 `.node-version`을 두지 않는다.
+- 도구는 checkout의 `var/tools`에 설치하고, 장비에는 설치하지 않는다. 새 checkout은 `make bootstrap`(`devEngines`의
+  npm이 장비의 node에서 `package-lock.json`을 설치한다. @polyspec/kit도 여기에 든다), `make install-tools TOOLS=npm`
+  (kit의 bootstrap이 mise를 sha256으로 설치하고, 그 mise가 `locked = true`에서 `mise install`로 `mise.toml`의 node와
+  npm을 설치한다), `make install-packages`(`var/tools`의 npm으로 `npm ci`)를 실행한다. `mise.toml`의 릴리스가 바뀌면
+  `make toolchain-lock`이 `mise.lock`을 다시 쓴다.
+- recipe는 `var/tools`의 경로로 node를 시작한다(Makefile의 `NODE`). 그 node가 있기 전에 실행되는 `make bootstrap`과
+  `make install-tools`만 장비의 node를 시작한다.
+  Enforced by: `make tool-pins-test`.
 
 ## Rust
 
@@ -117,7 +133,7 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
   workflow와 action을 실패시킨다.
 - workflow `ci`는 `main`의 push와 `workflow_dispatch`에서만 시작한다. job `shared`는 `make ci-shared`(Makefile의
-  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make commit-names-check`,
+  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make tool-pins-test`, `make commit-names-check`,
   `make commit-names-test`, `make release-coverage`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
   보고서 `var/report/ci-targets`를 올린다.

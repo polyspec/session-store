@@ -8,6 +8,7 @@
   "packages": [],
   "manifests": {},
   "notReleased": {
+    ".mise/locks/npm-npm/12.2.0/package.json": "the lock project of mise for the npm of mise.toml, which mise lock writes and which carries no version of the repository",
     "Cargo.toml": "the root Cargo workspace of the crates of the library and the binding crates (binding design L-2)",
     "package.json": "the private package of the development tools of the repository, which installs @polyspec/kit and carries no version",
     "packages/core/rust/Cargo.toml": "a crate of the library, publish = false: the bindings that packages/rust/interface.json generates build it from the source of the checkout, and no runtime installs it alone",

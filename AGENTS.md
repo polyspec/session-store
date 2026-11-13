@@ -28,8 +28,9 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 - `scripts/check-commit-names.mts`: the check of `make commit-names-check`, with its test
   `scripts/commit-names.test.mts`, which `make commit-names-test` runs.
 - `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/actions/bootstrap`: CI, the release and the
-  bootstrap of their jobs. `.node-version` names the Node.js that the bootstrap sets up; a development machine runs its
-  own Node.js within the `engines` of kit.
+  bootstrap of their jobs, which runs `make bootstrap`, `make install-tools TOOLS=npm` and `make install-packages`.
+- `mise.toml`, `mise.lock`, `.mise/locks`, `config/toolchain.json`: the pins of the tools of the checkout ("Tools").
+  `scripts/tool-pins.test.mts` is their test, which `make tool-pins-test` runs.
 - `config/owner-checks.json`: the make targets that own each tracked path. `make owner-validate` fails a tracked path
   that no rule owns and a target that the Makefile does not define; a change that adds a path adds its owner.
   `make owner-check PATHS="<paths>"` runs the owners of the named paths.
@@ -52,6 +53,21 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   token of binding-core (`Io`, `ProcessWait`) as its first argument.
 - The specification, the cases, the README, this file and the change log (English and Korean) change in the same
   change as the code.
+
+## Tools
+
+- Every tool whose release changes a result is pinned in a tracked file, because a tool of the machine gives a result
+  that another machine does not repeat: Node.js and npm in `mise.toml` at the digests of `mise.lock`, npm also in
+  `devEngines` of `package.json`, mise in `config/toolchain.json` with the sha256 of its archive of each platform, and
+  Rust in `rust-toolchain.toml`. No `.node-version` is kept beside `mise.toml`, so that Node.js has one pin.
+- The tools are installed into `var/tools` of the checkout, never into the machine. A fresh checkout runs
+  `make bootstrap` (the npm of `devEngines` installs `package-lock.json`, @polyspec/kit included, on the node of the
+  machine), `make install-tools TOOLS=npm` (the bootstrap of kit installs mise by its sha256, then the node and the npm
+  of `mise.toml` with `mise install` under `locked = true`) and `make install-packages` (`npm ci` with the npm of
+  `var/tools`). `make toolchain-lock` writes `mise.lock` again after a release of `mise.toml` changes.
+- A recipe starts node by its path in `var/tools` (`NODE` of the Makefile). Only `make bootstrap` and
+  `make install-tools`, which run before that node exists, start the node of the machine.
+  Enforced by: `make tool-pins-test`.
 
 ## Rust
 
@@ -120,7 +136,7 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   workflow or an action that breaks one of these rules.
 - The workflow `ci` starts on a push of `main` and on `workflow_dispatch` alone. Its job `shared` runs
   `make ci-shared` (`CI_SHARED` of the Makefile: `make docs-check`, `make owner-validate`, `make workflows-test`,
-  `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
+  `make tool-pins-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
   (`CI_RUST`: `make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
 - The last job of the workflow `ci` is `ci-passed`. It runs after every other job, also after a failed one, needs each

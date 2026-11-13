@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- A lone `.node-version` named the Node.js of CI, a development machine ran its own Node.js, and no file pinned the
+  digest of a tool. The tools are pinned in the form of the other polyspec repositories: `mise.toml` names Node.js
+  26.12.0 and npm 12.2.0, `mise.lock` pins Node.js by the checksum of its archive of 6 platforms and npm by the digest
+  of its lock project `.mise/locks/npm-npm/12.2.0`, and `config/toolchain.json` names mise 2026.10.8 with the sha256 of
+  its archive of 4 platforms. `make install-tools TOOLS=npm` installs them into `var/tools`, `make install-packages`
+  runs `npm ci` with that npm and `make toolchain-lock` writes `mise.lock`. `NODE` of the Makefile is
+  `var/tools/bin/node`, and the recipes of the Node package start that node and that npm. The bootstrap action reads
+  `mise.toml` and runs `make bootstrap`, `make install-tools TOOLS=npm` and `make install-packages`; `.node-version`
+  is removed. `make tool-pins-test` checks the pins on the tracked files: without them it gave 3 passed and 5 failed,
+  and with them 8 passed and 0 failed. `make ci-shared` passes its 7 targets on the node of `var/tools`, 26.12.0.
+  `config/release.json` classifies the manifest of the lock project of mise as not released.
+
 - No check read the tracked documents for the name of a Git commit, which is a wrong value once the history changes.
   `make commit-names-check` runs `scripts/check-commit-names.mts`, which fails with `<file>:<line>: <name>` for every
   word of 7 to 40 lowercase hexadecimal digits with a digit and a letter in a tracked Markdown file; a digest of 64

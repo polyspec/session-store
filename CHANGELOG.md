@@ -1,5 +1,13 @@
 <!-- doc-id: changelog -->
 
+- `Cargo.lock` pins the binding whose generator holds the value aliases, the fault injection and the error units in one
+  line of development, and the binding packages are those that its scaffold writes: each binding crate takes
+  `polyspec-binding-core` with the features `construct` and `lock`, and the lock gains `tokio` as a dependency of
+  `polyspec-binding-core`. `make binding-check` still fails, now with 18 findings of CK-22 where it had 31, and
+  `make bindings` writes nothing because of them: 17 name a member and a kind that no case raises by an input or by a
+  fault injection point (`random`, `io`, `cancelled`, `connection`, `identifier_taken`), and one requires a case that
+  arms the point `session_store.internal` as `broken`. The contract declares no fault injection point and the crates
+  have none.
 - The repository depends on `polyspec-binding-core` of the repository binding (`binding_core`, the Git dependency
   `https://github.com/polyspec/binding.git`, which `Cargo.lock` pins), the new name of bindgen, and runs its tool with
   `scripts/binding.mts`; the binding packages are those that `binding scaffold` writes. The crate

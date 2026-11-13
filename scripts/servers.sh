@@ -66,7 +66,9 @@ check)
 	;;
 pull)
 	# bay pulls the images of a project, so the image is the one service of a project that is written for the pull.
-	directory=$(mktemp -d) || exit 1
+	# bay names the project after the directory and accepts letters, digits, - and _ alone; mktemp without a template
+	# gives a name with a dot.
+	directory=$(mktemp -d "${TMPDIR:-/tmp}/session-store-pull-XXXXXXXX") || exit 1
 	printf 'services:\n  redis:\n    image: "%s"\n' "$1" >"$directory/compose.yaml" || exit 1
 	# shellcheck disable=SC2086 # BAY is words
 	$bay -f "$directory/compose.yaml" pull </dev/null

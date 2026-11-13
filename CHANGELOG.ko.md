@@ -1,7 +1,15 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: a40714ca97159414fa643c8e66690295e2050b353cf5079748928a16b1c7456f -->
+<!-- source-sha256: c1342e4b7cc0b122b255c30eaa7958b5e12b703c878a434d877f4a564def6e0a -->
 
 ## Unreleased
+
+- workflow `ci`의 runner에서 `make redis-image`가 `bay: compose.yaml: project name "tmp.x4bmuo3xsw" must be
+  letters, digits, - or _`로 실패했고, 이 Mac의 bay도 같은 파일을 같은 방법으로 거부한다. `scripts/servers.sh
+  pull`은 받기 위한 Compose 파일을 template 없이 `mktemp -d`가 주는 디렉터리 `tmp.<글자>`에 썼고, bay는 프로젝트의
+  이름을 그 디렉터리에서 받으며 그 이름의 점을 거부한다. 이제 pull은 `TMPDIR` 아래 디렉터리
+  `session-store-pull-<글자>`에 쓴다(SE-10.4). pull의 시험은 그 이름을 요구한다. 그 commit에서 `make servers-test`는
+  15개 통과, 1개 실패였고(이름 `tmp.4hb9OWSrEy`), 변경 뒤에는 16개가 통과하며, 이 Mac의 `bay plan --json`은 그런
+  디렉터리의 Compose 파일을 받아들인다. 미실행: image를 내려받는 pull 자체, 변경 뒤의 workflow job `test`.
 
 - 어떤 파일도 bay의 릴리스를 적지 않았고, workflow `ci`는 bay를 설치하지 않아 job `test`가 `make test`를 시작할 때
   실패했으며, `scripts/servers.sh`는 PATH의 bay만 시작했다. bay는 make처럼 장비가 주는 도구다. run은 PATH의 `bay`를

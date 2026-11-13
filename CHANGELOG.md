@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- `make redis-image` failed on the runner of the workflow `ci` with `bay: compose.yaml: project name
+  "tmp.x4bmuo3xsw" must be letters, digits, - or _`, and bay of this Mac refuses the same file in the same way:
+  `scripts/servers.sh pull` wrote the Compose file of the pull into the directory that `mktemp -d` gives without a
+  template, `tmp.<letters>`, and bay names a project after its directory and refuses a dot in that name. The pull
+  now writes into a directory `session-store-pull-<letters>` below `TMPDIR` (SE-10.4). The test of the pull requires
+  that name: on its commit `make servers-test` gave 15 passed and 1 failed (the name `tmp.4hb9OWSrEy`), after the
+  change 16 passed, and `bay plan --json` of this Mac accepts a Compose file in such a directory. Not run: the pull
+  itself, which downloads the image, and the job `test` of the workflow after the change.
+
 - No file named a release of bay, the workflow `ci` installed no bay, so its job `test` failed at the start of
   `make test`, and `scripts/servers.sh` started the bay of PATH alone. bay is a tool that the machine gives, as make
   is: a run starts `bay` of PATH, compares no version, writes the output of `bay version` as its first line, and the

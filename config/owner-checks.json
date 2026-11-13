@@ -23,7 +23,6 @@
         "packages/rust/**",
         "contracts/*.json",
         "scripts/test-run.sh",
-        "scripts/container.sh",
         "scripts/servers.sh",
         "Cargo.toml",
         "Cargo.lock",

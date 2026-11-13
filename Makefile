@@ -29,10 +29,10 @@ LIBRARY := polyspec-session-store
 TARGETS := php python node go wasm
 # binding at the commit of Cargo.lock (scripts/binding.mts).
 BINDING := $(NODE) scripts/binding.mts
-# The real peers of the tests, each required: PHP reads the records back (SE-10.3), the container program of the
-# platform runs the Redis servers of the stores of Redis from the image REDIS_IMAGE, Apple container on Darwin and
-# docker on Linux, whose commands scripts/container.sh holds, and openssl makes their certificates of TLS (SE-10.4). A
-# test whose peer is not given fails and names what gives it.
+# The real peers of the tests, each required: PHP reads the records back (SE-10.3), bay runs the Redis servers of the
+# stores of Redis from the image REDIS_IMAGE as Compose projects, on Apple container on Darwin and on Docker on Linux,
+# whose commands scripts/servers.sh holds, and openssl makes their certificates of TLS (SE-10.4). A test whose peer is
+# not given fails and names what gives it.
 PHP ?= $(shell command -v php)
 OPENSSL ?= $(shell command -v openssl)
 # Redis 8.10.3, the highest stable release of Redis, in the official image of Debian trixie, pinned by the digest of its
@@ -159,16 +159,17 @@ commit-names-check:
 commit-names-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/commit-names.test.mts
 
-# scripts/test-run.sh owns the containers and the temporary directory of the run and removes them when the run ends,
-# fails or is stopped by SIGINT or SIGTERM; it fails before the tests when the container program of the platform is
-# not found. PHP or openssl that is not found is passed empty, and the test that needs it fails.
+# scripts/test-run.sh owns the servers and the temporary directory of the run and removes them when the run ends,
+# fails or is stopped by SIGINT or SIGTERM; it fails before the tests when bay, the engine of the platform or the
+# machine setup of bay is missing. PHP or openssl that is not found is passed empty, and the test that needs it fails.
 test:
 	scripts/test-run.sh env PHP='$(PHP)' REDIS_IMAGE='$(REDIS_IMAGE)' OPENSSL='$(OPENSSL)' \
 		$(CARGO) test $(CARGOFLAGS) $(CORE) --locked
 
-# Pulls the pinned Redis image of the tests into the images of the container program of the platform (SE-10.4).
+# Pulls the pinned Redis image of the tests (SE-10.4), the only step that pulls. It pulls with the engine of the
+# platform, Apple container on Darwin and docker on Linux, until bay has a command that pulls.
 redis-image:
-	scripts/container.sh pull '$(REDIS_IMAGE)'
+	scripts/servers.sh pull '$(REDIS_IMAGE)'
 
 lint-rust:
 	$(CARGO) clippy $(CARGOFLAGS) $(CORE) --locked --all-targets -- -D warnings

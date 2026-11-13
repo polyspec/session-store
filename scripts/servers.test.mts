@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { test, type TestContext } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -134,6 +134,8 @@ test('pull fetches the image through bay, as the image of a project that the scr
   const [program, option, file, command, ...rest] = pulled.calls[0] ?? [];
   assert.deepEqual([program, option, command, rest], ['bay', '-f', 'pull', []]);
   assert.match(file ?? '', /\/compose\.yaml$/);
+  // bay names the project after the directory and refuses a name with another character than these.
+  assert.match(basename(dirname(file ?? '')), /^session-store-pull-[A-Za-z0-9]+$/);
   assert.equal(readFileSync(join(made.directory, 'pulled'), 'utf8'), `services:\n  redis:\n    image: "${IMAGE}"\n`);
   assert.equal(existsSync(dirname(file ?? '')), false);
   assert.equal(run(t, { bay: true, status: { pull: 1 } }, ['pull', IMAGE]).status, 1);

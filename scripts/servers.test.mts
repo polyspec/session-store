@@ -106,6 +106,7 @@ test('each verb of a project is one command of bay with the Compose file of the 
   assert.deepEqual([up.status, up.stdout], [0, '{"command":"up"}\n']);
   assert.deepEqual(run(t, present, ['images', FILE]).calls, [['bay', '-f', FILE, 'images']]);
   assert.deepEqual(run(t, present, ['logs', FILE, 'node-0']).calls, [['bay', '-f', FILE, 'logs', '-f', 'node-0']]);
+  assert.deepEqual(run(t, present, ['output', FILE, 'node-0']).calls, [['bay', '-f', FILE, 'logs', 'node-0']]);
   assert.deepEqual(run(t, present, ['down', FILE]).calls, [['bay', '-f', FILE, 'down']]);
 });
 
@@ -173,7 +174,7 @@ test('BAY names the words that start bay, and every verb starts bay by them', (t
 });
 
 test('bay that PATH does not hold fails every verb, with its name and what installs it', (t) => {
-  for (const args of [['check'], ['pull', IMAGE], ['plan', FILE], ['up', FILE], ['images', FILE], ['exec', FILE, 'a', 'true'], ['logs', FILE, 'a'], ['down', FILE]]) {
+  for (const args of [['check'], ['pull', IMAGE], ['plan', FILE], ['up', FILE], ['images', FILE], ['exec', FILE, 'a', 'true'], ['logs', FILE, 'a'], ['output', FILE, 'a'], ['down', FILE]]) {
     const missing = run(t, { bay: false }, args);
     assert.equal(missing.status, 1, args.join(' '));
     assert.match(missing.stderr, /^scripts\/servers\.sh: bay is not found on PATH: install bay, /);
@@ -182,7 +183,7 @@ test('bay that PATH does not hold fails every verb, with its name and what insta
 });
 
 test('a verb that the script does not know and a verb with other arguments fail', (t) => {
-  for (const args of [[], ['start'], ['status'], ['present', IMAGE], ['check', 'a'], ['pull'], ['plan'], ['up'], ['up', 'a', 'b'], ['images'], ['exec', 'a', 'b'], ['logs', 'a'], ['down']]) {
+  for (const args of [[], ['start'], ['status'], ['present', IMAGE], ['check', 'a'], ['pull'], ['plan'], ['up'], ['up', 'a', 'b'], ['images'], ['exec', 'a', 'b'], ['logs', 'a'], ['output', 'a'], ['down']]) {
     const unknown = run(t, present, args);
     assert.equal(unknown.status, 2, args.join(' '));
     assert.match(unknown.stderr, /^usage: scripts\/servers\.sh /);

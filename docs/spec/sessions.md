@@ -394,10 +394,13 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   - The return of `up` is the event of a start: bay returns after every service accepts connections on its port. The
     harness holds no time limit, no sleep and no repeated question. The test of the cluster creates the cluster with
     `redis-cli --cluster create` of the image, which `bay exec` runs in the container of the first node with the
-    addresses of the three nodes, because that command is how Redis states the making of a cluster and `bay exec`
-    returns its status; it is no service of the project, because `up` waits for the name of every service and fails
-    when a service has ended. The test then waits for the line in which each node reports the state ok, in the
-    output that `bay logs -f` gives from its first line.
+    IPv4 addresses of the three nodes. That command is how Redis states the making of a cluster, and it is no service
+    of the project: it takes the addresses of the nodes, which bay gives only after the start (a name of a service
+    gives more than one address, and a node tells its clients the address that the command gave), and `bay exec`
+    returns its status to the test. The fact that the cluster serves is the line in which a node reports the state
+    ok, which each node writes once when its state changes: the test waits for that line of each node in the output
+    that `bay logs -f` gives from its first line. It does not read `CLUSTER INFO`, which states the state of one
+    moment, so that a read before the change would have to be repeated.
   - No test pulls an image: the harness starts a project with `up -no-pull`, which fails before it creates anything
     when the image is not installed, and a test that fails this way names `make redis-image`; no such test is
     reported as ignored. `make redis-image` pulls with `bay pull`, the only step that pulls.

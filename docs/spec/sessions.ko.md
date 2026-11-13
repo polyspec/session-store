@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 88a57d669783de3428313387f9a2e990b0e6f37d88d14db76fce103a74fcd697 -->
+<!-- source-sha256: a86aa3d0e473a96b4ab16ae59637f382c87ed583bd3fb77a2fc3ef9dd0c9ac4c -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -389,10 +389,13 @@
     파일을 적는 bay의 authority를 신뢰한다. 어떤 시험도 certificate를 만들지 않는다.
   - `up`의 반환이 시작의 event다. bay는 모든 service가 자기 port에서 연결을 받은 뒤 반환한다. harness는 시간 제한도,
     sleep도, 반복해서 묻는 일도 갖지 않는다. cluster의 시험은 image의 `redis-cli --cluster create`로 cluster를
-    만든다. `bay exec`가 그 명령을 첫 node의 container에서 세 node의 주소와 함께 실행한다. 그 명령이 Redis가
-    cluster를 만드는 일을 적는 방법이고, `bay exec`가 그 status를 돌려주기 때문이다. 그 명령은 프로젝트의 service가
-    아니다. `up`은 모든 service의 이름을 기다리고, service가 이미 끝났으면 실패하기 때문이다. 그런 뒤 시험은 각
-    node가 state ok를 알리는 줄을 `bay logs -f`가 첫 줄부터 주는 출력에서 기다린다.
+    만든다. `bay exec`가 그 명령을 첫 node의 container에서 세 node의 IPv4 주소와 함께 실행한다. 그 명령이 Redis가
+    cluster를 만드는 일을 적는 방법이며, 프로젝트의 service가 아니다. 그 명령은 node의 주소를 받는데 bay는 주소를
+    시작한 뒤에만 주고(service의 이름은 주소를 둘 이상 주고, node는 그 명령이 준 주소를 client에게 알린다),
+    `bay exec`가 그 status를 시험에 돌려주기 때문이다. cluster가 요청을 받는다는 사실은 node가 state ok를 알리는
+    줄이다. 각 node는 자기 state가 바뀔 때 그 줄을 한 번 쓴다. 시험은 각 node의 그 줄을 `bay logs -f`가 첫 줄부터
+    주는 출력에서 기다린다. 시험은 `CLUSTER INFO`를 읽지 않는다. 그것은 한 순간의 state를 적으므로, 바뀌기 전에
+    읽으면 다시 읽어야 하기 때문이다.
   - 어떤 시험도 image를 받지 않는다. harness는 프로젝트를 `up -no-pull`로 시작하고, 이 명령은 image가 설치되지
     않았으면 아무것도 만들기 전에 실패한다. 그렇게 실패한 시험은 `make redis-image`를 적는다. 그런 시험은 무시된
     시험으로 보고되지 않는다. `make redis-image`는 `bay pull`로 받으며, 받는 step은 이것뿐이다.

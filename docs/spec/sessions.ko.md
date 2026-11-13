@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: a86aa3d0e473a96b4ab16ae59637f382c87ed583bd3fb77a2fc3ef9dd0c9ac4c -->
+<!-- source-sha256: 480bf03f87c8494601fbd03cf9b996e800834aaa14ce92cdfff7f8f148d5b64f -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -399,10 +399,22 @@
   - 어떤 시험도 image를 받지 않는다. harness는 프로젝트를 `up -no-pull`로 시작하고, 이 명령은 image가 설치되지
     않았으면 아무것도 만들기 전에 실패한다. 그렇게 실패한 시험은 `make redis-image`를 적는다. 그런 시험은 무시된
     시험으로 보고되지 않는다. `make redis-image`는 `bay pull`로 받으며, 받는 step은 이것뿐이다.
-  - bay를 찾지 못하면 run은 시험을 빌드하기 전, 시작할 때 설치 방법을 적고 실패한다. `bay check -scope run`이
-    프로젝트에 필요한 장비 설정의 일부가 없다고 보고하면 run은 그 설정을 적용하는 `bay install`을 적고 실패한다.
-    어떤 run도 장비의 설정을 바꾸지 않고, `up`도 바꾸지 않는다. 시작할 때의 검사는 빌드 뒤 모든 시험에서 한 번씩
-    실패하는 대신 빌드 전에 한 번 실패하게 한다.
+  - bay의 릴리스는 고정한다. `config/toolchain.json`이 mise를 적듯이 bay의 version을 플랫폼별 archive의 sha256과
+    함께 적는다. 다른 빌드의 bay가 시작한 서버는 다른 장비가 다시 얻는 결과가 아니기 때문이다. run은 시험을 빌드하기
+    전, 아무것도 만들기 전인 시작할 때 다음 경우에 실패한다. bay를 찾지 못한 경우, `bay version --json`이 고정한
+    version과 다른 version을 주는 경우(개발 빌드도 여기에 든다), `bay check -scope run`이 프로젝트에 필요한 장비
+    설정의 일부가 없다고 보고하는 경우다. 실패는 없는 것과 그것을 주는 것을 적는다. 곧 고정한 릴리스의 주소이거나
+    설정을 적용하는 `bay install`이다. 어떤 run도 장비의 설정을 바꾸지 않고, `up`도 바꾸지 않는다. 시작할 때의 검사는
+    빌드 뒤 모든 시험에서 한 번씩 실패하는 대신 빌드 전에 한 번 실패하게 한다.
+  - bay를 시작하는 방법은 값 하나, Makefile의 `BAY`이고, `scripts/servers.sh`만 그 값을 읽는다. 다른 어떤 파일도
+    bay를 시작하지 않는다. 기본값은 PATH의 `bay`다. bay의 설정은 `bay install`이 그것을 실행한 사용자를 위해 쓰는
+    장비의 상태(resolver, DNS agent, authority)다. 그래서 개발 장비의 bay는 그 장비의 주인이 설치하고 설정한 것이고,
+    Makefile의 어떤 target도 요청 없이 거기에 bay를 설치하지 않는다. workflow `ci`는 bay를 실행하는 step마다
+    `BAY_SUDO=1`을 주고, 그러면 `BAY`는 `sudo -n` 뒤의 `var/tools/bay`의 bay가 된다. Linux에서는 bay의 설정과 명령이
+    root로 실행되고 bay는 자기 상태를 실행한 사용자의 home 아래에 두므로, 설치와 검사와 받기와 시험의 모든 명령이 한
+    사용자로 실행되어야 하기 때문이다. `make install-bay`는 고정한 릴리스의 그 플랫폼 archive를 받고, sha256이 고정한
+    값과 다르면 실패하며, `bay`와 `bayd`를 `var/tools/bay`에 둔다. `make setup-bay`는 `bay install`을 실행한다. 장비의
+    설정을 바꾸는 target은 이것 하나이며, workflow가 자기 runner에서 실행하고 개발자는 자기 선택으로 실행한다.
   - `make test`는 시험을 `scripts/test-run.sh`로 실행하고, 이 script가 run의 디렉터리를 소유한다. Compose 파일은
     `up`보다 먼저 쓰이므로, 시작된 모든 프로젝트에는 파일이 있다. run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출
     때 script는 시험을 기다리고, 디렉터리에 남은 모든 Compose 파일에 `down`을 실행하고, 디렉터리를 지운다. 신호가

@@ -404,10 +404,24 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   - No test pulls an image: the harness starts a project with `up -no-pull`, which fails before it creates anything
     when the image is not installed, and a test that fails this way names `make redis-image`; no such test is
     reported as ignored. `make redis-image` pulls with `bay pull`, the only step that pulls.
-  - A run fails at its start, before the tests are built, when bay is not found, with what installs it, and when
-    `bay check -scope run` reports that a part of the machine setup that a project needs is missing, with
-    `bay install`, which applies it. No run changes the setup of the machine, and `up` changes none either; the check
-    at the start gives one failure before the build instead of one in every test after it.
+  - The release of bay is pinned: `config/toolchain.json` names its version with the sha256 of its archive of each
+    platform, as it names mise, because a server that another build of bay starts is not the result that another
+    machine repeats. A run fails at its start, before the tests are built and before anything is created, when bay is
+    not found, when `bay version --json` gives another version than the pin, a development build included, and when
+    `bay check -scope run` reports that a part of the machine setup that a project needs is missing. The failure
+    names what is missing and what gives it: the address of the pinned release, or `bay install`, which applies the
+    setup. No run changes the setup of the machine, and `up` changes none either; the check at the start gives one
+    failure before the build instead of one in every test after it.
+  - How bay is started is one value, `BAY` of the Makefile, which `scripts/servers.sh` alone reads; no other file
+    starts bay. Its default is `bay` of PATH. The setup of bay is state of the machine (the resolver, the DNS agent,
+    the authority) that `bay install` writes for the user who runs it, so on a development machine bay is the one
+    that its owner installed and set up, and no target of the Makefile installs it there without being asked. The
+    workflow `ci` sets `BAY_SUDO=1` on each step that runs bay, which makes `BAY` the bay of `var/tools/bay` behind
+    `sudo -n`: on Linux the setup and the commands of bay run as root, and bay keeps its state below the home of the
+    user who runs it, so the install, the check, the pull and every command of a test run as one user. `make
+    install-bay` downloads the archive of the pinned release for the platform, fails when its sha256 is not the
+    pinned one and puts `bay` and `bayd` into `var/tools/bay`; `make setup-bay` runs `bay install`, the one target
+    that changes the setup of a machine, which the workflow runs on its runner and a developer runs by choice.
   - `make test` runs the tests through `scripts/test-run.sh`, which owns the directory of the run. A Compose file is
     written before its `up`, so every project that started has its file. When the run ends, fails or is stopped by
     SIGINT or SIGTERM, the script waits for the tests, runs `down` for every Compose file that the directory still

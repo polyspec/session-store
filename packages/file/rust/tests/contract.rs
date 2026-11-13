@@ -1,4 +1,5 @@
-//! Every case of `contracts/file-sessions.json` (SE-10.1), one trial each, on a new temporary directory.
+//! Every case of `contracts/file-sessions.json` (SE-10.1), one trial each, on a new temporary directory. A case with
+//! `faults` arms the fault injection points that it names for its one call, as a generated binding test does (SE-10.5).
 
 use std::path::Path;
 use std::time::{Duration, SystemTime};
@@ -10,6 +11,8 @@ use polyspec_session_store_file::{FileSession, FileSessions};
 use serde_json::Value;
 
 const CONTRACT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../contracts/file-sessions.json"));
+/// The interface contract, whose `errors.kinds` give the category of each kind (SE-9.2).
+const INTERFACE: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../rust/interface.json"));
 
 fn latin1(text: &str) -> Result<Vec<u8>, Failed> {
     text.chars()
@@ -250,6 +253,93 @@ fn open(case: &Value) -> Result<(), Failed> {
 }
 
 /// A runner of the cases of one group.
+/// Calls a member under the faults that a case arms, as a generated binding test does (binding design G-5, SE-10.5): it
+/// arms the list for the member, the call takes the arming as the entry point of the member does, and a fault that did
+/// not fire fails the case.
+fn armed<T>(case: &Value, member: &str, call: impl FnOnce() -> T) -> Result<T, Failed> {
+    let faults = case.get("faults").ok_or("the case arms no faults")?;
+    let id = binding_core::fault::arm(member, &faults.to_string()).map_err(failed)?;
+    let outcome = binding_core::fault::take(member).run(call);
+    let left = binding_core::fault::left(id).map_err(failed)?;
+    if left.is_empty() {
+        Ok(outcome)
+    } else {
+        Err(format!("the faults of {} did not fire", left.join(", ")).into())
+    }
+}
+
+/// The kind of a variant of `errors.kinds`: its name in snake case (binding design E-3).
+fn variant_kind(variant: &str) -> String {
+    let name = match variant.rsplit_once("::") {
+        Some((_, name)) => name,
+        None => variant,
+    };
+    let mut kind = String::new();
+    for (index, character) in name.chars().enumerate() {
+        if character.is_ascii_uppercase() && index > 0 {
+            kind.push('_');
+        }
+        kind.push(character.to_ascii_lowercase());
+    }
+    kind
+}
+
+/// The category of a kind in `errors.kinds` of the interface contract (SE-9.2).
+fn category(kind: &str) -> Result<String, Failed> {
+    let interface: Value = serde_json::from_str(INTERFACE).map_err(failed)?;
+    let rows =
+        interface.pointer("/errors/kinds").and_then(Value::as_array).ok_or("the contract has no errors.kinds")?;
+    for row in rows {
+        if variant_kind(str_of(row, "variant")?) == kind {
+            return Ok(str_of(row, "category")?.to_owned());
+        }
+    }
+    Err(format!("errors.kinds has no kind {kind}").into())
+}
+
+/// The value of the errno symbol of a case on this machine (binding design G-5).
+fn errno_of(raises: &Value) -> Result<Option<i32>, Failed> {
+    match raises.get("errno").and_then(Value::as_str) {
+        None => Ok(None),
+        Some("EIO") => Ok(Some(rustix::io::Errno::IO.raw_os_error())),
+        Some(symbol) => Err(format!("the runner knows no errno {symbol}").into()),
+    }
+}
+
+/// The failure of a case that arms faults: its kind, status, category and errno, and its message where a rule states
+/// one (SE-9.1).
+fn expect_failure(error: &polyspec_session_store_core::Error, raises: &Value) -> Result<(), Failed> {
+    expect_raises(error.kind(), error.status(), &error.to_string(), raises)?;
+    expect_eq("category", &category(error.kind())?.as_str(), &str_of(raises, "category")?)?;
+    expect_eq("errno", &error.errno(), &errno_of(raises)?)
+}
+
+/// The store of the directory of a case of one call (SE-10.5), which the armed point fails before the directory is read.
+fn store_of(case: &Value) -> Result<FileSessions, Failed> {
+    FileSessions::new(Io::for_generated_call(), Path::new(str_of(case, "directory")?), None).map_err(failed)
+}
+
+/// SE-9.6: `open` whose open of the session file fails; only `file_sessions.open` reads the group.
+fn open_faults(case: &Value) -> Result<(), Failed> {
+    let raises = case.get("raises").ok_or("the case has no raises")?;
+    let store = store_of(case)?;
+    let cookie = latin1(str_of(case, "cookie")?)?;
+    match armed(case, "file_sessions.open", || store.open(ProcessWait::for_generated_call(), Some(&cookie), None))? {
+        Ok(_) => Err("the session is opened".into()),
+        Err(error) => expect_failure(&error, raises),
+    }
+}
+
+/// SE-9.6: `collect` whose read of the directory fails; only `file_sessions.collect` reads the group.
+fn collect_faults(case: &Value) -> Result<(), Failed> {
+    let raises = case.get("raises").ok_or("the case has no raises")?;
+    let store = store_of(case)?;
+    match armed(case, "file_sessions.collect", || store.collect(Io::for_generated_call()))? {
+        Ok(removed) => Err(format!("collect removes {removed} files").into()),
+        Err(error) => expect_failure(&error, raises),
+    }
+}
+
 type Group = fn(&Value) -> Result<(), Failed>;
 
 fn main() {
@@ -258,7 +348,8 @@ fn main() {
         Ok(contract) => contract,
         Err(error) => panic!("contracts/file-sessions.json is no JSON: {error}"),
     };
-    let groups: [(&str, Group); 2] = [("requests", requests), ("open", open)];
+    let groups: [(&str, Group); 4] =
+        [("requests", requests), ("open", open), ("openFaults", open_faults), ("collectFaults", collect_faults)];
     let mut trials = Vec::new();
     for (group, run) in groups {
         let Some(Value::Array(cases)) = contract.get(group) else {

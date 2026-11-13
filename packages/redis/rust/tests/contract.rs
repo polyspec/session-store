@@ -1,6 +1,7 @@
 //! Every case of `contracts/redis-sessions.json` (SE-10.4): the protocol against a model of the commands that it sends,
 //! with the command records of the cases, and the same requests through the connection against a real Redis server,
-//! which the test starts when the environment names a `redis-server` binary (`REDIS_SERVER`).
+//! which the test starts when the environment names a `redis-server` binary (`REDIS_SERVER`). A case with `faults`
+//! arms the fault injection points that it names for its one call, as a generated binding test does (SE-10.5).
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -18,6 +19,8 @@ use polyspec_session_store_redis::{Command, Options, RedisSessions, Reply, Setti
 use serde_json::Value;
 
 const CONTRACT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../contracts/redis-sessions.json"));
+/// The interface contract, whose `errors.kinds` give the category of each kind (SE-9.2).
+const INTERFACE: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../rust/interface.json"));
 
 fn latin1(text: &str) -> Result<Vec<u8>, Failed> {
     text.chars()
@@ -409,6 +412,73 @@ fn open_case(case: &Value) -> Result<(), Failed> {
     }
 }
 
+/// Calls a member under the faults that a case arms, as a generated binding test does (binding design G-5, SE-10.5): it
+/// arms the list for the member, the call takes the arming as the entry point of the member does, and a fault that did
+/// not fire fails the case.
+fn armed<T>(case: &Value, member: &str, call: impl FnOnce() -> T) -> Result<T, Failed> {
+    let faults = case.get("faults").ok_or("the case arms no faults")?;
+    let id = binding_core::fault::arm(member, &faults.to_string()).map_err(failed)?;
+    let outcome = binding_core::fault::take(member).run(call);
+    let left = binding_core::fault::left(id).map_err(failed)?;
+    if left.is_empty() {
+        Ok(outcome)
+    } else {
+        Err(format!("the faults of {} did not fire", left.join(", ")).into())
+    }
+}
+
+/// The kind of a variant of `errors.kinds`: its name in snake case (binding design E-3).
+fn variant_kind(variant: &str) -> String {
+    let name = match variant.rsplit_once("::") {
+        Some((_, name)) => name,
+        None => variant,
+    };
+    let mut kind = String::new();
+    for (index, character) in name.chars().enumerate() {
+        if character.is_ascii_uppercase() && index > 0 {
+            kind.push('_');
+        }
+        kind.push(character.to_ascii_lowercase());
+    }
+    kind
+}
+
+/// The category of a kind in `errors.kinds` of the interface contract (SE-9.2).
+fn category(kind: &str) -> Result<String, Failed> {
+    let interface: Value = serde_json::from_str(INTERFACE).map_err(failed)?;
+    let rows =
+        interface.pointer("/errors/kinds").and_then(Value::as_array).ok_or("the contract has no errors.kinds")?;
+    for row in rows {
+        if variant_kind(str_of(row, "variant")?) == kind {
+            return Ok(str_of(row, "category")?.to_owned());
+        }
+    }
+    Err(format!("errors.kinds has no kind {kind}").into())
+}
+
+/// An opening of one call on a store whose setting names a socket under `/dev/null`, which no server has (SE-10.5):
+/// the group `opening`, whose connection fails (SR-6.4), and the group `openFaults`, whose case arms the fault
+/// injection points that it names (SE-9.6). Only `redis_sessions.open` reads the two groups. The future runs on a
+/// runtime of this thread, which is the thread of the arming.
+fn opening(case: &Value) -> Result<(), Failed> {
+    let raises = case.get("raises").ok_or("the case has no raises")?;
+    let setting = setting_of(case.get("setting").ok_or("the case has no setting")?)?;
+    let store = RedisSessions::new(setting, store_options(case)).map_err(failed)?;
+    let cookie = latin1(str_of(case, "cookie")?)?;
+    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(failed)?;
+    let open = || runtime.block_on(store.open(Some(&cookie)));
+    let opened = if case.get("faults").is_some() { armed(case, "redis_sessions.open", open)? } else { open() };
+    match opened {
+        Ok(_) => Err("the session is opened".into()),
+        Err(error) => {
+            expect_eq("kind", &error.kind(), &str_of(raises, "kind")?)?;
+            expect_eq("status", &error.status().map(u64::from), &raises.get("status").and_then(Value::as_u64))?;
+            expect_eq("category", &category(error.kind())?.as_str(), &str_of(raises, "category")?)?;
+            expect_eq("errno", &error.errno(), &None)
+        }
+    }
+}
+
 /// A Redis server that the test started on a socket of a temporary directory, for every trial.
 struct Server {
     child: std::sync::Mutex<Child>,
@@ -571,6 +641,17 @@ fn main() {
         // A value that no u64 holds is refused by the binding (SR-8.2); the bindings run such a case.
         let binding = case.get("binding").is_some();
         trials.push(Trial::test(name, move || open_case(&case)).with_ignored_flag(binding));
+    }
+    for group in ["opening", "openFaults"] {
+        let Some(Value::Array(cases)) = contract.get(group) else {
+            panic!("contracts/redis-sessions.json has no group {group}");
+        };
+        for case in cases.clone() {
+            let Some(id) = case.get("id").and_then(Value::as_str) else {
+                panic!("a case has no id");
+            };
+            trials.push(Trial::test(format!("{group}::{id}"), move || opening(&case)));
+        }
     }
     let conclusion = libtest_mimic::run(&arguments, trials);
     if with_server {

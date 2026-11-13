@@ -196,6 +196,56 @@
       }
     ]
   },
+  "faults": [
+    {
+      "id": "random",
+      "core": "polyspec_session_store::fault::RANDOM",
+      "inject": [
+        "io"
+      ],
+      "fills": [
+        "random"
+      ],
+      "reason": "SE-5.4",
+      "place": "polyspec_session_store::random_hex"
+    },
+    {
+      "id": "internal",
+      "core": "polyspec_session_store::fault::INTERNAL",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-4.3",
+      "place": "polyspec_session_store::MemoryStore::renew"
+    },
+    {
+      "id": "open",
+      "core": "polyspec_session_store::fault::OPEN",
+      "inject": [
+        "io"
+      ],
+      "fills": [
+        "io"
+      ],
+      "reason": "SF-9.2",
+      "place": "polyspec_session_store::FileSessions::open"
+    },
+    {
+      "id": "read_dir",
+      "core": "polyspec_session_store::fault::READ_DIR",
+      "inject": [
+        "io"
+      ],
+      "fills": [
+        "io"
+      ],
+      "reason": "SF-9.2",
+      "place": "polyspec_session_store::FileSessions::collect"
+    }
+  ],
   "units": [
     {
       "id": "store",
@@ -1364,6 +1414,11 @@
       "group": "store"
     },
     {
+      "member": "memory_store.renew",
+      "file": "contracts/sessions.json",
+      "group": "internal"
+    },
+    {
       "member": "memory_store.renewals",
       "file": "contracts/sessions.json",
       "group": "store"
@@ -1389,9 +1444,19 @@
       "group": "requests"
     },
     {
+      "member": "file_sessions.open",
+      "file": "contracts/file-sessions.json",
+      "group": "openFaults"
+    },
+    {
       "member": "file_sessions.collect",
       "file": "contracts/file-sessions.json",
       "group": "requests"
+    },
+    {
+      "member": "file_sessions.collect",
+      "file": "contracts/file-sessions.json",
+      "group": "collectFaults"
     },
     {
       "member": "file_sessions.lifetime",
@@ -1442,6 +1507,16 @@
       "member": "redis_sessions.open",
       "file": "contracts/redis-sessions.json",
       "group": "requests"
+    },
+    {
+      "member": "redis_sessions.open",
+      "file": "contracts/redis-sessions.json",
+      "group": "openFaults"
+    },
+    {
+      "member": "redis_sessions.open",
+      "file": "contracts/redis-sessions.json",
+      "group": "opening"
     },
     {
       "member": "redis_session.get",

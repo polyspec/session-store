@@ -1,5 +1,22 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 5f4bf5a76c102e07273a980b134427d7da0baa6592bf1ca34a5c72db6df1b4d3 -->
+<!-- source-sha256: d5627afcf11ab3746c2d682d7dc89849d7b1a4ede76e13f87d8bcc3b50679abb -->
+
+- 한 호출이 닿는 kind가 자기 case를 갖는다(binding CK-22, SE-9.6, SE-10.5). `polyspec-session-store`가 다시 내보내는
+  `polyspec-session-store-core`의 모듈 `fault`가 실패 주입점 넷을 이름한다: `random_hex`의
+  `session_store.random`(`random`, SE-5.4), 메모리 저장소의 갱신의 `session_store.internal`(`internal`, X-1의 한
+  case), 파일 저장소에서 세션 파일의 open의 `session_store.open`과 디렉터리의 읽기의
+  `session_store.read_dir`(`io`, SF-9.2). 코어 crate에 feature `fault-test`가 있고 `polyspec-session-store`가 자기
+  feature `fault-test`로 그것을 켜며, PHP, Python, Node의 바인딩 crate에는 binding scaffold가 쓰는 feature
+  `fault-test`가 더해진다. 어떤 release 빌드에도 그것은 없다. 계약은 주입점을 `faults`에 적고, 한 member만 읽는 새
+  group이 한 호출 case를 담는다: `created`에 `new_identifier`의 실패하는 난수원이 더해지고,
+  `internal`(`memory_store.renew`), 디렉터리 `/`의 `openFaults`(`file_sessions.open`)와
+  `collectFaults`(`file_sessions.collect`), Redis 저장소의 `openFaults`(`redis_sessions.open`, `random`)가 생긴다.
+  `redis_sessions.open`의 `connection`에는 입력, 곧 `/dev/null` 아래 socket을 적은 설정이 닿으므로, 새 group
+  `opening`이 그 입력 case를 담고 어떤 주입점도 그것을 흉내 내지 않는다. Rust 시험은 생성된 시험처럼 case의
+  fault를 장전하고, fault가 터지지 않은 case를 실패시킨다. `make binding-check`는 18건이던 CK-22 지적을 12건으로
+  낸다. SE-10.6이 각각에 필요한 case 형식을 적는다: 두 세션의 저장소 호출 넷의 `random`, `file_session.close`의
+  `io`와 `identifier_taken`, `redis_session.close`의 `connection`에는 다른 unit의 `open`이 만드는 receiver가
+  필요하고, `file_sessions.open`의 `cancelled`에는 타입 `cancel`의 값이 필요하다.
 
 - `Cargo.lock`은 `polyspec-php-serialization`을 그 브랜치 `v1/rust-core`의 끝으로 고정한다. 그 crate에는 실패 주입점
   `php_serialization.internal`과 feature `fault-test`가 있다. lock의 다른 것은 바뀌지 않는다.

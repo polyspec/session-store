@@ -9,7 +9,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use binding_core::{Cancel, Io, ProcessWait};
 use polyspec_php_serialization::PhpValue;
-use polyspec_session_store_core::{accept, Failure, Found, Outcome, RecordSession, Store};
+use polyspec_session_store_core::{accept, fault, Failure, Found, Outcome, RecordSession, Store};
 use rustix::fs::{FlockOperation, Mode, OFlags, Stat, Timespec, Timestamps};
 use rustix::io::Errno;
 
@@ -82,6 +82,11 @@ fn flock(file: &File, operation: FlockOperation) -> Result<(), Errno> {
     }
 }
 
+/// The failure without errno of an `io` fault armed at the point `name` (SE-9.6).
+fn injected(name: &'static str) -> std::io::Error {
+    std::io::Error::other(format!("the fault of {name}"))
+}
+
 /// Whether the path names the file that was locked (SF-3.5).
 fn same_file(locked: &Stat, path: &Path) -> Result<bool, Error> {
     match rustix::fs::lstat(path) {
@@ -149,7 +154,14 @@ impl FileSessions {
         let turn = self.shared.turns.enter(&id, cancel)?;
         let path = self.shared.file(&id);
         let (file, locked) = loop {
-            let file = match rustix::fs::open(&path, OPEN, Mode::empty()) {
+            // SE-9.6: the point imitates a failure of the open, which no input reaches; an errno of the fault is that
+            // of the system call, and a fault without one is a failure without errno.
+            let opened = match fault::failed(fault::OPEN) {
+                Some(Some(errno)) => Err(Errno::from_raw_os_error(errno)),
+                Some(None) => return Err(io_error("open", &path, &injected(fault::OPEN))),
+                None => rustix::fs::open(&path, OPEN, Mode::empty()),
+            };
+            let file = match opened {
                 Ok(descriptor) => File::from(descriptor),
                 Err(Errno::NOENT) => return Ok(self.without_session()),
                 Err(errno) => return Err(errno_error("open", &path, errno)),
@@ -178,7 +190,13 @@ impl FileSessions {
     /// Removes the files of ended sessions whose lock no request holds, and gives how many it removed (SF-5).
     pub fn collect(&self, _io: Io) -> Result<u64, Error> {
         let directory = &self.shared.directory;
-        let entries = std::fs::read_dir(directory).map_err(|error| io_error("read_dir", directory, &error))?;
+        // SE-9.6: the point imitates a failure of the read of the directory, which no input reaches.
+        let entries = match fault::failed(fault::READ_DIR) {
+            Some(Some(errno)) => Err(std::io::Error::from_raw_os_error(errno)),
+            Some(None) => Err(injected(fault::READ_DIR)),
+            None => std::fs::read_dir(directory),
+        };
+        let entries = entries.map_err(|error| io_error("read_dir", directory, &error))?;
         let mut removed: u64 = 0;
         for entry in entries {
             let entry = entry.map_err(|error| io_error("read_dir", directory, &error))?;

@@ -125,6 +125,25 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   the operating system fails (`random`, SE-5.4), or another process created the file of a new identifier
   (`identifier_taken`, SF-4.4). A caller that tells a defect from a failure of the environment by the class of the
   error is then right for both.
+  <a id="SE-9.6"></a> No input reaches some failures of the environment and the kind `internal`, so fault injection
+  points imitate them (binding design G-5, X-1). The module `fault` of `polyspec-session-store-core`, which
+  `polyspec-session-store` gives again, names the points as `session_store.<id>`, the crates of the stores call the
+  points of their places through it, and the interface contract names the same points in `faults`. A point does nothing
+  unless the feature `fault-test` of `polyspec-session-store-core` is on: `polyspec-session-store` turns it on through
+  its own feature `fault-test`, which a binding crate turns on for its tests only, the tests of the crates turn it on
+  through their dev-dependency `polyspec-binding-core`, and no release build has it. An `io` injection at `open` or
+  `read_dir` is the failure of that call of the system with the `errno` of the fault, whose kind follows SF-9.2, or a
+  failure without `errno` of the kind `io` when the fault names none. The `fills` of the contract name `io` alone of
+  the kinds of SF-9.2, because the row of the variant `Io` in `errors.kinds` names no `kinds`, and a point fills only
+  the kinds of that table. An `io` injection at `random` is a failure of the random source, which has no `errno`. The
+  core starts no task and no thread, so each point takes the arming of the call that reaches it.
+
+  | Id | Place (function) | Inject | Fills | Rule of the condition | Takes the arming |
+  |---|---|---|---|---|---|
+  | `random` | `random_hex`, which `new_identifier`, the start of a new session, a renewal and the opening of the store of Redis call | `io` | `random` | SE-5.4 | yes |
+  | `internal` | `renew` of `MemoryStore`: the count of renewals is treated as passing u64 | `broken` | `internal` | SE-4.3 | yes |
+  | `open` | the open of the session file in `FileSessions::open` | `io` | `io` | SF-3.1, SF-9.2 | yes |
+  | `read_dir` | the read of the directory in `FileSessions::collect` | `io` | `io` | SF-5.1, SF-9.2 | yes |
 
 ## The store of files
 
@@ -304,8 +323,8 @@ the statement that it checks. A PHP value and its serialize form are those of ph
 
 - **SE-10** <a id="SE-10.1"></a> `contracts/sessions.json` holds the cases of the core: group `identifier` (SE-5.1,
   SE-5.2), group `created` (SE-5.3: the `length` and the `alphabet` of a new identifier, which is an identifier and
-  differs from the one made before it), group `store` (SE-2, SE-4, run on the memory store and on a record session) and
-  group `record` (SE-6, SE-7). `contracts/file-sessions.json` holds the requests of the store of files (SF-1 to SF-5),
+  differs from the one made before it, and SE-5.4), group `store` (SE-2, SE-4, run on the memory store and on a record
+  session), group `record` (SE-6, SE-7) and group `internal` (SE-9.6). `contracts/file-sessions.json` holds the requests of the store of files (SF-1 to SF-5),
   and `contracts/redis-sessions.json` the requests of the store of Redis with the commands that each sends (SR-1 to
   SR-5). <a id="SE-10.2"></a> A PHP value of a case is its serialize form, and a byte string of a case is JSON text
   whose characters U+0000 to U+00FF are its bytes. A failure is the key `raises` with `kind`, `status`, `category` and
@@ -326,3 +345,25 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   gives each record as a status reply, SR-5.1) or with `errorReplies` (the model gives the stated error reply to every
   command of a name, SR-5.2) runs against the model only, because a real server gives neither to these commands on these
   keys.
+  <a id="SE-10.5"></a> A case with `faults` arms the fault injection points of SE-9.6 for its one call, as a generated
+  binding test does (binding design G-5): the Rust tests arm the list for the member, run the call with the arming that
+  the entry point of the member takes, and fail the case when a fault did not fire. Such a case is a case of one call in
+  a group that only its member reads, so that the test of no other member arms it: the groups `created`
+  (`new_identifier`) and `internal` (`memory_store.renew`) of `contracts/sessions.json`, the groups `openFaults`
+  (`file_sessions.open`) and `collectFaults` (`file_sessions.collect`) of `contracts/file-sessions.json`, and the group
+  `openFaults` (`redis_sessions.open`) of `contracts/redis-sessions.json`. A case of one call makes its receiver with
+  the constructor of its unit from the keys of the case (binding T-5): the store of files of the directory `/`, which
+  exists on every platform of the library and whose read the armed point fails before the call reads it, and the store
+  of Redis of a socket under `/dev/null`, which no file can be. The group `opening` of `contracts/redis-sessions.json`
+  holds the input case of one call whose connection fails with that setting (SR-6.4); no injection imitates a failure
+  that this input reaches. <a id="SE-10.6"></a> The contract has no case for the following kinds of members, and the
+  contract check reports each (binding CK-22). A session of a request (`file_session`, `redis_session`) is made by
+  `open` of its store, a method of another unit, and a case of one call makes a receiver only with a constructor or a
+  static member of its own unit (binding T-5), so no case of one call reaches `random` of `get`, `set`, `remove` and
+  `renew` of either session (the start of a new session and a renewal make an identifier, SE-7.2, SE-7.3), `io` and
+  `identifier_taken` of `file_session.close`, or `connection` of `redis_session.close`; these kinds need a case form
+  that makes the receiver by a call of another unit. `cancelled` of `file_sessions.open` (SF-3.8) is reached by an
+  input, a cancellation that fired before the call waits, and needs a case form that gives a value of the type
+  `cancel`. The check counts a case of the group `requests` for every member that reads the group, but a binding test
+  takes the keys of a case as the arguments of one call and runs no case of several requests (`steps`); so no case of
+  that group arms a point, because it would satisfy the check while no binding test runs it.

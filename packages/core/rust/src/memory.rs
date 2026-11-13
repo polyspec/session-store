@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use polyspec_php_serialization::{Key, PhpValue};
 
 use crate::error::Error;
+use crate::fault;
 use crate::store::{key_of, Store};
 use crate::Failure;
 
@@ -84,6 +85,10 @@ impl Store for MemoryStore {
     }
 
     fn renew(&mut self) -> Result<(), Failure> {
+        // SE-9.6: the point imitates a count that passes u64, which no input reaches (X-1).
+        if fault::broken(fault::INTERNAL) {
+            return Err(binding_core::Failure::Kind(Error::Internal { what: "the count of renewals passes u64" }));
+        }
         self.renewals = self
             .renewals
             .checked_add(1)

@@ -5,6 +5,8 @@
 
 mod copy;
 mod error;
+#[doc(hidden)]
+pub mod fault;
 mod identifier;
 mod memory;
 mod record;

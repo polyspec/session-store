@@ -13,6 +13,11 @@ include = ["/src/**/*.rs"]
 name = "polyspec_session_store_core"
 path = "src/lib.rs"
 
+[features]
+# G-5, X-1: compiles the arming of the fault injection points of the module `fault` (SE-9.6); a generated binding crate
+# turns it on through polyspec-session-store for its tests only, and no release build has it (binding design 3.6).
+fault-test = ["polyspec-binding-core/fault-test"]
+
 [dependencies]
 # The random source of the operating system (SE-5.3).
 getrandom = "0.3"
@@ -22,6 +27,8 @@ polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", branc
 polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", branch = "v1/rust-core" }
 
 [dev-dependencies]
+# tests/contract.rs arms the fault injection points of the cases that name them, as a generated binding test does.
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", branch = "v1/rust-core", features = ["fault-test"] }
 libtest-mimic = "=0.8.2"
 serde_json = "1"
 

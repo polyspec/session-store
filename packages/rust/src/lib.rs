@@ -4,6 +4,9 @@
 //! of this crate. The rules are in `docs/spec/sessions.md`.
 #![forbid(unsafe_code)]
 
+/// The fault injection points of the library (SE-9.6), which the interface contract names in `faults`.
+#[doc(hidden)]
+pub use polyspec_session_store_core::fault;
 pub use polyspec_session_store_core::{
     accept, key_of, new_identifier, random_hex, Error, Failure, Found, IoKind, MemoryStore, Outcome, RecordSession,
     Store,

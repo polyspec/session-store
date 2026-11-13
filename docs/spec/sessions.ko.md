@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: cc0b1f1c9f758fff1990d3ff6934b4a7e1b6347ad717120aa96060b2236309b8 -->
+<!-- source-sha256: 66360d30b1a70121eb2330f3a4a536a3d724784ed673e8d36669f9da5e0a022b -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -126,6 +126,24 @@
   실패하거나(`random`, SE-5.4), 다른 프로세스가 새 식별자의 파일을 만든 경우다
   (`identifier_taken`, SF-4.4). 그러면 오류의 클래스로 결함과 환경의 실패를 구분하는 호출자는
   두 경우 모두에서 옳다.
+  <a id="SE-9.6"></a> 환경의 실패 몇 가지와 kind `internal`에는 어떤 입력도 닿지 않으므로, 실패 주입점이 그것을
+  흉내 낸다(binding 설계 G-5, X-1). `polyspec-session-store`가 다시 내보내는 `polyspec-session-store-core`의
+  모듈 `fault`가 주입점을 `session_store.<id>`로 이름하고, 저장소의 crate는 자기 자리의 주입점을 그 모듈로
+  부르며, 인터페이스 계약은 같은 주입점을 `faults`에 적는다. 주입점은 `polyspec-session-store-core`의 feature
+  `fault-test`가 켜져 있지 않으면 아무것도 하지 않는다: `polyspec-session-store`는 자기 feature `fault-test`로 그것을
+  켜고, 바인딩 crate는 자기 시험에서만 그 feature를 켜며, crate의 시험은 dev-dependency `polyspec-binding-core`로
+  그것을 켜고, 어떤 release 빌드에도 그것은 없다. `open`이나 `read_dir`의 `io` 주입은 그 시스템 호출이 fault의
+  `errno`로 실패하는 것이고 그 kind는 SF-9.2를 따르며, fault가 `errno`를 적지 않으면 `errno` 없는 kind `io`의
+  실패다. `errors.kinds`의 variant `Io` 행이 `kinds`를 적지 않고 주입점은 그 표의 kind만 채우므로, 계약의
+  `fills`는 SF-9.2의 kind 중 `io`만 적는다. `random`의 `io` 주입은 난수원의 실패이며 `errno`가 없다. 코어는 task도
+  thread도 시작하지 않으므로, 각 주입점은 그 점에 닿는 호출의 장전을 받는다.
+
+  | Id | 자리(함수) | 주입 | 채우는 kind | 조건의 규칙 | 장전을 받는가 |
+  |---|---|---|---|---|---|
+  | `random` | `new_identifier`, 새 세션의 시작, 갱신, Redis 저장소의 열기가 부르는 `random_hex` | `io` | `random` | SE-5.4 | 예 |
+  | `internal` | `MemoryStore`의 `renew`: 갱신 횟수가 u64를 넘는 것으로 다룬다 | `broken` | `internal` | SE-4.3 | 예 |
+  | `open` | `FileSessions::open`에서 세션 파일의 open | `io` | `io` | SF-3.1, SF-9.2 | 예 |
+  | `read_dir` | `FileSessions::collect`에서 디렉터리의 읽기 | `io` | `io` | SF-5.1, SF-9.2 | 예 |
 
 ## 파일 저장소
 
@@ -305,8 +323,8 @@
 
 - **SE-10** <a id="SE-10.1"></a> `contracts/sessions.json`은 코어의 case를 담는다: group `identifier`(SE-5.1,
   SE-5.2), group `created`(SE-5.3: 새 식별자의 `length`와 `alphabet`. 새 식별자는 식별자이고
-  그 앞에 만든 식별자와 다르다), group `store`(SE-2, SE-4, 메모리 저장소와 레코드 세션에서 실행한다),
-  group `record`(SE-6, SE-7). `contracts/file-sessions.json`은 파일 저장소의 요청을 담고(SF-1부터 SF-5),
+  그 앞에 만든 식별자와 다르다. 그리고 SE-5.4), group `store`(SE-2, SE-4, 메모리 저장소와 레코드 세션에서
+  실행한다), group `record`(SE-6, SE-7), group `internal`(SE-9.6). `contracts/file-sessions.json`은 파일 저장소의 요청을 담고(SF-1부터 SF-5),
   `contracts/redis-sessions.json`은 Redis 저장소의 요청을 각 요청이 보내는 명령과 함께 담는다(SR-1부터
   SR-5). <a id="SE-10.2"></a> case의 PHP 값은 그 serialize 형식이고, case의 바이트 문자열은 문자 U+0000부터
   U+00FF가 그 바이트인 JSON 텍스트다. 실패는 `kind`, `status`, `category`,
@@ -327,3 +345,24 @@
   각 레코드를 status 응답으로 준다, SR-5.1)나 `errorReplies`를 가진 case(모델이 한 이름의 모든 명령에 적힌 오류 응답을
   준다, SR-5.2)는 모델에 대해서만 실행된다. 실제 서버는 이 key에 대한 이 명령에 둘 중 어느 것도
   주지 않기 때문이다.
+  <a id="SE-10.5"></a> `faults`를 가진 case는 생성된 바인딩 시험처럼 SE-9.6의 실패 주입점을 자기 한 호출에
+  장전한다(binding 설계 G-5): Rust 시험은 그 목록을 member에 장전하고, member의 entry point가 받는 장전으로 호출을
+  실행하며, 터지지 않은 fault가 있으면 case를 실패시킨다. 그런 case는 자기 member만 읽는 group의 한 호출 case이며,
+  그래서 다른 member의 시험은 그것을 장전하지 않는다: `contracts/sessions.json`의 group `created`(`new_identifier`)와
+  `internal`(`memory_store.renew`), `contracts/file-sessions.json`의 group `openFaults`(`file_sessions.open`)와
+  `collectFaults`(`file_sessions.collect`), `contracts/redis-sessions.json`의 group
+  `openFaults`(`redis_sessions.open`)다. 한 호출 case는 자기 unit의 생성자로 case의 key에서 receiver를
+  만든다(binding T-5): 라이브러리의 모든 플랫폼에 있고 그 읽기를 장전된 주입점이 호출이 읽기 전에 실패시키는
+  디렉터리 `/`의 파일 저장소, 그리고 어떤 파일도 될 수 없는 `/dev/null` 아래 socket의 Redis 저장소다.
+  `contracts/redis-sessions.json`의 group `opening`은 그 설정으로 연결이 실패하는 한 호출의 입력 case를
+  담는다(SR-6.4). 이 입력이 닿는 실패를 흉내 내는 주입은 없다. <a id="SE-10.6"></a> 계약에는 다음 member의 kind에
+  대한 case가 없고, 계약 검사는 그것을 하나씩 지적한다(binding CK-22). 요청의 세션(`file_session`,
+  `redis_session`)은 다른 unit의 메서드인 그 저장소의 `open`이 만들고, 한 호출 case는 자기 unit의 생성자나 static
+  member로만 receiver를 만든다(binding T-5). 그래서 어떤 한 호출 case도 두 세션의 `get`, `set`, `remove`,
+  `renew`의 `random`(새 세션의 시작과 갱신이 식별자를 만든다, SE-7.2, SE-7.3), `file_session.close`의 `io`와
+  `identifier_taken`, `redis_session.close`의 `connection`에 닿지 않는다. 이 kind들에는 다른 unit의 호출로
+  receiver를 만드는 case 형식이 필요하다. `file_sessions.open`의 `cancelled`(SF-3.8)는 입력, 곧 호출이 기다리기
+  전에 발동한 취소가 닿으며, 타입 `cancel`의 값을 주는 case 형식이 필요하다. 검사는 group `requests`의 case를
+  그 group을 읽는 모든 member에 센다. 그러나 바인딩 시험은 case의 key를 한 호출의 인자로 받으며 여러 요청의
+  case(`steps`)는 하나도 실행하지 않는다. 그래서 그 group의 어떤 case도 주입점을 장전하지 않는다. 그런 case는
+  어떤 바인딩 시험도 실행하지 않는데 검사는 통과시키기 때문이다.

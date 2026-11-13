@@ -1086,5 +1086,58 @@
     "message": null
    }
   }
+ ],
+ "openFaults": [
+  {
+   "id": "a_failing_open_of_the_session_file_fails_with_io",
+   "label": "the fault injection point session_store.open makes the open of the session file fail with EIO, a failure of the file system that no input reaches",
+   "rules": [
+    "SF-3.1",
+    "SF-9.2",
+    "SE-9.6"
+   ],
+   "directory": "/",
+   "cookie": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "faults": [
+    {
+     "point": "session_store.open",
+     "kind": "io",
+     "errno": "EIO"
+    }
+   ],
+   "raises": {
+    "kind": "io",
+    "status": 500,
+    "category": "io",
+    "errno": "EIO",
+    "message": null
+   }
+  }
+ ],
+ "collectFaults": [
+  {
+   "id": "a_failing_read_of_the_directory_fails_with_io",
+   "label": "the fault injection point session_store.read_dir makes the read of the session directory fail with EIO, a failure of the file system that no input reaches",
+   "rules": [
+    "SF-5.1",
+    "SF-9.2",
+    "SE-9.6"
+   ],
+   "directory": "/",
+   "faults": [
+    {
+     "point": "session_store.read_dir",
+     "kind": "io",
+     "errno": "EIO"
+    }
+   ],
+   "raises": {
+    "kind": "io",
+    "status": 500,
+    "category": "io",
+    "errno": "EIO",
+    "message": null
+   }
+  }
  ]
 }

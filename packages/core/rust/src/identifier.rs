@@ -1,6 +1,7 @@
 //! Session identifiers (SE-5).
 
 use crate::error::Error;
+use crate::fault;
 
 /// The least and the greatest length of an identifier (SE-5.1).
 const SHORTEST: usize = 22;
@@ -28,6 +29,14 @@ pub fn new_identifier() -> Result<String, Error> {
 /// source is the kind `random` and no other source replaces it (SE-5.4).
 pub fn random_hex(count: usize) -> Result<String, Error> {
     let mut bytes = vec![0_u8; count];
+    // SE-9.6: the point imitates a failure of the random source, which no input reaches.
+    if let Some(errno) = fault::failed(fault::RANDOM) {
+        let detail = match errno {
+            Some(errno) => std::io::Error::from_raw_os_error(errno).to_string(),
+            None => format!("the fault of {}", fault::RANDOM),
+        };
+        return Err(Error::Random { detail });
+    }
     getrandom::fill(&mut bytes).map_err(|error| Error::Random { detail: error.to_string() })?;
     let mut text = String::with_capacity(count * 2);
     for byte in bytes {

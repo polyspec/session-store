@@ -20,6 +20,8 @@ path = "src/lib.rs"
 default = ["file", "redis"]
 file = ["dep:polyspec-session-store-file"]
 redis = ["dep:polyspec-session-store-redis"]
+# G-5, X-1: the fault injection points of the library (SE-9.6), for the tests of a generated binding crate only.
+fault-test = ["polyspec-session-store-core/fault-test"]
 
 [dependencies]
 # The PHP values of the contract (php_value, SE-1.5): the binding crates take the dependency of the crate whose

@@ -1,5 +1,23 @@
 <!-- doc-id: changelog -->
 
+- The kinds that one call reaches have their cases (binding CK-22, SE-9.6, SE-10.5). The module `fault` of
+  `polyspec-session-store-core`, which `polyspec-session-store` gives again, names four fault injection points:
+  `session_store.random` in `random_hex` (`random`, SE-5.4), `session_store.internal` in the renewal of a memory store
+  (`internal`, the one case of X-1), `session_store.open` at the open of a session file and `session_store.read_dir` at
+  the read of the directory of the store of files (`io`, SF-9.2). The core crate has the feature `fault-test`, which
+  `polyspec-session-store` turns on through its own feature `fault-test`, and the binding crates of PHP, Python and
+  Node gain the feature `fault-test` that binding scaffold writes; no release build has it. The contract names the
+  points in `faults`, and new groups that only one member reads hold the cases of one call: `created` gains the failing
+  random source of `new_identifier`, `internal` (`memory_store.renew`), `openFaults` (`file_sessions.open`) and
+  `collectFaults` (`file_sessions.collect`) on the directory `/`, and `openFaults` (`redis_sessions.open`, `random`)
+  of the store of Redis. `connection` of `redis_sessions.open` is reached by an input, a setting that names a socket
+  under `/dev/null`, so the new group `opening` holds that input case and no point imitates it. The Rust tests arm the
+  faults of a case as a generated test does and fail a case whose fault did not fire. `make binding-check` gives 12
+  findings of CK-22 where it gave 18; SE-10.6 states the case form that each needs: `random` of the four store calls of
+  both sessions, `io` and `identifier_taken` of `file_session.close` and `connection` of `redis_session.close` need a
+  receiver that `open` of another unit makes, and `cancelled` of `file_sessions.open` needs a value of the type
+  `cancel`.
+
 - `Cargo.lock` pins `polyspec-php-serialization` at the head of its branch `v1/rust-core`, whose crate has the fault
   injection point `php_serialization.internal` and the feature `fault-test`. Nothing else in the lock changes.
 

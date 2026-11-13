@@ -4,7 +4,7 @@
 // records its arguments, so it needs neither bay nor a container runtime.
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test, type TestContext } from 'node:test';
@@ -288,4 +288,24 @@ test('a run that SIGINT or SIGTERM stops waits for its command, runs down for it
     assert.deepEqual(run.calls, [...CHECKED, ['bay', '-f', join(run.projects, 'p-1-0', 'compose.yaml'), 'down']]);
     assert.equal(existsSync(dirname(run.projects)), false);
   }
+});
+
+test('no test binary of the store of Redis changes the environment of a process whose trials run in parallel', () => {
+  // The environment of a process belongs to all its threads (SE-10.4): a file of tests that changes it holds one
+  // trial, and changes it in main before a second thread starts.
+  const directory = join(scripts, '..', 'packages', 'redis', 'rust', 'tests');
+  const files = readdirSync(directory).filter((name) => name.endsWith('.rs'));
+  assert.ok(files.includes('server.rs') && files.includes('contract.rs'), `the tests of the store of Redis are not in ${directory}`);
+  const changing: string[] = [];
+  for (const name of files) {
+    const text = readFileSync(join(directory, name), 'utf8');
+    if (!/\bset_var\(|\bremove_var\(/.test(text)) continue;
+    changing.push(name);
+    assert.equal(text.match(/\bTrial::test\(/g)?.length, 1, `${name} changes the environment and holds more than one trial`);
+    const main = text.slice(text.indexOf('fn main()'));
+    assert.match(main, /\bset_var\(/, `${name} changes the environment outside main`);
+    assert.equal(text.match(/\bset_var\(|\bremove_var\(/g)?.length, 1, `${name} changes the environment more than once`);
+  }
+  // The test of TLS names the authority file of bay for its process.
+  assert.deepEqual(changing, ['tls.rs']);
 });

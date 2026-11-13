@@ -78,7 +78,8 @@
       "paths": [
         "scripts/servers.test.mts",
         "scripts/servers.sh",
-        "scripts/test-run.sh"
+        "scripts/test-run.sh",
+        "packages/redis/rust/tests/*.rs"
       ],
       "targets": [
         "servers-test"

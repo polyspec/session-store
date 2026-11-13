@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 9d6848bba213722f79aea2b6202062a0a9e70ba670ec1ef44df3eea5a42565de -->
+<!-- source-sha256: 88a57d669783de3428313387f9a2e990b0e6f37d88d14db76fce103a74fcd697 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -366,43 +366,45 @@
   image(`REDIS_IMAGE`, `make redis-image`가 받는다)의 container 안에서 도는 Redis 8.10.3의 `redis-server`이고, 어떤
   시험도 장비에 설치된 서버를 실행하지 않는다. 서버는 bay가 시작하고 지운다. bay는 Compose 프로젝트를 Darwin에서는
   Apple `container`로, Linux에서는 Docker로 실행한다. 그래서 image와 그 digest는 하나이고, 두 플랫폼의 시험이 같은
-  bytes의 서버에 연결하며, 이 저장소의 어떤 파일도 engine이 서버를 실행하는 명령을 갖지 않는다.
-  `scripts/servers.sh`가 서버의 명령(`check`, `up`, `down`, `status`, `logs`, 그리고 image의 `present`와 `pull`)을
-  갖고, harness와 run은 이 script만 시작한다.
+  bytes의 서버에 연결하며, 이 저장소의 어떤 파일도 engine의 명령을 갖지 않는다. `scripts/servers.sh`가 bay의
+  명령(`check`, `pull`, `plan`, `up`, `images`, `exec`, `logs`, `down`)을 갖고, harness와 run은 이 script만 시작한다.
   - 시험마다 프로젝트 하나. 시험은 자기가 필요한 서버의 Compose 파일을 run의 디렉터리(`SESSION_STORE_PROJECTS`) 아래
-    자기 디렉터리에 쓰고 프로젝트 하나로 시작한다. 서버마다 service 하나를 두고, image는 digest로 적고, 서버의
-    인자는 `command`로, 서버의 port는 `expose`로, 서버가 파일을 읽는 곳은 프로젝트의 디렉터리를 volume으로 적으며,
-    port를 host에 공개하지 않는다. 서버의 인자는 시험이 적는 내용의 일부이고(ACL 사용자, TLS 파일, Sentinel,
-    cluster 방식), 한 시험의 key와 사용자와 cluster는 다른 시험에 닿으면 안 된다. 그래서 시험끼리 서버를 함께 쓰지
-    않고, run은 자기가 실행하는 시험의 서버만 시작한다. `tests/contract.rs`의 case들은 이 뜻에서 시험 하나다. 서버
-    하나를 함께 쓰고, case마다 자기 database를 쓴다.
-  - 프로젝트의 이름은 그 디렉터리의 이름이다. run의 디렉터리 이름, 시험 process의 id, 순번으로 이루어진다. bay는
-    프로젝트의 이름을 파일에서만 읽으므로 Compose 파일이 `name`에 그 이름을 적는다. run의 디렉터리는 run의 process를
-    따라 이름 지으므로, 한 장비의 두 run이 같은 이름을 갖지 않는다.
-  - 서버의 주소는 bay가 주는 주소다. 시작한 뒤 harness는 `bay status --json`에서 그 service를 읽고(`address`, 곧
-    이름과 port, 그리고 `ipv4`), 시험은 그 주소에 연결한다. 이름의 domain은 bay의 것이므로 이 저장소의 어떤 파일도
-    그 domain을 적지 않고, 어떤 port도 host에 공개하지 않는다. 다른 서버의 이름을 적어야 하는 서버나 certificate가
-    자기 이름을 적는 서버는 그 주소를 읽은 뒤 같은 파일을 다시 `up`하여 시작한다. bay는 바뀌지 않은 service를
-    그대로 두고, 바뀐 service를 교체하고, 새 service를 시작한다. Sentinel은 이 방법으로 primary의 이름을 받고, TLS
-    서버는 certificate를 받는다.
+    자기 디렉터리에 쓰고, 한 번의 `up`으로 프로젝트 하나로 시작한다. 서버마다 service 하나를 두고, image는 digest로
+    적고, 서버의 인자는 `command`로, 서버의 port는 `expose`로, 서버가 시험의 파일을 읽는 곳은 프로젝트의 디렉터리를
+    volume으로 적으며, port를 host에 공개하지 않는다. 서버의 인자는 시험이 적는 내용의 일부이고(ACL 사용자, TLS,
+    Sentinel, cluster 방식), 한 시험의 key와 사용자와 cluster는 다른 시험에 닿으면 안 된다. 그래서 시험끼리 서버를
+    함께 쓰지 않고, run은 자기가 실행하는 시험의 서버만 시작한다. `tests/contract.rs`의 case들은 이 뜻에서 시험
+    하나다. 서버 하나를 함께 쓰고, case마다 자기 database를 쓴다.
+  - 프로젝트의 이름은 그 디렉터리의 이름이다. 파일이 이름을 적지 않으면 bay가 디렉터리의 이름을 쓴다. 그 이름은
+    run의 디렉터리 이름, 시험 process의 id, 순번으로 이루어진다. run의 디렉터리는 run의 process를 따라 이름 지으므로,
+    한 장비의 두 run이 같은 이름을 갖지 않는다.
+  - 모든 이름은 bay가 준다. 시작하기 전에 harness는 Compose 파일의 `bay plan --json`을 읽는다. 거기에 각 service의
+    host 이름과, bay가 그 이름에 발급하는 certificate의 경로가 있다. 다른 서버의 이름을 적는 서버는 그 이름을
+    plan에서 받는다. Sentinel의 설정이 primary의 이름을 이렇게 적는다. 그래서 한 번의 `up`이 한 시험의 모든 서버를
+    시작한다. 시작한 뒤 harness는 `bay up --json`의 출력을 읽고(`address`, 곧 이름과 port, 그리고 `ipv4`), 시험은 그
+    주소에 연결한다. 이 저장소의 어떤 파일도 이름의 domain이나 certificate의 경로를 적지 않고, 어떤 port도 host에
+    공개하지 않는다. harness는 `schemaVersion`이 1이 아닌 plan이나 `up`의 출력을 실패시킨다. 1이 harness가 읽는
+    계약의 version이다.
+  - TLS 서버는 bay가 자기 이름에 발급한 certificate를 plan이 주는 container 안의 경로에서 읽고, 시험은 plan이 그
+    파일을 적는 bay의 authority를 신뢰한다. 어떤 시험도 certificate를 만들지 않는다.
   - `up`의 반환이 시작의 event다. bay는 모든 service가 자기 port에서 연결을 받은 뒤 반환한다. harness는 시간 제한도,
-    sleep도, 반복해서 묻는 일도 갖지 않는다. cluster의 시험은 slot을 배정하고 node를 서로 소개하는 일을 자기가 보내는
-    Redis 명령으로 한다. `up`은 끝나는 service에 대해 실패하므로(그 service의 port를 기다린다) 프로젝트의 어떤
-    service도 한 번 실행되고 끝나는 명령이 아니기 때문이다. 그런 뒤 시험은 각 node가 state ok를 알리는 줄을
-    `bay logs -f`가 첫 줄부터 주는 출력에서 기다린다.
-  - TLS의 certificate는 host의 `openssl`(`OPENSSL`)이 서버의 이름에 대해 만들고, 읽기 전용 volume으로 서버에
-    전달된다. bay가 domain이 없는 service에 certificate를 발급할 때까지 이 방법이 남는다.
-  - bay나 플랫폼의 engine을 찾지 못하면 run은 시험을 실행하기 전, 시작할 때 그 프로그램의 이름과 설치 방법을 적고
-    실패한다. `bay check`가 bay의 장비 설정이 갖추어지지 않았다고 보고하면 run은 그 설정을 적용하는 `bay install`을
-    적고 실패한다. run은 장비의 설정을 바꾸지 않는다. image가 설치되지 않은 시험은 실패하고 `make redis-image`를
-    적는다. 그런 시험은 무시된 시험으로 보고되지 않고, 어떤 시험도 image를 받지 않는다. image의 존재 확인과 받기는
-    bay에 받는 명령이 생길 때까지 플랫폼의 engine, 곧 Darwin의 Apple `container`와 Linux의 `docker`의 명령이다.
+    sleep도, 반복해서 묻는 일도 갖지 않는다. cluster의 시험은 image의 `redis-cli --cluster create`로 cluster를
+    만든다. `bay exec`가 그 명령을 첫 node의 container에서 세 node의 주소와 함께 실행한다. 그 명령이 Redis가
+    cluster를 만드는 일을 적는 방법이고, `bay exec`가 그 status를 돌려주기 때문이다. 그 명령은 프로젝트의 service가
+    아니다. `up`은 모든 service의 이름을 기다리고, service가 이미 끝났으면 실패하기 때문이다. 그런 뒤 시험은 각
+    node가 state ok를 알리는 줄을 `bay logs -f`가 첫 줄부터 주는 출력에서 기다린다.
+  - 어떤 시험도 image를 받지 않는다. harness는 프로젝트를 `up -no-pull`로 시작하고, 이 명령은 image가 설치되지
+    않았으면 아무것도 만들기 전에 실패한다. 그렇게 실패한 시험은 `make redis-image`를 적는다. 그런 시험은 무시된
+    시험으로 보고되지 않는다. `make redis-image`는 `bay pull`로 받으며, 받는 step은 이것뿐이다.
+  - bay를 찾지 못하면 run은 시험을 빌드하기 전, 시작할 때 설치 방법을 적고 실패한다. `bay check -scope run`이
+    프로젝트에 필요한 장비 설정의 일부가 없다고 보고하면 run은 그 설정을 적용하는 `bay install`을 적고 실패한다.
+    어떤 run도 장비의 설정을 바꾸지 않고, `up`도 바꾸지 않는다. 시작할 때의 검사는 빌드 뒤 모든 시험에서 한 번씩
+    실패하는 대신 빌드 전에 한 번 실패하게 한다.
   - `make test`는 시험을 `scripts/test-run.sh`로 실행하고, 이 script가 run의 디렉터리를 소유한다. Compose 파일은
     `up`보다 먼저 쓰이므로, 시작된 모든 프로젝트에는 파일이 있다. run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출
-    때 script는 시험을 기다리고, 디렉터리에 남은 모든 Compose 파일에 `down`을 실행하고, 디렉터리를 지운다. `down`이
-    지우지 못한 프로젝트가 있으면 run은 실패하고, 디렉터리를 남기고 그 파일을 적는다. 알려진 한계: engine이
-    container를 만드는 동안 신호가 `up`을 멈추면 bay는 engine을 기다리지 않고 끝나므로, 그 container가 run의 `down`
-    뒤에 나타날 수 있다.
+    때 script는 시험을 기다리고, 디렉터리에 남은 모든 Compose 파일에 `down`을 실행하고, 디렉터리를 지운다. 신호가
+    멈춘 `up`은 자기가 만든 것을 지운다. `down`이 지우지 못한 프로젝트가 있으면 run은 실패하고, 디렉터리를 남기고 그
+    파일을 적는다.
 
   `text_replies`를 가진 case(모델이 각 레코드를 status 응답으로 준다, SR-5.1)나
   `error_replies`를 가진 case(모델이 한 이름의 모든 명령에 적힌 오류 응답을 준다, SR-5.2)는 모델에 대해서만 실행되고

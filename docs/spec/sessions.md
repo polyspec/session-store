@@ -369,46 +369,47 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   pulled by `make redis-image`), and no test runs a server that is installed on the machine. bay starts and removes
   the servers: it runs a Compose project on Apple `container` on Darwin and on Docker on Linux, so the image and its
   digest are one, the tests of both platforms connect to the same bytes of the server, and no file of this repository
-  holds the commands with which an engine runs a server. `scripts/servers.sh` holds the commands of the servers
-  (`check`, `up`, `down`, `status`, `logs`, and `present` and `pull` of an image); the harness and the run start that
-  script alone.
+  holds a command of an engine. `scripts/servers.sh` holds the commands of bay (`check`, `pull`, `plan`, `up`,
+  `images`, `exec`, `logs`, `down`); the harness and the run start that script alone.
   - A project for each test. A test writes the Compose file of the servers that it needs into a directory of its own
-    below the directory of the run (`SESSION_STORE_PROJECTS`) and starts it as one project: one service for each
-    server, the image by its digest, the arguments of the server as `command`, the port of the server as `expose`, a
-    directory of the project as a volume where the server reads files, and no published port. The arguments of a
-    server are part of what a test states (an ACL user, the files of TLS, Sentinel, the cluster mode), and the keys,
-    the users and the cluster of one test must not reach another test, so no server is shared between tests and a run
-    starts only the servers of the tests that it runs. The cases of `tests/contract.rs` are one test in this sense:
-    they share one server, each case in a database of its own.
-  - The name of a project is the name of its directory: the name of the directory of the run, the id of the test
-    process and a count. The Compose file states it in `name`, because bay takes the name of a project from the file
-    alone, and the directory of the run is named after the process of the run, so no two runs of a machine hold one
-    name.
-  - The address of a server is the one that bay gives. After a start the harness reads the service in
-    `bay status --json` (`address`, the name and the port, and `ipv4`), and a test connects to that address; no file
-    of this repository states the domain of the names, which belongs to bay, and no port is published to the host. A
-    server that must name another one, or whose certificate names itself, starts by a further `up` of the same file
-    after that address is read: bay keeps a service that did not change, replaces one that changed and starts a new
-    one. Sentinel takes the name of its primary this way, and the server of TLS its certificate.
+    below the directory of the run (`SESSION_STORE_PROJECTS`) and starts it as one project by one `up`: one service
+    for each server, the image by its digest, the arguments of the server as `command`, the port of the server as
+    `expose`, a directory of the project as a volume where the server reads a file of the test, and no published
+    port. The arguments of a server are part of what a test states (an ACL user, TLS, Sentinel, the cluster mode), and
+    the keys, the users and the cluster of one test must not reach another test, so no server is shared between tests
+    and a run starts only the servers of the tests that it runs. The cases of `tests/contract.rs` are one test in
+    this sense: they share one server, each case in a database of its own.
+  - The name of a project is the name of its directory, which bay takes when the file states none: the name of the
+    directory of the run, the id of the test process and a count. The directory of the run is named after the
+    process of the run, so no two runs of a machine hold one name.
+  - bay gives every name. Before the start the harness reads `bay plan --json` of the Compose file: the host name of
+    each service and the paths of the certificate that bay issues for that name. A server that names another one
+    takes the name from the plan, as the configuration of Sentinel names its primary, so one `up` starts every server
+    of a test. After the start the harness reads the output of `bay up --json` (`address`, the name and the port,
+    and `ipv4`), and a test connects to that address. No file of this repository states the domain of the names or a
+    path of a certificate, and no port is published to the host. The harness fails a plan or an output of `up` whose
+    `schemaVersion` is not 1, the version of the contract that it reads.
+  - The server of TLS takes the certificate that bay issues for its name, at the paths in its container that the
+    plan gives, and the test trusts the authority of bay, whose file the plan names. No test makes a certificate.
   - The return of `up` is the event of a start: bay returns after every service accepts connections on its port. The
-    harness holds no time limit, no sleep and no repeated question. The test of the cluster assigns the slots and
-    introduces the nodes with commands of Redis that it sends itself, because `up` fails for a service that ends
-    (it waits for a port of the service), so no service of a project is a command that runs once; it then waits for
-    the line in which each node reports the state ok, in the output that `bay logs -f` gives from its first line.
-  - The certificates of TLS are made by `openssl` of the host (`OPENSSL`) for the name of the server and reach the
-    server as a read-only volume. They remain until bay issues a certificate to a service without a domain.
-  - A run fails at its start, before a test runs, when bay or the engine of the platform is not found, with the name
-    of the program and what installs it, and when `bay check` reports that the machine setup of bay is not in place,
-    with `bay install`, which applies it: a run changes no setup of the machine. A test whose image is not installed
-    fails and names `make redis-image`; no such test is reported as ignored and no test pulls an image. The presence
-    and the pull of an image are commands of the engine of the platform, Apple `container` on Darwin and `docker` on
-    Linux, until bay has a command that pulls.
+    harness holds no time limit, no sleep and no repeated question. The test of the cluster creates the cluster with
+    `redis-cli --cluster create` of the image, which `bay exec` runs in the container of the first node with the
+    addresses of the three nodes, because that command is how Redis states the making of a cluster and `bay exec`
+    returns its status; it is no service of the project, because `up` waits for the name of every service and fails
+    when a service has ended. The test then waits for the line in which each node reports the state ok, in the
+    output that `bay logs -f` gives from its first line.
+  - No test pulls an image: the harness starts a project with `up -no-pull`, which fails before it creates anything
+    when the image is not installed, and a test that fails this way names `make redis-image`; no such test is
+    reported as ignored. `make redis-image` pulls with `bay pull`, the only step that pulls.
+  - A run fails at its start, before the tests are built, when bay is not found, with what installs it, and when
+    `bay check -scope run` reports that a part of the machine setup that a project needs is missing, with
+    `bay install`, which applies it. No run changes the setup of the machine, and `up` changes none either; the check
+    at the start gives one failure before the build instead of one in every test after it.
   - `make test` runs the tests through `scripts/test-run.sh`, which owns the directory of the run. A Compose file is
     written before its `up`, so every project that started has its file. When the run ends, fails or is stopped by
     SIGINT or SIGTERM, the script waits for the tests, runs `down` for every Compose file that the directory still
-    holds and removes the directory. A project that `down` does not remove fails the run, which then keeps the
-    directory and names the file. Known limit: when a signal stops an `up` while the engine creates a container, bay
-    ends without waiting for the engine, and the container can appear after the `down` of the run.
+    holds and removes the directory. An `up` that the signal stops removes what it created. A project that `down`
+    does not remove fails the run, which then keeps the directory and names the file.
 
   A case with `text_replies` (the model gives each record as a status reply, SR-5.1) or with `error_replies` (the
   model gives the stated error reply to every command of a name, SR-5.2) runs against the model only and has no trial

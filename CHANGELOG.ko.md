@@ -1,5 +1,22 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: d5627afcf11ab3746c2d682d7dc89849d7b1a4ede76e13f87d8bcc3b50679abb -->
+<!-- source-sha256: e6fba9fc549a67593cddc5ca466b84033cde8f330a1f3d3fbef39ee9d0ce6e7f -->
+
+## Unreleased
+
+- `make test-bindings`가 계약의 모든 target을 빌드하고 시험한다(binding BD-27). workspace 전체에 clippy를 실행하고,
+  `make check-declarations`, `make test-python`, `make test-node`, `make test-wasm`, `make test-php`, `make test-go`를
+  실행한다. 각각은 그 언어의 표준 runner(unittest, Node와 WASM의 node --test, PHPUnit, go test)로 binding이 생성한
+  시험과 `packages/<language>/tests`의 contract case를 실행하며, contract case는 `SESSION_STORE_CASES`로 디렉터리
+  `contracts`를 읽는다. WASM의 모듈과 glue는 패키지를 묶기 전에 wasm-bindgen CLI가 쓰며, 그 CLI의 판은
+  `wasm-bindgen` crate의 판이어야 한다. 그래서 `make test-node`와 `make test-wasm`은 단계 `node-package`를 함께 쓴다.
+  `make test-go`는 feature `panic-test`와 `codec-test`로 정적 라이브러리를 빌드하고, gofmt와 go vet을 실행한 다음
+  go test를 실행한다. Go는 `packages/go/go.mod`의 go 지시문의 판이고 `GOTOOLCHAIN=local`로 실행한다. 변수 `PYTHON`,
+  `PHP_CONFIG`, `PHPUNIT`, `TSC`, `GO`, `GOFMT`, `WASM_BINDGEN`이 런타임과 도구를 가리키고, `.cargo/config.toml`은
+  macOS에서 PHP와 Node 런타임의 기호를 정의하지 않은 채 둔다. Go 파일 `zz_generated_*.go`는 binding이 쓰면
+  추적되고(binding GN-3), `packages/ts/wasm/generated`와 `packages/go/internal/ffi/generated`는 무시된다. 전에는
+  바인딩을 빌드하거나 시험하는 make target이 없었다. 다섯 target은 모두 `make bindings`에서 실패한다. 계약 검사가
+  SE-10.6의 kind 열두 개를 보고하는 동안 binding generate가 계약을 거부하기 때문이다(binding CK-22). runner가
+  호출하고 그것으로 검증될 바인딩 API가 생성되지 않으므로 contract case runner는 쓰지 않았다.
 
 - 한 호출이 닿는 kind가 자기 case를 갖는다(binding CK-22, SE-9.6, SE-10.5). `polyspec-session-store`가 다시 내보내는
   `polyspec-session-store-core`의 모듈 `fault`가 실패 주입점 넷을 이름한다: `random_hex`의

@@ -1,3 +1,6 @@
 /target/
 /var/
 /packages/*/generated/
+/packages/ts/wasm/generated/
+/packages/go/internal/ffi/generated/
+__pycache__/

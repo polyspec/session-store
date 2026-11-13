@@ -1,5 +1,23 @@
 <!-- doc-id: changelog -->
 
+## Unreleased
+
+- `make test-bindings` builds and tests every target of the contract (binding BD-27): it runs clippy on the whole
+  workspace, `make check-declarations`, `make test-python`, `make test-node`, `make test-wasm`, `make test-php` and
+  `make test-go`, each on the standard runner of its language (unittest, node --test for Node and for WASM, PHPUnit and
+  go test) with the tests that binding generates and the contract cases of `packages/<language>/tests`, which read the
+  directory `contracts` through `SESSION_STORE_CASES`. The module and the glue of WASM are written by the wasm-bindgen
+  CLI, whose release must be that of the `wasm-bindgen` crate, before the package is packed, so `make test-node` and
+  `make test-wasm` share the step `node-package`. `make test-go` builds the static library with the features
+  `panic-test` and `codec-test`, runs gofmt and go vet, then go test, with the Go of the go directive of
+  `packages/go/go.mod` and `GOTOOLCHAIN=local`. The variables `PYTHON`, `PHP_CONFIG`, `PHPUNIT`, `TSC`, `GO`, `GOFMT`
+  and `WASM_BINDGEN` name the runtimes and tools; `.cargo/config.toml` leaves the symbols of the PHP and Node runtimes
+  undefined on macOS. The Go files `zz_generated_*.go` are tracked once binding writes them (binding GN-3), and
+  `packages/ts/wasm/generated` and `packages/go/internal/ffi/generated` are ignored. Before, no make target built or
+  tested a binding. Every one of the five targets fails at `make bindings`, because binding generate refuses the
+  contract while the contract check reports the twelve kinds of SE-10.6 (binding CK-22); no contract case runner is
+  written, because no binding API is generated that a runner could call and be checked against.
+
 - The kinds that one call reaches have their cases (binding CK-22, SE-9.6, SE-10.5). The module `fault` of
   `polyspec-session-store-core`, which `polyspec-session-store` gives again, names four fault injection points:
   `session_store.random` in `random_hex` (`random`, SE-5.4), `session_store.internal` in the renewal of a memory store

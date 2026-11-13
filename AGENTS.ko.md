@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: b92f99fb14eb0810b63d31c3d2450daf6d66988c989a838ec204d76189644e6c -->
+<!-- source-sha256: eb49cc1c6db49186d95e8e3fcd2b1a9d44b799eaa7ff4ca1b6310aac897d691d -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -24,7 +24,7 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 - 루트의 `Cargo.toml`은 crate 넷과 다섯 target의 바인딩 crate의 workspace이며 `Cargo.lock`은 하나다.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: case다(SE-10).
 - `docs/spec/`: 명세다. 루트: `AGENTS.md`, `README.md`, `CHANGELOG.md`와 그 한국어 번역
-  (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`.
+  (`*.ko.md`), `Makefile`, `rust-toolchain.toml`, `clippy.toml`, `rustfmt.toml`, `.cargo/config.toml`.
 
 ## 변경
 
@@ -51,6 +51,30 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   `#[allow(..., reason = "<rule id>")]`를 붙인다.
 - peer(PHP, redis-server, redis-cli, openssl)가 필요한 시험은 Makefile이 그 peer를 찾으면 실행되고, 찾지 못하면
   무시된 시험으로 보고된다.
+
+## Bindings
+
+- `make bindings`가 생성한다. 바인딩을 빌드하거나 시험하는 모든 make target은 그것을 먼저 실행한다. `make test-bindings`는
+  workspace 전체에 clippy를 실행하고, `make check-declarations`를 실행하고, 그다음 계약의 다섯 target마다 하나씩
+  `make test-python`, `make test-node`, `make test-wasm`, `make test-php`, `make test-go`를 실행한다. 각각은 binding이
+  생성한 시험과 그 바인딩의 contract case를 그 언어의 표준 runner로 실행한다. runner는 unittest, node --test(Node와
+  WASM, WASM 바인딩은 같은 설치 패키지의 subpath `./wasm`으로), PHPUnit, go test다. contract case는
+  `packages/python/tests`, `packages/ts/tests/cases.test.mjs`, `packages/ts/tests/cases.wasm.test.mjs`,
+  `packages/php-ext/tests`, `packages/go/tests`이며, `SESSION_STORE_CASES`로 디렉터리 `contracts`를 읽는다. 생성기가
+  받지 못하는 target은 원인과 함께 실패하는 target으로 남는다. 어떤 target도 빠지거나 건너뛰지 않는다(binding BD-27).
+- contract case runner는 아직 쓰지 않았다. 계약 검사가 SE-10.6의 kind를 보고하는 동안 `make bindings`는 계약을
+  거부하므로, runner가 호출하고 그것으로 검증될 바인딩 API가 없다. 다섯 target은 모두 그 원인으로 `make bindings`에서
+  실패한다.
+- Go 모듈에서 binding은 파일 `zz_generated_*.go`를 소유한다(binding GN-3). Go 모듈은 소스로 받아지므로 이 파일들은
+  추적되고, `make bindings`가 다시 쓴다. `packages/ts/wasm/generated`와 `packages/go/internal/ffi/generated`는 추적하지
+  않는다. wasm-bindgen은 모듈과 그 glue를 앞의 디렉터리에 쓴다.
+  변수 `PYTHON`(3.14 이상), `PHP`, `PHP_CONFIG`, `PHPUNIT`, `TSC`, `GO`, `GOFMT`, `WASM_BINDGEN`이 런타임과 도구를
+  가리킨다. `make test-go`는 `packages/go/go.mod`의 go 지시문과 다른 판의 Go를 실패시키고, toolchain을 받지 않도록
+  `GOTOOLCHAIN=local`로 실행한다. `make test-wasm`은 `packages/ts/wasm/Cargo.toml`의 `wasm-bindgen` crate와 다른 판의
+  wasm-bindgen CLI를 실패시킨다. 그 CLI는 자기 판의 모듈만 읽기 때문이다(binding GN-18). `CARGOFLAGS`는 모든 cargo
+  build에 인자를 더한다. macOS에서 PHP 확장과 Node addon은 자기 런타임이 그것을 로드할 때 런타임의 기호를 받는다.
+  그래서 `.cargo/config.toml`이 링커에게 그 기호를 정의하지 않은 채 두게 하고, recipe는 Cargo가 만든 라이브러리를
+  플랫폼의 확장자(macOS `dylib`, Linux `so`)로 가리킨다.
 
 ## 플랫폼
 

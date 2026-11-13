@@ -16,8 +16,11 @@ OPENSSL ?= $(shell command -v openssl)
 
 check: lint-rust fmt-check test binding-check
 
+# A peer that is not found is not named to the tests: a variable that is set and empty would name a binary without a path.
+PEERS := $(foreach peer,PHP REDIS_SERVER REDIS_CLI OPENSSL,$(if $($(peer)),$(peer)=$($(peer))))
+
 test:
-	PHP=$(PHP) REDIS_SERVER=$(REDIS_SERVER) REDIS_CLI=$(REDIS_CLI) OPENSSL=$(OPENSSL) $(CARGO) test $(CARGOFLAGS) $(CORE) --locked
+	env $(foreach peer,PHP REDIS_SERVER REDIS_CLI OPENSSL,-u $(peer)) $(PEERS) $(CARGO) test $(CARGOFLAGS) $(CORE) --locked
 
 lint-rust:
 	$(CARGO) clippy $(CARGOFLAGS) $(CORE) --locked --all-targets -- -D warnings

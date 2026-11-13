@@ -16,3 +16,6 @@
 - The kinds `random` and `identifier_taken` are of the category `io`, not `internal` (SE-9.5): the random source of the
   operating system and a file that another process created are the environment of the process, not a defect, so their
   errors are `SessionStoreIoError`. The category `internal` holds only the kind `internal`.
+- `make test` names a peer (`PHP`, `REDIS_SERVER`, `REDIS_CLI`, `OPENSSL`) to the tests only when its binary is found.
+  It gave a peer that is not found as an empty variable, which the tests of Redis read as a `redis-server` to start, so
+  they failed on a machine without Redis; they are now reported as ignored there.

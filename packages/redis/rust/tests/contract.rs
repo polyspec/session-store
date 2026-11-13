@@ -14,7 +14,7 @@ use polyspec_session_store_core::Store;
 use polyspec_session_store_redis::protocol::{Closing, Opening, Step, RELEASE};
 use polyspec_session_store_redis::{Command, Options, RedisSessions, Reply, Setting, StoreOptions};
 use serde_json::Value;
-use servers::{Server, PLAIN, PORT, READY};
+use servers::{Project, Service, PLAIN, PORT};
 
 mod servers;
 
@@ -559,10 +559,11 @@ fn made_close(case: &Value) -> Result<(), Failed> {
 
 type Group = fn(&Value) -> Result<(), Failed>;
 
-/// The Redis server of every trial, in a container of the run (`tests/servers`); each trial uses a database of its own.
+/// The Redis server of every trial, in a project of the run (`tests/servers`); each trial uses a database of its own.
+/// `address` is the name and the port that bay gives for the server.
 struct Shared {
     address: String,
-    server: std::sync::Mutex<Option<Server>>,
+    server: std::sync::Mutex<Option<Project>>,
 }
 
 static SERVER: OnceLock<Result<Shared, String>> = OnceLock::new();
@@ -570,14 +571,15 @@ static SERVER: OnceLock<Result<Shared, String>> = OnceLock::new();
 fn server() -> Result<&'static Shared, String> {
     SERVER
         .get_or_init(|| {
-            let server = Server::start(&PLAIN, None, READY)?;
-            Ok(Shared { address: server.address().to_owned(), server: std::sync::Mutex::new(Some(server)) })
+            let mut project = Project::new()?;
+            let address = project.start(Service::new("server", PORT, &PLAIN))?;
+            Ok(Shared { address: address.name, server: std::sync::Mutex::new(Some(project)) })
         })
         .as_ref()
         .map_err(String::clone)
 }
 
-/// Deletes the container of the server, if a trial started it.
+/// Removes the project of the server, if a trial started it.
 fn stop_server() {
     let Some(Ok(shared)) = SERVER.get() else {
         return;
@@ -589,7 +591,7 @@ fn stop_server() {
 }
 
 fn url(address: &str, database: usize) -> String {
-    format!("redis://{address}:{PORT}/{database}")
+    format!("redis://{address}/{database}")
 }
 
 async fn server_case(case: &Value, database: usize) -> Result<(), Failed> {

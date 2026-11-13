@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 334c92c57eb798d53d475a71f22987af292de2efff1054ea1112f8c19fb523e7 -->
+<!-- source-sha256: 91526a177089e9ba84334400b25ab0896f3543e531e806a5493e67cdedaba1c8 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -22,10 +22,10 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   생성된 소스가 필요 없다.
 - `scripts/binding.mts`: `Cargo.lock`이 고정하는 `polyspec-binding-core`의 commit에서 binding을 실행한다.
 - `scripts/test-run.sh`: `make test`의 시험을 자기 서버와 임시 디렉터리를 소유하는 run으로 실행한다(SE-10.4).
-- `scripts/servers.sh`: 시험의 Redis 서버의 명령이다. 시험, `scripts/test-run.sh`, `make redis-image`가 이 script를
-  실행한다(SE-10.4). bay가 서버를 Compose 프로젝트로 시작하고 지우며, 플랫폼의 engine, 곧 Darwin의 Apple
-  `container`와 Linux의 `docker`가 image를 받고 찾는다. `scripts/servers.test.mts`가 두 script의 시험이며,
-  `make servers-test`가 bay와 engine의 대역으로 실행한다.
+- `scripts/servers.sh`: 시험의 Redis 서버를 위한 bay의 명령이다. 시험, `scripts/test-run.sh`, `make redis-image`가 이
+  script를 실행한다(SE-10.4). bay가 서버를 Compose 프로젝트로 시작하고 지우며, 서버의 이름과 certificate와 주소를 주고,
+  image를 받고 찾는다. `scripts/servers.test.mts`가 두 script의 시험이며, `make servers-test`가 bay의 대역으로
+  실행한다.
 - 루트의 `Cargo.toml`은 crate 넷과 다섯 target의 바인딩 crate의 workspace이며 `Cargo.lock`은 하나다.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: case다(SE-10).
 - `scripts/workflows.test.mts`: GitHub workflow의 규칙의 시험이며, `make workflows-test`가 실행한다.
@@ -88,24 +88,28 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   `clippy.toml`은 `Option::{unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`와
   `Result::{ok, unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`를 금지한다. 규칙이 필요로 하는 사용에는
   `#[allow(..., reason = "<rule id>")]`를 붙인다.
-- peer(PHP, bay와 Redis image를 가진 플랫폼의 engine, openssl)가 필요한 시험은 그 peer가 주어지지 않으면 실패하고 그
+- peer(PHP, Redis image를 가진 bay)가 필요한 시험은 그 peer가 주어지지 않으면 실패하고 그
   peer를 주는 것을 적는다. peer가 없다는 이유로 무시된 시험으로 보고되는 시험은 없다. 무시되는 시험은 `binding`을 가진
   group `open`의 case뿐이고, 이 case는 바인딩이 실행한다(SF-8.2, SR-8.2).
 - 시험의 Redis 서버는 Makefile의 `REDIS_IMAGE`가 digest로 고정한 image의 container 안에서 돈다. 기계에 설치된
   서버는 쓰지 않는다(SE-10.4). bay가 서버를 Compose 프로젝트로 시작하고 지운다. Darwin에서는 Apple `container`로,
   Linux에서는 Docker로 실행하고, image와 digest는 둘에 하나다. 그래서 두 플랫폼이 같은 bytes의 서버를 시험한다.
-  `scripts/servers.sh`가 그 명령을 가진 유일한 파일이다. 어떤 시험도, 어떤 recipe도 bay나 engine을 직접 시작하지
-  않는다. bay, 플랫폼의 engine, bay의 장비 설정 중 하나가 없으면 `make test`는 시작할 때 없는 것과 그것을 주는
-  것을 적고 실패한다(`bay install`이 설정을 적용한다. 어떤 run도 설정을 적용하지 않는다). image는 Redis의 가장 높은
-  안정판의 공식 image다. `make redis-image`가 플랫폼의 engine으로 그 image를 받고, 어떤 시험도 image를 받지 않는다.
+  `scripts/servers.sh`가 bay의 명령을 가진 유일한 파일이고, 어떤 파일도 engine의 명령을 갖지 않는다. 어떤 시험도,
+  어떤 recipe도 bay를 직접 시작하지 않는다. bay나 그 장비 설정의 일부가 없으면 `make test`는 빌드 전, 시작할 때 없는
+  것과 그것을 주는 것을 적고 실패한다(`bay check -scope run`. `bay install`이 설정을 적용하고, 어떤 run도 설정을
+  적용하지 않는다). image는 Redis의 가장 높은 안정판의 공식 image다. `make redis-image`가 `bay pull`로 그 image를
+  받고, 어떤 시험도 image를 받지 않는다. 프로젝트는 `up -no-pull`로 시작한다.
 - 시험은 자기가 필요한 서버를 Compose 프로젝트 하나로 소유한다. 서버의 인자는 시험이 적는 내용의 일부이고, 서버의
   상태는 다른 시험에 닿으면 안 되기 때문이다. 시험은 프로젝트를 시작하기 전에 `compose.yaml`을
-  `SESSION_STORE_PROJECTS`, 곧 run의 디렉터리 `session-store-test-<pid>` 아래 자기 디렉터리에 쓰고, 그 파일은
-  프로젝트의 이름을 그 디렉터리와 시험 process와 순번으로 적는다. `up`의 반환이 시작의 event다. 시험은 서버의 주소를
-  `bay status --json`에서 받아 거기에 연결하고, 서버의 나중 보고는 `bay logs -f`의 줄로 기다리며, 시간을 기다리지
-  않는다. 어떤 파일도 bay의 이름의 domain을 적지 않고, 어떤 port도 공개하지 않는다. `scripts/test-run.sh`는 run이
-  끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때 run의 디렉터리에 남은 모든 Compose 파일에 `down`을 실행하고 그
-  디렉터리를 지운다.
+  `SESSION_STORE_PROJECTS`, 곧 run의 디렉터리 `session-store-test-<pid>` 아래 자기 디렉터리에 쓴다. 그 디렉터리의
+  이름이 시험 process와 순번을 포함하며, 프로젝트의 이름이다. 모든 이름은 bay가 준다. harness는 시작하기 전에 각
+  service의 host 이름과 certificate의 경로를 `bay plan --json`에서 읽고, 주소를 `bay up --json`의 출력에서 읽는다.
+  그래서 한 번의 `up`이 한 시험의 모든 서버를 시작하고, 어떤 파일도 이름의 domain이나 certificate의 경로를 적지
+  않으며, 어떤 port도 공개하지 않는다. TLS 서버는 bay가 발급한 certificate를 읽고, 어떤 시험도 certificate를 만들지
+  않는다. `up`의 반환이 시작의 event다. `redis-cli --cluster create`처럼 시험이 container 안에서 필요로 하는 Redis의
+  명령은 `bay exec`로 실행하고, 서버의 나중 보고는 `bay logs -f`의 줄로 기다리며, 시간을 기다리지 않는다.
+  `scripts/test-run.sh`는 run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때 run의 디렉터리에 남은 모든 Compose
+  파일에 `down`을 실행하고 그 디렉터리를 지운다.
 
 ## Bindings
 

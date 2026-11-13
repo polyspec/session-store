@@ -21,10 +21,10 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   targets of the core name the core crates with `-p`, so they need no generated source.
 - `scripts/binding.mts`: runs binding at the commit of `polyspec-binding-core` that `Cargo.lock` pins.
 - `scripts/test-run.sh`: runs the tests of `make test` as a run that owns its servers and its temporary directory (SE-10.4).
-- `scripts/servers.sh`: the commands of the Redis servers of the tests, which the tests, `scripts/test-run.sh` and
-  `make redis-image` run (SE-10.4): bay starts and removes the servers as Compose projects, and the engine of the
-  platform, Apple `container` on Darwin and `docker` on Linux, pulls and finds the image. `scripts/servers.test.mts`
-  is the test of both scripts, which `make servers-test` runs against stand-ins of bay and of the engines.
+- `scripts/servers.sh`: the commands of bay for the Redis servers of the tests, which the tests,
+  `scripts/test-run.sh` and `make redis-image` run (SE-10.4): bay starts and removes the servers as Compose projects,
+  gives their names, certificates and addresses, and pulls and finds the image. `scripts/servers.test.mts` is the
+  test of both scripts, which `make servers-test` runs against a stand-in of bay.
 - `Cargo.toml` of the root is the workspace of the four crates and the binding crates of the five targets with one
   `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
@@ -88,25 +88,30 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   `clippy.toml` disallows `Option::{unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}` and
   `Result::{ok, unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`. A use that a rule needs carries
   `#[allow(..., reason = "<rule id>")]`.
-- A test that needs a peer (PHP, bay and the engine of the platform with the Redis image, openssl) fails when the peer is not given and
+- A test that needs a peer (PHP, bay with the Redis image) fails when the peer is not given and
   names what gives it; no test is reported as ignored because a peer is missing. The only ignored tests are the cases
   of the group `open` that carry `binding`, which the bindings run (SF-8.2, SR-8.2).
 - A Redis server of a test runs in a container from the image that `REDIS_IMAGE` of the Makefile pins by its digest,
   never a server installed on the machine (SE-10.4). bay starts and removes the servers as Compose projects, on Apple
   `container` on Darwin and on Docker on Linux, one image and one digest for both, so that both platforms test the
-  same bytes of the server. `scripts/servers.sh` is the one file that holds the commands; no test and no recipe
-  starts bay or an engine by itself. bay, the engine of the platform or the machine setup of bay that is missing
-  fails `make test` at its start with what is missing and what gives it (`bay install` applies the setup; no run
-  applies it). The image is the official image of the highest stable release of Redis; `make redis-image` pulls it
-  with the engine of the platform, and no test pulls an image.
+  same bytes of the server. `scripts/servers.sh` is the one file that holds the commands of bay, and no file holds a
+  command of an engine; no test and no recipe starts bay by itself. bay or a part of its machine setup that is
+  missing fails `make test` at its start, before the build, with what is missing and what gives it
+  (`bay check -scope run`; `bay install` applies the setup, and no run applies it). The image is the official image
+  of the highest stable release of Redis; `make redis-image` pulls it with `bay pull`, and no test pulls an image: a
+  project starts with `up -no-pull`.
 - A test owns the servers that it needs as one Compose project, because the arguments of a server are part of what a
   test states and the state of a server must not reach another test. It writes `compose.yaml` into a directory of
   its own below `SESSION_STORE_PROJECTS`, the directory `session-store-test-<pid>` of the run, before it starts the
-  project, and the file names the project after that directory, the test process and a count. The return of `up` is
-  the event of a start; a test takes the address of a server from `bay status --json`, connects to it, and waits for
-  a later report of a server by its line in `bay logs -f`, never for a time. No file states the domain of the names
-  of bay, and no port is published. `scripts/test-run.sh` runs `down` for every Compose file that the directory of
-  the run still holds and removes the directory when the run ends, fails or is stopped by SIGINT or SIGTERM.
+  project; the name of that directory, with the test process and a count, is the name of the project. bay gives
+  every name: the harness reads the host name and the certificate paths of each service from `bay plan --json`
+  before the start and the addresses from the output of `bay up --json`, so one `up` starts every server of a test,
+  no file states the domain of the names or a path of a certificate, and no port is published. The server of TLS
+  reads the certificate that bay issues, and no test makes one. The return of `up` is the event of a start; a
+  command of Redis that a test needs in a container, such as `redis-cli --cluster create`, runs with `bay exec`, and
+  a test waits for a later report of a server by its line in `bay logs -f`, never for a time. `scripts/test-run.sh`
+  runs `down` for every Compose file that the directory of the run still holds and removes the directory when the
+  run ends, fails or is stopped by SIGINT or SIGTERM.
 
 ## Bindings
 

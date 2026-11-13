@@ -62,7 +62,7 @@ jobs:
           if-no-files-found: ignore
 
   # The tests of the crates of the library, the stores of Redis against real Redis servers (SE-10.4): PHP reads the
-  # records back, make redis-image pulls the pinned image into docker, and make test owns the servers of its run.
+  # records back, make redis-image pulls the pinned image with bay, and make test owns the servers of its run.
   test:
     runs-on: ubuntu-26.04-arm
     steps:

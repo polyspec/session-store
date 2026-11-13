@@ -1,5 +1,5 @@
 <!-- doc-id: readme -->
-<!-- source-sha256: 702549c2fe0ddda61752de7b6fd907166a946ccc0c5c7fe616f4ec743c701d97 -->
+<!-- source-sha256: 850b8198bec69c8bc5a8295d3b9977dba90040f7bb64d906c5bfc6d61541cbc6 -->
 # session-store
 
 [English](README.md)
@@ -39,8 +39,8 @@ crate `polyspec-session-store`(`packages/rust`)가 세 crate의 항목을 한 �
 make check   # clippy -D warnings, rustfmt --check, 시험, 계약 검사
 ```
 
-필요한 것: `rust-toolchain.toml`의 Rust 릴리스, `php`, `openssl`, 장비 설정(`bay install`)을 갖춘 bay, 그리고 bay가
-쓰는 engine(macOS는 Apple `container`, Linux는 Docker)과 `make redis-image`가 받는 Redis image. 시험은 PHP로 레코드를
-다시 읽고, Redis 저장소를 실제 서버에 대해 실행한다. bay가 그 image에서 서버를 Compose 프로젝트로 시작하고 run과
-함께 지운다. peer가 없는 시험은 실패한다.
+필요한 것: `rust-toolchain.toml`의 Rust 릴리스, `php`, 장비 설정(`bay install`)을 갖춘 bay, 그리고 bay가 쓰는
+engine(macOS는 Apple `container`, Linux는 Docker)과 `make redis-image`가 받는 Redis image. 시험은 PHP로 레코드를 다시
+읽고, Redis 저장소를 실제 서버에 대해 실행한다. bay가 그 image에서 서버를 Compose 프로젝트로 시작하고 run과 함께
+지운다. peer가 없는 시험은 실패한다.
 Windows는 아직 지원하지 않는다.

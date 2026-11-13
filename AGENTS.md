@@ -20,6 +20,7 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   workspace; `make bindings` writes their `generated/`, which is not tracked, and builds of them come after it. The
   targets of the core name the core crates with `-p`, so they need no generated source.
 - `scripts/binding.mts`: runs binding at the commit of `polyspec-binding-core` that `Cargo.lock` pins.
+- `scripts/test-run.sh`: runs the tests of `make test` as a run that owns its containers and its temporary directory (SE-10.4).
 - `Cargo.toml` of the root is the workspace of the four crates and the binding crates of the five targets with one
   `Cargo.lock`.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: the cases (SE-10).
@@ -49,8 +50,15 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   `clippy.toml` disallows `Option::{unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}` and
   `Result::{ok, unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`. A use that a rule needs carries
   `#[allow(..., reason = "<rule id>")]`.
-- The tests that need a peer (PHP, redis-server, redis-cli, openssl) run when the Makefile finds it and are reported
-  as ignored otherwise.
+- A test that needs a peer (PHP, Apple container with the Redis image, openssl) fails when the peer is not given and
+  names what gives it; no test is reported as ignored because a peer is missing. The only ignored tests are the cases
+  of the group `open` that carry `binding`, which the bindings run (SF-8.2, SR-8.2).
+- A Redis server of a test runs in a container of Apple `container` (`CONTAINER`) from the image that `REDIS_IMAGE` of
+  the Makefile pins by its digest, never a server installed on the machine (SE-10.4). The image is the official image
+  of the highest stable release of Redis; `make redis-image` pulls it, and no test pulls an image. The containers of a
+  run are named `session-store-test-<pid>-...`, and `scripts/test-run.sh` deletes them and the temporary directory of
+  the run when the run ends, fails or is stopped by SIGINT or SIGTERM. A test connects to the address of its container
+  and waits for the lines of the server, never for a time.
 
 ## Bindings
 

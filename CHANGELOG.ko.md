@@ -1,7 +1,28 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: e6fba9fc549a67593cddc5ca466b84033cde8f330a1f3d3fbef39ee9d0ce6e7f -->
+<!-- source-sha256: 2baa72a36ba4baf3dca25430f817db806c237d92006769c6cc87c2e13602561f -->
 
 ## Unreleased
+
+- 실제 Redis 서버의 시험이 Apple `container`의 container 안에서 돌고, peer가 없으면 실패한다(SE-10.4). 전에는 `make
+  test`가 PATH에서 `redis-server`, `redis-cli`, `openssl`을 찾고, 없으면 그것이 필요한 시험 21개를 무시된 시험으로
+  보고했다. group `requests`의 case 13개를 서버에 대해 실행하는 시험(`tests/contract.rs`의 `server::...`. 그 밖에
+  `textReplies`나 `errorReplies`를 가진 case의 무시된 trial 3개가 있었는데, 이 case는 모델에 대해서만 실행되므로 이제
+  서버에 대한 trial이 없다)과 `tests/server.rs`의 한 프로세스의 대기열, ACL 사용자, TLS, Sentinel, Cluster다. PHP가
+  필요한 시험은 PHP 없이 통과했다. 이제 모든 서버는 가장 높은 안정판인 Redis 8.10.3의 `redis-server`이고, Makefile의
+  `REDIS_IMAGE`가 고정하고 `make redis-image`가 받는 공식 image
+  `docker.io/library/redis:8.10.3-trixie@sha256:de1068af6f552240dfab67bcc9bfef99bfc60f776bb4580ef077ea4c8c97e848`에서
+  돈다. 모듈 `tests/servers`는 각 서버를 run의 이름을 가진 container 안에서 시작하고, 서버가 시작하기 전에 container가
+  쓰는 주소를 받고, 서버의 줄(준비, Sentinel이 감시하는 primary, 각 Cluster node의 state ok)을 기다리며, redis-cli를
+  자기 container 안에서 실행한다. TLS는 container 주소의 인증서와 그 port를 CONFIG SET으로 받는다. 어떤 시험도
+  시간을 기다리거나 polling하지 않는다. socket 파일, 연결, `cluster info`에 대한 기다림과 대기열 시험의 읽기와 쓰기
+  사이의 2 ms sleep을 없앴다. `scripts/test-run.sh`는 시험을 자기 process group에서 실행하고, run이 끝날 때, 실패할 때,
+  SIGINT나 SIGTERM으로 멈출 때 그 run의 container와 임시 디렉터리를 지운다. container, image, openssl, PHP가 주어지지
+  않은 시험은 실패하고 `make test`나 `make redis-image`를 적는다. `make test`의 결과는 통과 130, 실패 0, 무시 13이다.
+  무시되는 13개는 `binding`을 가진 group `open`의 case다. 음수, 소수, 텍스트, 불리언인 `lifetime`이나
+  `lock_expire`와 빠진 `lock_expire`이며, 바인딩이 저장소를 실행하기 전에 거부한다(SF-8.2, `docs/spec/sessions.md` 215행; SR-8.2,
+  305행). 이 case는 `contracts/file-sessions.json` 1030, 1047, 1064, 1081행과 `contracts/redis-sessions.json` 1119,
+  1138, 1157, 1176, 1194, 1212, 1230, 1248, 1263행이다. 이 case는 바인딩의 contract case runner에서 돌고, 아직 어떤
+  runner도 돌지 않는다. contract 검사가 SE-10.6의 kind를 보고하는 동안 `make bindings`가 계약을 거부하기 때문이다.
 
 - `make test-bindings`가 계약의 모든 target을 빌드하고 시험한다(binding BD-27). workspace 전체에 clippy를 실행하고,
   `make check-declarations`, `make test-python`, `make test-node`, `make test-wasm`, `make test-php`, `make test-go`를

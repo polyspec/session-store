@@ -338,13 +338,19 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   compare it. A case of the group `open` of the store of files states the directory of the made store in
   `store_directory`, and one of the store of Redis with `setting` makes the store of that connection setting (one of
   `server`, `sentinel` and `cluster` with its fields, SR-6.1), which connects to nothing. <a id="SE-10.3"></a> Every
-  record that a case writes is read again by real PHP (`unserialize` of PHP 8.4) in the tests of the core when a PHP
-  binary is given (`PHP`), so the records are those of PHP. <a id="SE-10.4"></a> The commands of the Redis cases run
-  against a model of the Redis commands that the protocol sends, and the same requests run against a real Redis server,
-  which the tests start when a `redis-server` binary is given (`REDIS_SERVER`). A case with `textReplies` (the model
-  gives each record as a status reply, SR-5.1) or with `errorReplies` (the model gives the stated error reply to every
-  command of a name, SR-5.2) runs against the model only, because a real server gives neither to these commands on these
-  keys.
+  record that a case writes is read again by real PHP (`unserialize` of PHP 8.4) in the tests of the core, which fail
+  when no PHP binary is given (`PHP`), so the records are those of PHP. <a id="SE-10.4"></a> The commands of the Redis cases run
+  against a model of the Redis commands that the protocol sends, and the same requests run against a real Redis server.
+  Every real server of the tests (the server of the cases, and the ACL user, TLS, Sentinel and Cluster of SR-6) is
+  `redis-server` of Redis 8.10.3 in a container of Apple `container` (`CONTAINER`) from the image that the Makefile
+  pins by its digest (`REDIS_IMAGE`, pulled by `make redis-image`), and a test whose container or image is not given
+  fails and names that target; no such test is reported as ignored. A test connects to the address of its container,
+  waits for the line in which the server reports that it accepts connections (Sentinel: the primary that it monitors,
+  Cluster: the state ok of each node) and never for a time. `make test` runs the tests through `scripts/test-run.sh`,
+  which deletes the containers and the temporary directory of the run when it ends, fails or is stopped by SIGINT or
+  SIGTERM. A case with `textReplies` (the model gives each record as a status reply, SR-5.1) or with `errorReplies` (the
+  model gives the stated error reply to every command of a name, SR-5.2) runs against the model only and has no trial
+  against a server, because a real server gives neither to these commands on these keys.
   <a id="SE-10.5"></a> A case with `faults` arms the fault injection points of SE-9.6 for its one call, as a generated
   binding test does (binding design G-5): the Rust tests arm the list for the member, run the call with the arming that
   the entry point of the member takes, and fail the case when a fault did not fire. Such a case is a case of one call in

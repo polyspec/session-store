@@ -43,5 +43,6 @@ interface contract `packages/rust/interface.json`, which its package holds; ther
 make check   # clippy -D warnings, rustfmt --check, the tests and the contract check
 ```
 
-Requirements: the Rust release of `rust-toolchain.toml`. The tests read records back with PHP and run the stores of Redis
-against real servers when `php`, `redis-server`, `redis-cli` and `openssl` are installed. Windows is not supported yet.
+Requirements: the Rust release of `rust-toolchain.toml`, `php`, `openssl` and Apple `container` with the Redis image
+that `make redis-image` pulls. The tests read records back with PHP and run the stores of Redis against real servers in
+containers of that image; a test whose peer is missing fails. Windows is not supported yet.

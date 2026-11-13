@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- The tests of a real Redis server run in containers of Apple `container` and fail when their peer is missing
+  (SE-10.4). Before, `make test` looked up `redis-server`, `redis-cli` and `openssl` on PATH and reported the 21 tests
+  that need them as ignored when they were missing: the 13 cases of the group `requests` against a server
+  (`server::...` of `tests/contract.rs`; 3 more were ignored trials of the cases with `textReplies` or `errorReplies`,
+  which run against the model only and now have no trial against a server) and the queue of one process, the ACL
+  user, TLS, Sentinel and Cluster of `tests/server.rs`; a test that needed PHP passed without PHP. Now every server is
+  `redis-server` of Redis 8.10.3, the highest stable release, from the official image
+  `docker.io/library/redis:8.10.3-trixie@sha256:de1068af6f552240dfab67bcc9bfef99bfc60f776bb4580ef077ea4c8c97e848`,
+  which `REDIS_IMAGE` of the Makefile pins and `make redis-image` pulls. The module `tests/servers` starts each server
+  in a container named after the run, takes the address that the container writes before the server starts, waits for
+  the line of the server (ready, the primary that Sentinel monitors, the state ok of each Cluster node) and runs
+  redis-cli in a container of its own; TLS takes a certificate of the address of the container and its port through
+  CONFIG SET. No test waits for a time or polls: the waits on a socket file, on a connection and on `cluster info`, and
+  the sleep of 2 ms between the read and the write of the queue test, are removed. `scripts/test-run.sh` runs the
+  tests in a process group of their own and deletes the containers and the temporary directory of the run when it
+  ends, fails or is stopped by SIGINT or SIGTERM. A test whose container, image, openssl or PHP is not given fails and
+  names `make test` or `make redis-image`. `make test` gives 130 passed, 0 failed and 13 ignored. The 13 ignored tests
+  are the cases of the group `open` that carry `binding`: a `lifetime` or a `lock_expire` that is negative, fractional,
+  a text or a boolean, and a missing `lock_expire`, which a binding refuses before the store runs (SF-8.2, `docs/spec/sessions.md` line 215; SR-8.2, line
+  305). They are `contracts/file-sessions.json` lines 1030, 1047, 1064 and 1081 and `contracts/redis-sessions.json`
+  lines 1119, 1138, 1157, 1176, 1194, 1212, 1230, 1248 and 1263. They run in the contract case runners of the
+  bindings, and no runner runs yet, because `make bindings` refuses the contract while the contract check reports the
+  kinds of SE-10.6.
+
 - `make test-bindings` builds and tests every target of the contract (binding BD-27): it runs clippy on the whole
   workspace, `make check-declarations`, `make test-python`, `make test-node`, `make test-wasm`, `make test-php` and
   `make test-go`, each on the standard runner of its language (unittest, node --test for Node and for WASM, PHPUnit and

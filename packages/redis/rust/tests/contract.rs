@@ -1,13 +1,10 @@
 //! Every case of `contracts/redis-sessions.json` (SE-10.4): the protocol against a model of the commands that it sends,
-//! with the command records of the cases, and the same requests through the connection against a real Redis server,
-//! which the test starts when the environment names a `redis-server` binary (`REDIS_SERVER`). A case with `faults`
+//! with the command records of the cases, and the same requests through the connection against a real Redis server in a
+//! container of the pinned image (`tests/servers`). A case with `faults`
 //! arms the fault injection points that it names for its one call, as a generated binding test does (SE-10.5).
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
-use std::process::{Child, Command as Process, Stdio};
 use std::sync::OnceLock;
-use std::time::{Duration, Instant};
 
 use binding_core::{Failure, Kinds};
 use libtest_mimic::{Arguments, Failed, Trial};
@@ -17,6 +14,9 @@ use polyspec_session_store_core::Store;
 use polyspec_session_store_redis::protocol::{Closing, Opening, Step, RELEASE};
 use polyspec_session_store_redis::{Command, Options, RedisSessions, Reply, Setting, StoreOptions};
 use serde_json::Value;
+use servers::{Server, PLAIN, PORT, READY};
+
+mod servers;
 
 const CONTRACT: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../contracts/redis-sessions.json"));
 /// The interface contract, whose `errors.kinds` give the category of each kind (SE-9.2).
@@ -479,62 +479,41 @@ fn opening(case: &Value) -> Result<(), Failed> {
     }
 }
 
-/// A Redis server that the test started on a socket of a temporary directory, for every trial.
-struct Server {
-    child: std::sync::Mutex<Child>,
-    socket: PathBuf,
-    _directory: tempfile::TempDir,
+/// The Redis server of every trial, in a container of the run (`tests/servers`); each trial uses a database of its own.
+struct Shared {
+    address: String,
+    server: std::sync::Mutex<Option<Server>>,
 }
 
-fn server() -> Result<&'static Server, String> {
-    static SERVER: OnceLock<Result<Server, String>> = OnceLock::new();
-    SERVER.get_or_init(start_server).as_ref().map_err(String::clone)
+static SERVER: OnceLock<Result<Shared, String>> = OnceLock::new();
+
+fn server() -> Result<&'static Shared, String> {
+    SERVER
+        .get_or_init(|| {
+            let server = Server::start(&PLAIN, None, READY)?;
+            Ok(Shared { address: server.address().to_owned(), server: std::sync::Mutex::new(Some(server)) })
+        })
+        .as_ref()
+        .map_err(String::clone)
 }
 
-fn start_server() -> Result<Server, String> {
-    let binary = std::env::var("REDIS_SERVER").map_err(|error| format!("REDIS_SERVER: {error}"))?;
-    let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
-    let socket = directory.path().join("redis.sock");
-    let child = Process::new(binary)
-        .args(["--port", "0", "--save", "", "--appendonly", "no", "--unixsocket"])
-        .arg(&socket)
-        .arg("--dir")
-        .arg(directory.path())
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|error| format!("redis-server does not start: {error}"))?;
-    let start = Instant::now();
-    while !socket.exists() {
-        if start.elapsed() > Duration::from_secs(10) {
-            return Err("redis-server makes no socket in 10 seconds".to_owned());
-        }
-        std::thread::sleep(Duration::from_millis(20));
-    }
-    Ok(Server { child: std::sync::Mutex::new(child), socket, _directory: directory })
-}
-
-/// Stops the server that the test started, if it started one.
+/// Deletes the container of the server, if a trial started it.
 fn stop_server() {
-    let Ok(server) = server() else {
+    let Some(Ok(shared)) = SERVER.get() else {
         return;
     };
-    if let Ok(mut child) = server.child.lock() {
-        let stopped: std::io::Result<()> = child.kill().and_then(|()| child.wait().map(|_status| ()));
-        if let Err(error) = stopped {
-            eprintln!("the Redis server does not stop: {error}");
-        }
+    match shared.server.lock() {
+        Ok(mut server) => drop(server.take()),
+        Err(error) => eprintln!("the Redis server is not stopped: {error}"),
     }
 }
 
-fn url(socket: &Path, database: usize) -> String {
-    format!("redis+unix://{}?db={database}", socket.display())
+fn url(address: &str, database: usize) -> String {
+    format!("redis://{address}:{PORT}/{database}")
 }
 
 async fn server_case(case: &Value, database: usize) -> Result<(), Failed> {
-    let server = server().map_err(Failed::from)?;
-    let address = url(&server.socket, database);
+    let address = url(&server().map_err(Failed::from)?.address, database);
     let client = redis::Client::open(address.as_str()).map_err(failed)?;
     let mut connection = client.get_multiplexed_async_connection().await.map_err(failed)?;
     redis::cmd("FLUSHDB").query_async::<()>(&mut connection).await.map_err(failed)?;
@@ -615,23 +594,22 @@ fn main() {
         panic!("contracts/redis-sessions.json has no groups requests and open");
     };
     let mut trials = Vec::new();
-    let with_server = std::env::var_os("REDIS_SERVER").is_some();
     for (index, case) in requests.iter().enumerate() {
         let Some(id) = case.get("id").and_then(Value::as_str) else {
             panic!("a case has no id");
         };
         let model_case = case.clone();
         trials.push(Trial::test(format!("model::{id}"), move || model(&model_case)));
-        // A reply that is not bytes and an error reply to a command that the case names come only from a model.
-        let server_only = case.get("textReplies").is_none() && case.get("errorReplies").is_none();
+        // A reply that is not bytes and an error reply to a command that the case names come only from a model, so such
+        // a case has no trial against a server (SE-10.4).
+        if case.get("textReplies").is_some() || case.get("errorReplies").is_some() {
+            continue;
+        }
         let server_case_value = case.clone();
-        trials.push(
-            Trial::test(format!("server::{id}"), move || {
-                let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(failed)?;
-                runtime.block_on(server_case(&server_case_value, index % 16))
-            })
-            .with_ignored_flag(!(with_server && server_only)),
-        );
+        trials.push(Trial::test(format!("server::{id}"), move || {
+            let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(failed)?;
+            runtime.block_on(server_case(&server_case_value, index % 16))
+        }));
     }
     for case in opens.clone() {
         let Some(id) = case.get("id").and_then(Value::as_str) else {
@@ -654,8 +632,6 @@ fn main() {
         }
     }
     let conclusion = libtest_mimic::run(&arguments, trials);
-    if with_server {
-        stop_server();
-    }
+    stop_server();
     conclusion.exit();
 }

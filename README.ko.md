@@ -1,5 +1,5 @@
 <!-- doc-id: readme -->
-<!-- source-sha256: 7435d13d6d6887994473afd8ebf73507604e091cf235e8144004083be71ccc82 -->
+<!-- source-sha256: e070f25e093565a97f8f678ba2dbe4324fca85889385057693af575035f9fa1e -->
 # session-store
 
 [English](README.md)
@@ -39,5 +39,6 @@ crate `polyspec-session-store`(`packages/rust`)가 세 crate의 항목을 한 �
 make check   # clippy -D warnings, rustfmt --check, 시험, 계약 검사
 ```
 
-필요한 것: `rust-toolchain.toml`의 Rust 릴리스. `php`, `redis-server`, `redis-cli`, `openssl`이 설치되어 있으면 시험이 PHP로
-레코드를 다시 읽고 Redis 저장소를 실제 서버에 대해 실행한다. Windows는 아직 지원하지 않는다.
+필요한 것: `rust-toolchain.toml`의 Rust 릴리스, `php`, `openssl`, 그리고 `make redis-image`가 받는 Redis image를 가진 Apple
+`container`. 시험은 PHP로 레코드를 다시 읽고, Redis 저장소를 그 image의 container 안에 있는 실제 서버에 대해 실행한다.
+peer가 없는 시험은 실패한다. Windows는 아직 지원하지 않는다.

@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 66360d30b1a70121eb2330f3a4a536a3d724784ed673e8d36669f9da5e0a022b -->
+<!-- source-sha256: 43f2493816782f1fcc53cda607f2aca1a219811279ce3e07e7964db916c4b205 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -338,13 +338,18 @@
   비교하지 않는다. 파일 저장소의 group `open`의 case는 만든 저장소의 디렉터리를
   `store_directory`에 적고, `setting`을 가진 Redis 저장소의 case는 그 연결 설정(`server`, `sentinel`,
   `cluster` 중 하나와 그 필드, SR-6.1)의 저장소를 만들며, 그 저장소는 어디에도 연결하지 않는다. <a id="SE-10.3"></a> case가 쓰는
-  모든 레코드는 PHP 실행 파일이 주어지면(`PHP`) 코어의 시험에서 실제 PHP(PHP 8.4의 `unserialize`)가 다시
-  읽으므로, 그 레코드는 PHP의 레코드다. <a id="SE-10.4"></a> Redis case의 명령은
+  모든 레코드는 코어의 시험에서 실제 PHP(PHP 8.4의 `unserialize`)가 다시 읽고, PHP 실행 파일이 주어지지
+  않으면(`PHP`) 그 시험은 실패하므로, 그 레코드는 PHP의 레코드다. <a id="SE-10.4"></a> Redis case의 명령은
   프로토콜이 보내는 Redis 명령의 모델에 대해 실행되고, 같은 요청이 실제 Redis 서버에 대해 실행된다.
-  시험은 `redis-server` 실행 파일이 주어지면(`REDIS_SERVER`) 그 서버를 시작한다. `textReplies`를 가진 case(모델이
-  각 레코드를 status 응답으로 준다, SR-5.1)나 `errorReplies`를 가진 case(모델이 한 이름의 모든 명령에 적힌 오류 응답을
-  준다, SR-5.2)는 모델에 대해서만 실행된다. 실제 서버는 이 key에 대한 이 명령에 둘 중 어느 것도
-  주지 않기 때문이다.
+  시험의 모든 실제 서버(case의 서버, 그리고 SR-6의 ACL 사용자, TLS, Sentinel, Cluster)는 Makefile이 digest로 고정한
+  image(`REDIS_IMAGE`, `make redis-image`가 받는다)로 Apple `container`(`CONTAINER`)의 container 안에서 도는 Redis
+  8.10.3의 `redis-server`다. container나 image가 주어지지 않은 시험은 실패하고 그 대상을 적는다. 그런 시험은 무시된
+  시험으로 보고되지 않는다. 시험은 자기 container의 주소에 연결하고, 서버가 연결을 받는다고 알리는 줄(Sentinel은
+  감시하는 primary, Cluster는 각 node의 state ok)을 기다리며, 시간을 기다리지 않는다. `make test`는 시험을
+  `scripts/test-run.sh`로 실행하고, 이 script는 run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때 그 run의
+  container와 임시 디렉터리를 지운다. `textReplies`를 가진 case(모델이 각 레코드를 status 응답으로 준다, SR-5.1)나
+  `errorReplies`를 가진 case(모델이 한 이름의 모든 명령에 적힌 오류 응답을 준다, SR-5.2)는 모델에 대해서만 실행되고
+  서버에 대한 trial이 없다. 실제 서버는 이 key에 대한 이 명령에 둘 중 어느 것도 주지 않기 때문이다.
   <a id="SE-10.5"></a> `faults`를 가진 case는 생성된 바인딩 시험처럼 SE-9.6의 실패 주입점을 자기 한 호출에
   장전한다(binding 설계 G-5): Rust 시험은 그 목록을 member에 장전하고, member의 entry point가 받는 장전으로 호출을
   실행하며, 터지지 않은 fault가 있으면 case를 실패시킨다. 그런 case는 자기 member만 읽는 group의 한 호출 case이며,

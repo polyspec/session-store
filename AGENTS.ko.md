@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: eb49cc1c6db49186d95e8e3fcd2b1a9d44b799eaa7ff4ca1b6310aac897d691d -->
+<!-- source-sha256: 52472b58a89b7371449b7fa0d9e94bda151f9cbe539897070381e621be87140e -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -21,6 +21,7 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   `generated/`를 쓰고, 바인딩 package의 빌드는 그 뒤에 한다. 코어의 target은 코어 crate를 `-p`로 지정하므로
   생성된 소스가 필요 없다.
 - `scripts/binding.mts`: `Cargo.lock`이 고정하는 `polyspec-binding-core`의 commit에서 binding을 실행한다.
+- `scripts/test-run.sh`: `make test`의 시험을 자기 container와 임시 디렉터리를 가진 run으로 실행한다(SE-10.4).
 - 루트의 `Cargo.toml`은 crate 넷과 다섯 target의 바인딩 crate의 workspace이며 `Cargo.lock`은 하나다.
 - `contracts/sessions.json`, `contracts/file-sessions.json`, `contracts/redis-sessions.json`: case다(SE-10).
 - `docs/spec/`: 명세다. 루트: `AGENTS.md`, `README.md`, `CHANGELOG.md`와 그 한국어 번역
@@ -49,8 +50,15 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   `clippy.toml`은 `Option::{unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`와
   `Result::{ok, unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`를 금지한다. 규칙이 필요로 하는 사용에는
   `#[allow(..., reason = "<rule id>")]`를 붙인다.
-- peer(PHP, redis-server, redis-cli, openssl)가 필요한 시험은 Makefile이 그 peer를 찾으면 실행되고, 찾지 못하면
-  무시된 시험으로 보고된다.
+- peer(PHP, Redis image를 가진 Apple container, openssl)가 필요한 시험은 그 peer가 주어지지 않으면 실패하고 그
+  peer를 주는 것을 적는다. peer가 없다는 이유로 무시된 시험으로 보고되는 시험은 없다. 무시되는 시험은 `binding`을 가진
+  group `open`의 case뿐이고, 이 case는 바인딩이 실행한다(SF-8.2, SR-8.2).
+- 시험의 Redis 서버는 Makefile의 `REDIS_IMAGE`가 digest로 고정한 image로 Apple `container`(`CONTAINER`)의 container
+  안에서 돈다. 기계에 설치된 서버는 쓰지 않는다(SE-10.4). image는 Redis의 가장 높은 안정판의 공식 image다. `make
+  redis-image`가 그 image를 받고, 어떤 시험도 image를 받지 않는다. run의 container 이름은
+  `session-store-test-<pid>-...`이고, `scripts/test-run.sh`는 run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때
+  그 container와 run의 임시 디렉터리를 지운다. 시험은 자기 container의 주소에 연결하고 서버가 쓰는 줄을 기다리며,
+  시간을 기다리지 않는다.
 
 ## Bindings
 

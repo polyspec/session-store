@@ -7,12 +7,15 @@ CORE := -p polyspec-session-store -p polyspec-session-store-core -p polyspec-ses
 LIBRARY := polyspec-session-store
 # binding at the commit of Cargo.lock (scripts/binding.mts).
 BINDING := node scripts/binding.mts
-# The real peers of the tests, each optional: PHP reads the records back (SE-10.3), redis-server, redis-cli and openssl
-# run the stores of Redis against real servers (SE-10.4). A test that needs a missing peer is reported as ignored.
+# The real peers of the tests, each required: PHP reads the records back (SE-10.3), Apple container runs the Redis
+# servers of the stores of Redis from the image REDIS_IMAGE, and openssl makes their certificates of TLS (SE-10.4). A
+# test whose peer is not given fails and names what gives it.
 PHP ?= $(shell command -v php)
-REDIS_SERVER ?= $(shell command -v redis-server)
-REDIS_CLI ?= $(shell command -v redis-cli)
+CONTAINER ?= $(shell command -v container)
 OPENSSL ?= $(shell command -v openssl)
+# Redis 8.10.3, the highest stable release of Redis, in the official image of Debian trixie, pinned by the digest of its
+# index; make redis-image pulls it, and the tests fail while it is not installed, so that no test pulls an image.
+REDIS_IMAGE := docker.io/library/redis:8.10.3-trixie@sha256:de1068af6f552240dfab67bcc9bfef99bfc60f776bb4580ef077ea4c8c97e848
 # The directory of the cases (SE-10), which the contract case runners of the bindings read.
 CASES := $(CURDIR)/contracts
 VAR := $(CURDIR)/var
@@ -37,16 +40,21 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: check test lint-rust fmt-check binding-check bindings test-bindings lint-bindings check-declarations \
+.PHONY: check test redis-image lint-rust fmt-check binding-check bindings test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go
 
 check: lint-rust fmt-check test binding-check
 
-# A peer that is not found is not named to the tests: a variable that is set and empty would name a binary without a path.
-PEERS := $(foreach peer,PHP REDIS_SERVER REDIS_CLI OPENSSL,$(if $($(peer)),$(peer)=$($(peer))))
-
+# scripts/test-run.sh owns the containers and the temporary directory of the run and removes them when the run ends,
+# fails or is stopped by SIGINT or SIGTERM. A peer that is not found is passed empty, and the test that needs it fails.
 test:
-	env $(foreach peer,PHP REDIS_SERVER REDIS_CLI OPENSSL,-u $(peer)) $(PEERS) $(CARGO) test $(CARGOFLAGS) $(CORE) --locked
+	scripts/test-run.sh '$(CONTAINER)' env PHP='$(PHP)' CONTAINER='$(CONTAINER)' REDIS_IMAGE='$(REDIS_IMAGE)' \
+		OPENSSL='$(OPENSSL)' $(CARGO) test $(CARGOFLAGS) $(CORE) --locked
+
+# Pulls the pinned Redis image of the tests into the images of Apple container (SE-10.4).
+redis-image:
+	test -n '$(CONTAINER)' || { echo 'Apple container is not found: install it or name it with CONTAINER=' >&2; exit 1; }
+	'$(CONTAINER)' image pull '$(REDIS_IMAGE)'
 
 lint-rust:
 	$(CARGO) clippy $(CARGOFLAGS) $(CORE) --locked --all-targets -- -D warnings

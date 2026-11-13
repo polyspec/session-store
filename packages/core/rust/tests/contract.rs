@@ -1,6 +1,6 @@
-//! Every case of `contracts/sessions.json` (SE-10.1), one trial each. When the environment names a PHP binary (`PHP`),
-//! every record that a case writes is also read and written again by PHP (SE-10.3). A case with `faults` arms the fault
-//! injection points that it names for its one call, as a generated binding test does (SE-10.5).
+//! Every case of `contracts/sessions.json` (SE-10.1), one trial each. Every record that a case writes is also read and
+//! written again by PHP (`PHP`, which `make test` names, SE-10.3). A case with `faults` arms the fault injection points
+//! that it names for its one call, as a generated binding test does (SE-10.5).
 
 use std::process::Command;
 
@@ -94,8 +94,9 @@ fn expect_eq<T: PartialEq + std::fmt::Debug>(what: &str, actual: &T, expected: &
 
 /// SE-10.3: PHP reads the record and writes the same bytes.
 fn php_agrees(record: &[u8]) -> Result<(), Failed> {
-    let Ok(php) = std::env::var("PHP") else {
-        return Ok(());
+    let php = match std::env::var("PHP") {
+        Ok(php) if !php.is_empty() => php,
+        _ => return Err("PHP is not set: `make test` names the php of PATH, which reads the records again".into()),
     };
     let output = Command::new(php)
         .args(["-r", "$r = stream_get_contents(STDIN); echo serialize(unserialize($r)) === $r ? 'same' : 'other';"])

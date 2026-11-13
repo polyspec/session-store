@@ -1,7 +1,13 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: c1342e4b7cc0b122b255c30eaa7958b5e12b703c878a434d877f4a564def6e0a -->
+<!-- source-sha256: 5e66206101a52c1574e103a348126a80bb90d0b8da670f1c8612603b1a170d1e -->
 
 ## Unreleased
+
+- `config/toolchain.json`은 CI가 설치하는 릴리스로 bay v0.0.7을, 그 릴리스의 `SHA256SUMS`에서 받은 archive별 sha256과
+  함께 고정한다. 이 Mac의 bay가 v0.0.7이고, CI는 여기의 run이 시작하는 릴리스를 실행하기 때문이다. runner는 매 run의
+  `make setup-bay`로 그 릴리스의 설정을 적용하며, 그 agent unit은 v0.0.6의 것과 다르다. 이 Mac에서 `make install-bay`는
+  darwin-arm64의 archive를 받고 그 sha256을 받아들여 bay v0.0.7을 설치한다. `make tool-pins-test`는 9개,
+  `make install-bay-test`는 4개가 통과한다. 미실행: Linux에서의 설치, 이 릴리스로 실행하는 workflow job `test`.
 
 - workflow `ci`의 runner에서 `make redis-image`가 `bay: compose.yaml: project name "tmp.x4bmuo3xsw" must be
   letters, digits, - or _`로 실패했고, 이 Mac의 bay도 같은 파일을 같은 방법으로 거부한다. `scripts/servers.sh

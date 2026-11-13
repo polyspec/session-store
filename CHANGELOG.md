@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- `config/toolchain.json` pins bay v0.0.7 as the release that CI installs, with the sha256 of each archive from the
+  `SHA256SUMS` of that release, because the bay of this Mac is v0.0.7 and CI runs the release that a run here starts.
+  A runner applies the setup of that release, whose agent unit differs from the one of v0.0.6, with `make setup-bay`
+  in each run. On this Mac `make install-bay` downloads the archive of darwin-arm64, accepts its sha256 and installs
+  bay v0.0.7; `make tool-pins-test` gives 9 passed and `make install-bay-test` 4 passed. Not run: the install on
+  Linux and the job `test` of the workflow with this release.
+
 - `make redis-image` failed on the runner of the workflow `ci` with `bay: compose.yaml: project name
   "tmp.x4bmuo3xsw" must be letters, digits, - or _`, and bay of this Mac refuses the same file in the same way:
   `scripts/servers.sh pull` wrote the Compose file of the pull into the directory that `mktemp -d` gives without a

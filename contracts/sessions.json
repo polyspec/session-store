@@ -988,5 +988,366 @@
     "message": null
    }
   }
+ ],
+ "recordFaults": [
+  {
+   "id": "a_broken_session_waits_is_internal",
+   "label": "the fault injection point session_store.session_waits imitates that the start of the session finds it still waiting, the kind internal, which no input reaches",
+   "rules": [
+    "SE-7.2",
+    "SE-9.6"
+   ],
+   "calls": [
+    [
+     "set",
+     [
+      "a",
+      "i:1;"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.session_waits",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: a started session waits"
+   }
+  },
+  {
+   "id": "a_broken_record_root_is_internal",
+   "label": "the fault injection point session_store.record_root imitates that the decoded record names no array at its root, the kind internal, which no input reaches",
+   "rules": [
+    "SE-6.3",
+    "SE-9.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"a\";i:1;}",
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.record_root",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: the root names no array"
+   }
+  },
+  {
+   "id": "a_broken_record_index_is_internal",
+   "label": "the fault injection point session_store.record_index imitates that the index of the values names no entry, the kind internal, which no input reaches",
+   "rules": [
+    "SE-6.5",
+    "SE-9.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"a\";i:1;}",
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.record_index",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: an index names no entry"
+   }
+  },
+  {
+   "id": "a_broken_value_reference_is_internal",
+   "label": "the fault injection point session_store.value_reference imitates that the source names no reference for a read element that is one, the kind internal, which no input reaches",
+   "rules": [
+    "SE-6.5",
+    "SE-9.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:2:{s:1:\"a\";i:1;s:1:\"b\";R:2;}",
+   "calls": [
+    [
+     "get",
+     [
+      "b"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.value_reference",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: the source names no reference"
+   }
+  },
+  {
+   "id": "a_broken_value_root_is_internal",
+   "label": "the fault injection point session_store.value_root imitates that the copy of a read value refuses its top value, the kind internal, which no input reaches",
+   "rules": [
+    "SE-6.5",
+    "SE-9.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"a\";i:1;}",
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.value_root",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: a copied top value is refused"
+   }
+  },
+  {
+   "id": "a_broken_copy_new_reference_is_internal",
+   "label": "the fault injection point session_store.copy_new_reference imitates that the copy refuses a new reference, the kind internal, which no input reaches",
+   "rules": [
+    "SE-6.6",
+    "SE-9.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"a\";a:2:{i:0;i:1;i:1;R:3;}}",
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.copy_new_reference",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: a new reference is refused"
+   }
+  },
+  {
+   "id": "a_broken_copy_array_is_internal",
+   "label": "the fault injection point session_store.copy_array imitates that the source names no array for an array that the copy fills, the kind internal, which no input reaches",
+   "rules": [
+    "SE-6.5",
+    "SE-9.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"a\";a:1:{i:0;i:1;}}",
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.copy_array",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: the source names no array"
+   }
+  },
+  {
+   "id": "a_broken_copy_element_is_internal",
+   "label": "the fault injection point session_store.copy_element imitates that the copy refuses an element of an array, the kind internal, which no input reaches",
+   "rules": [
+    "SE-6.5",
+    "SE-9.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"a\";a:1:{i:0;i:1;}}",
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.copy_element",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: a copied element is refused"
+   }
+  },
+  {
+   "id": "a_broken_copy_object_is_internal",
+   "label": "the fault injection point session_store.copy_object imitates that the source names no object for an object that the copy fills, the kind internal, which no input reaches",
+   "rules": [
+    "SE-6.5",
+    "SE-9.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"o\";O:8:\"stdClass\":1:{s:1:\"p\";i:1;}}",
+   "calls": [
+    [
+     "get",
+     [
+      "o"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.copy_object",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: the source names no object"
+   }
+  },
+  {
+   "id": "a_broken_copy_property_is_internal",
+   "label": "the fault injection point session_store.copy_property imitates that the copy refuses a property of an object, the kind internal, which no input reaches",
+   "rules": [
+    "SE-6.5",
+    "SE-9.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"o\";O:8:\"stdClass\":1:{s:1:\"p\";i:1;}}",
+   "calls": [
+    [
+     "get",
+     [
+      "o"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.copy_property",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: a copied property is refused"
+   }
+  },
+  {
+   "id": "a_broken_copy_reference_is_internal",
+   "label": "the fault injection point session_store.copy_reference imitates that the source names no reference for a reference that the copy fills, the kind internal, which no input reaches",
+   "rules": [
+    "SE-6.6",
+    "SE-9.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"a\";a:2:{i:0;i:1;i:1;R:3;}}",
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.copy_reference",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: the source names no reference"
+   }
+  },
+  {
+   "id": "a_broken_copy_set_reference_is_internal",
+   "label": "the fault injection point session_store.copy_set_reference imitates that the copy refuses the value of a reference, the kind internal, which no input reaches",
+   "rules": [
+    "SE-6.6",
+    "SE-9.6"
+   ],
+   "identifier": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "found": "a:1:{s:1:\"a\";a:2:{i:0;i:1;i:1;R:3;}}",
+   "calls": [
+    [
+     "get",
+     [
+      "a"
+     ]
+    ]
+   ],
+   "faults": [
+    {
+     "point": "session_store.copy_set_reference",
+     "kind": "broken"
+    }
+   ],
+   "raises": {
+    "kind": "internal",
+    "status": 500,
+    "category": "internal",
+    "message": "internal error: a copied reference is refused"
+   }
+  }
  ]
 }

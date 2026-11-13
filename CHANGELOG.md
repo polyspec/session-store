@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- Every invariant branch of the kind `internal` that `get`, `set` and `remove` of a record session reach has a fault
+  injection point (SE-9.6). Before, the only point of the kind `internal` was `session_store.internal` in `renew` of
+  `MemoryStore`, so a caller of `get`, `set` and `remove` of `file_session` or `redis_session` had no point that gives
+  that kind. Each new point takes `broken`, fills `internal`, is declared in `faults` of the interface contract and is
+  checked by `fault::invariant` just before its branch, as the point of `renew` is. The points and their branches in
+  `packages/core/rust/src`: `session_store.session_waits`, `session.rs` line 74 (`get`, `set`, `remove`, `renew`);
+  `session_store.record_root`, `record.rs` line 47 (the first use of a found record); `session_store.record_index`,
+  `record.rs` line 63; `session_store.value_reference`, `copy.rs` line 116; `session_store.value_root`, `copy.rs` line
+  123; `session_store.copy_new_reference`, `copy.rs` line 69; `session_store.copy_array`, line 82;
+  `session_store.copy_element`, line 86; `session_store.copy_object`, line 91; `session_store.copy_property`, line 95;
+  `session_store.copy_reference`, line 100; `session_store.copy_set_reference`, line 103 (`get`, and `close` through
+  the copy of the record). The new group `recordFaults` of `contracts/sessions.json` holds one case of one call for
+  each point, which the tests of the core run on a record session: the call without the arming succeeds, and the
+  armed call fails with the kind `internal` and the message of its branch. `get`, `set` and `remove` of
+  `MemoryStore` (`memory.rs` lines 73 to 85) return no error, and `random_hex` (`identifier.rs` lines 30 to 47) fails
+  only with the kind `random`, so these paths give no `internal` and have no point. The branches of `encode` that only
+  `close` reaches (`record.rs` lines 97 and 104) have no point.
+
 - The tests of a real Redis server run in containers of Apple `container` and fail when their peer is missing
   (SE-10.4). Before, `make test` looked up `redis-server`, `redis-cli` and `openssl` on PATH and reported the 21 tests
   that need them as ignored when they were missing: the 13 cases of the group `requests` against a server

@@ -136,12 +136,28 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   failure without `errno` of the kind `io` when the fault names none. The `fills` of the contract name `io` alone of
   the kinds of SF-9.2, because the row of the variant `Io` in `errors.kinds` names no `kinds`, and a point fills only
   the kinds of that table. An `io` injection at `random` is a failure of the random source, which has no `errno`. The
-  core starts no task and no thread, so each point takes the arming of the call that reaches it.
+  core starts no task and no thread, so each point takes the arming of the call that reaches it. Every invariant branch
+  of the kind `internal` that `get`, `set` and `remove` of a record session reach, the calls of `file_session` and
+  `redis_session`, has a point just before it, which imitates the failed invariant as `broken`; the points of the copy
+  are also reached by `close`, which writes the record with the same copy. `get`, `set` and `remove` of `MemoryStore`
+  and `random_hex` have no branch of the kind `internal`.
 
   | Id | Place (function) | Inject | Fills | Rule of the condition | Takes the arming |
   |---|---|---|---|---|---|
   | `random` | `random_hex`, which `new_identifier`, the start of a new session, a renewal and the opening of the store of Redis call | `io` | `random` | SE-5.4 | yes |
   | `internal` | `renew` of `MemoryStore`: the count of renewals is treated as passing u64 | `broken` | `internal` | SE-4.3 | yes |
+  | `session_waits` | the start of a record session in `get`, `set`, `remove` and `renew` (`RecordSession::start`): the state after the start is treated as waiting | `broken` | `internal` | SE-7.2 | yes |
+  | `record_root` | the decode of a found record at the start of a record session (`Values::decode`): the root is treated as naming no array | `broken` | `internal` | SE-6.3 | yes |
+  | `record_index` | `get` of a record session (`Values::get`): the index is treated as naming no entry | `broken` | `internal` | SE-6.5 | yes |
+  | `value_reference` | `get` of a record session of a read element that is a reference (`value_of`): the source is treated as naming no reference | `broken` | `internal` | SE-6.5 | yes |
+  | `value_root` | `get` of a record session of a read element (`value_of`): the copy is treated as refusing its top value | `broken` | `internal` | SE-6.5 | yes |
+  | `copy_new_reference` | the copy of a reference of the source, in `get` and in `close` (`Copier::shallow`): a new reference is treated as refused | `broken` | `internal` | SE-6.6 | yes |
+  | `copy_array` | the copy of an array, in `get` and in `close` (`Copier::fill`): the source is treated as naming no array | `broken` | `internal` | SE-6.5 | yes |
+  | `copy_element` | the copy of an element of an array, in `get` and in `close` (`Copier::fill`): the element is treated as refused | `broken` | `internal` | SE-6.5 | yes |
+  | `copy_object` | the copy of an object, in `get` and in `close` (`Copier::fill`): the source is treated as naming no object | `broken` | `internal` | SE-6.5 | yes |
+  | `copy_property` | the copy of a property of an object, in `get` and in `close` (`Copier::fill`): the property is treated as refused | `broken` | `internal` | SE-6.5 | yes |
+  | `copy_reference` | the copy of a reference, in `get` and in `close` (`Copier::fill`): the source is treated as naming no reference | `broken` | `internal` | SE-6.6 | yes |
+  | `copy_set_reference` | the copy of the value of a reference, in `get` and in `close` (`Copier::fill`): the value is treated as refused | `broken` | `internal` | SE-6.6 | yes |
   | `open` | the open of the session file in `FileSessions::open` | `io` | `io` | SF-3.1, SF-9.2 | yes |
   | `read_dir` | the read of the directory in `FileSessions::collect` | `io` | `io` | SF-5.1, SF-9.2 | yes |
 
@@ -324,7 +340,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
 - **SE-10** <a id="SE-10.1"></a> `contracts/sessions.json` holds the cases of the core: group `identifier` (SE-5.1,
   SE-5.2), group `created` (SE-5.3: the `length` and the `alphabet` of a new identifier, which is an identifier and
   differs from the one made before it, and SE-5.4), group `store` (SE-2, SE-4, run on the memory store and on a record
-  session), group `record` (SE-6, SE-7) and group `internal` (SE-9.6). `contracts/file-sessions.json` holds the requests of the store of files (SF-1 to SF-5),
+  session), group `record` (SE-6, SE-7), group `internal` (SE-9.6) and group `recordFaults` (SE-9.6). `contracts/file-sessions.json` holds the requests of the store of files (SF-1 to SF-5),
   and `contracts/redis-sessions.json` the requests of the store of Redis with the commands that each sends (SR-1 to
   SR-5). <a id="SE-10.2"></a> A PHP value of a case is its serialize form, and a byte string of a case is JSON text
   whose characters U+0000 to U+00FF are its bytes. A failure is the key `raises` with `kind`, `status`, `category` and
@@ -355,7 +371,10 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   binding test does (binding design G-5): the Rust tests arm the list for the member, run the call with the arming that
   the entry point of the member takes, and fail the case when a fault did not fire. Such a case is a case of one call in
   a group that only its member reads, so that the test of no other member arms it: the groups `created`
-  (`new_identifier`) and `internal` (`memory_store.renew`) of `contracts/sessions.json`, the groups `openFaults`
+  (`new_identifier`) and `internal` (`memory_store.renew`) of `contracts/sessions.json`, the group `recordFaults` of
+  `contracts/sessions.json`, a call of a record session for each point of a record session, which only the Rust tests
+  read and which runs the same call without the arming first, so that the input alone gives no failure, the groups
+  `openFaults`
   (`file_sessions.open`) and `collectFaults` (`file_sessions.collect`) of `contracts/file-sessions.json`, and the group
   `openFaults` (`redis_sessions.open`) of `contracts/redis-sessions.json`. A case of one call makes its receiver with
   the constructor of its unit from the keys of the case (binding T-5): the store of files of the directory `/`, which

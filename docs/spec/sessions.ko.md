@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 43f2493816782f1fcc53cda607f2aca1a219811279ce3e07e7964db916c4b205 -->
+<!-- source-sha256: fc6f49e2b69eaba5aebe62a1e3040e97ed007c5feb7fcf687150d4051e393789 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -136,12 +136,27 @@
   `errno`로 실패하는 것이고 그 kind는 SF-9.2를 따르며, fault가 `errno`를 적지 않으면 `errno` 없는 kind `io`의
   실패다. `errors.kinds`의 variant `Io` 행이 `kinds`를 적지 않고 주입점은 그 표의 kind만 채우므로, 계약의
   `fills`는 SF-9.2의 kind 중 `io`만 적는다. `random`의 `io` 주입은 난수원의 실패이며 `errno`가 없다. 코어는 task도
-  thread도 시작하지 않으므로, 각 주입점은 그 점에 닿는 호출의 장전을 받는다.
+  thread도 시작하지 않으므로, 각 주입점은 그 점에 닿는 호출의 장전을 받는다. record session의 `get`, `set`,
+  `remove`(`file_session`과 `redis_session`의 호출)가 닿는 kind `internal`의 모든 불변식 분기는 바로 앞에 주입점을
+  가지며, 그 주입점은 실패한 불변식을 `broken`으로 흉내 낸다. 복사의 주입점은 같은 복사로 레코드를 쓰는 `close`도
+  닿는다. `MemoryStore`의 `get`, `set`, `remove`와 `random_hex`에는 kind `internal`의 분기가 없다.
 
   | Id | 자리(함수) | 주입 | 채우는 kind | 조건의 규칙 | 장전을 받는가 |
   |---|---|---|---|---|---|
   | `random` | `new_identifier`, 새 세션의 시작, 갱신, Redis 저장소의 열기가 부르는 `random_hex` | `io` | `random` | SE-5.4 | 예 |
   | `internal` | `MemoryStore`의 `renew`: 갱신 횟수가 u64를 넘는 것으로 다룬다 | `broken` | `internal` | SE-4.3 | 예 |
+  | `session_waits` | `get`, `set`, `remove`, `renew`에서 record session의 시작(`RecordSession::start`): 시작 뒤의 상태를 기다리는 상태로 다룬다 | `broken` | `internal` | SE-7.2 | 예 |
+  | `record_root` | record session의 시작에서 찾은 레코드의 decode(`Values::decode`): root가 배열을 가리키지 않는 것으로 다룬다 | `broken` | `internal` | SE-6.3 | 예 |
+  | `record_index` | record session의 `get`(`Values::get`): index가 항목을 가리키지 않는 것으로 다룬다 | `broken` | `internal` | SE-6.5 | 예 |
+  | `value_reference` | 참조인 읽은 원소에 대한 record session의 `get`(`value_of`): 원본이 참조를 가리키지 않는 것으로 다룬다 | `broken` | `internal` | SE-6.5 | 예 |
+  | `value_root` | 읽은 원소에 대한 record session의 `get`(`value_of`): 복사본이 최상위 값을 거부하는 것으로 다룬다 | `broken` | `internal` | SE-6.5 | 예 |
+  | `copy_new_reference` | `get`과 `close`에서 원본의 참조의 복사(`Copier::shallow`): 새 참조가 거부되는 것으로 다룬다 | `broken` | `internal` | SE-6.6 | 예 |
+  | `copy_array` | `get`과 `close`에서 배열의 복사(`Copier::fill`): 원본이 배열을 가리키지 않는 것으로 다룬다 | `broken` | `internal` | SE-6.5 | 예 |
+  | `copy_element` | `get`과 `close`에서 배열의 원소의 복사(`Copier::fill`): 원소가 거부되는 것으로 다룬다 | `broken` | `internal` | SE-6.5 | 예 |
+  | `copy_object` | `get`과 `close`에서 객체의 복사(`Copier::fill`): 원본이 객체를 가리키지 않는 것으로 다룬다 | `broken` | `internal` | SE-6.5 | 예 |
+  | `copy_property` | `get`과 `close`에서 객체의 속성의 복사(`Copier::fill`): 속성이 거부되는 것으로 다룬다 | `broken` | `internal` | SE-6.5 | 예 |
+  | `copy_reference` | `get`과 `close`에서 참조의 복사(`Copier::fill`): 원본이 참조를 가리키지 않는 것으로 다룬다 | `broken` | `internal` | SE-6.6 | 예 |
+  | `copy_set_reference` | `get`과 `close`에서 참조의 값의 복사(`Copier::fill`): 값이 거부되는 것으로 다룬다 | `broken` | `internal` | SE-6.6 | 예 |
   | `open` | `FileSessions::open`에서 세션 파일의 open | `io` | `io` | SF-3.1, SF-9.2 | 예 |
   | `read_dir` | `FileSessions::collect`에서 디렉터리의 읽기 | `io` | `io` | SF-5.1, SF-9.2 | 예 |
 
@@ -324,7 +339,7 @@
 - **SE-10** <a id="SE-10.1"></a> `contracts/sessions.json`은 코어의 case를 담는다: group `identifier`(SE-5.1,
   SE-5.2), group `created`(SE-5.3: 새 식별자의 `length`와 `alphabet`. 새 식별자는 식별자이고
   그 앞에 만든 식별자와 다르다. 그리고 SE-5.4), group `store`(SE-2, SE-4, 메모리 저장소와 레코드 세션에서
-  실행한다), group `record`(SE-6, SE-7), group `internal`(SE-9.6). `contracts/file-sessions.json`은 파일 저장소의 요청을 담고(SF-1부터 SF-5),
+  실행한다), group `record`(SE-6, SE-7), group `internal`(SE-9.6), group `recordFaults`(SE-9.6). `contracts/file-sessions.json`은 파일 저장소의 요청을 담고(SF-1부터 SF-5),
   `contracts/redis-sessions.json`은 Redis 저장소의 요청을 각 요청이 보내는 명령과 함께 담는다(SR-1부터
   SR-5). <a id="SE-10.2"></a> case의 PHP 값은 그 serialize 형식이고, case의 바이트 문자열은 문자 U+0000부터
   U+00FF가 그 바이트인 JSON 텍스트다. 실패는 `kind`, `status`, `category`,
@@ -354,7 +369,9 @@
   장전한다(binding 설계 G-5): Rust 시험은 그 목록을 member에 장전하고, member의 entry point가 받는 장전으로 호출을
   실행하며, 터지지 않은 fault가 있으면 case를 실패시킨다. 그런 case는 자기 member만 읽는 group의 한 호출 case이며,
   그래서 다른 member의 시험은 그것을 장전하지 않는다: `contracts/sessions.json`의 group `created`(`new_identifier`)와
-  `internal`(`memory_store.renew`), `contracts/file-sessions.json`의 group `openFaults`(`file_sessions.open`)와
+  `internal`(`memory_store.renew`), `contracts/sessions.json`의 group `recordFaults`(record session의 주입점마다
+  record session의 한 호출이며, Rust 시험만 읽고, 같은 호출을 먼저 장전 없이 실행해 입력만으로는 실패가 없음을
+  확인한다), `contracts/file-sessions.json`의 group `openFaults`(`file_sessions.open`)와
   `collectFaults`(`file_sessions.collect`), `contracts/redis-sessions.json`의 group
   `openFaults`(`redis_sessions.open`)다. 한 호출 case는 자기 unit의 생성자로 case의 key에서 receiver를
   만든다(binding T-5): 라이브러리의 모든 플랫폼에 있고 그 읽기를 장전된 주입점이 호출이 읽기 전에 실패시키는

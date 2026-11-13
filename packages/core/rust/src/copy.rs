@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use polyspec_php_serialization::{ArrayId, Node, ObjectId, PhpValue, ReferenceId};
 
 use crate::error::{internal, Error};
+use crate::fault;
 
 enum Task {
     Array { from: ArrayId, to: ArrayId },
@@ -64,6 +65,7 @@ impl<'a> Copier<'a> {
                 if let Some(to) = self.references.get(from) {
                     return Ok(Node::Reference(*to));
                 }
+                fault::invariant(fault::COPY_NEW_REFERENCE, "a new reference is refused")?;
                 let to = target.new_reference(Node::Null).map_err(internal("a new reference is refused"))?;
                 self.references.insert(*from, to);
                 self.tasks.push(Task::Reference { from: *from, to });
@@ -76,22 +78,28 @@ impl<'a> Copier<'a> {
         let source = self.source;
         match task {
             Task::Array { from, to } => {
+                fault::invariant(fault::COPY_ARRAY, "the source names no array")?;
                 let array = source.array(from).map_err(internal("the source names no array"))?;
                 for (key, node) in array.iter() {
                     let copy = self.shallow(target, node)?;
+                    fault::invariant(fault::COPY_ELEMENT, "a copied element is refused")?;
                     target.set_element(to, key.clone(), copy).map_err(internal("a copied element is refused"))?;
                 }
             }
             Task::Object { from, to } => {
+                fault::invariant(fault::COPY_OBJECT, "the source names no object")?;
                 let object = source.object(from).map_err(internal("the source names no object"))?;
                 for (name, node) in object.iter() {
                     let copy = self.shallow(target, node)?;
+                    fault::invariant(fault::COPY_PROPERTY, "a copied property is refused")?;
                     target.set_property(to, name.to_vec(), copy).map_err(internal("a copied property is refused"))?;
                 }
             }
             Task::Reference { from, to } => {
+                fault::invariant(fault::COPY_REFERENCE, "the source names no reference")?;
                 let node = source.reference(from).map_err(internal("the source names no reference"))?;
                 let copy = self.shallow(target, node)?;
+                fault::invariant(fault::COPY_SET_REFERENCE, "a copied reference is refused")?;
                 target.set_reference(to, copy).map_err(internal("a copied reference is refused"))?;
             }
         }
@@ -101,12 +109,17 @@ impl<'a> Copier<'a> {
 
 /// A value whose top value is a copy of a node of the source; a reference gives the value that it holds (SE-6.5).
 pub(crate) fn value_of(source: &PhpValue, node: &Node) -> Result<PhpValue, Error> {
+    // SE-9.6: each point imitates a failed invariant of the source or of the copy, which no input reaches (X-1).
     let node = match node {
-        Node::Reference(id) => source.reference(*id).map_err(internal("the source names no reference"))?,
+        Node::Reference(id) => {
+            fault::invariant(fault::VALUE_REFERENCE, "the source names no reference")?;
+            source.reference(*id).map_err(internal("the source names no reference"))?
+        }
         other => other,
     };
     let mut value = PhpValue::new();
     let top = Copier::new(source).copy(&mut value, node)?;
+    fault::invariant(fault::VALUE_ROOT, "a copied top value is refused")?;
     value.set_root(top).map_err(internal("a copied top value is refused"))?;
     Ok(value)
 }

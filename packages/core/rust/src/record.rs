@@ -6,6 +6,7 @@ use polyspec_php_serialization::{serialize, unserialize, Key, Node, PhpValue};
 
 use crate::copy::{value_of, Copier};
 use crate::error::{internal, Error};
+use crate::fault;
 
 /// What a key of the record holds: the node of the record as it was read, or a value that the request set.
 #[derive(Debug, Clone)]
@@ -40,6 +41,9 @@ impl Values {
         };
         let mut entries = Vec::new();
         let mut index = HashMap::new();
+        // SE-9.6: each point imitates a failed invariant of the value that php-serialization read, which no input
+        // reaches (X-1).
+        fault::invariant(fault::RECORD_ROOT, "the root names no array")?;
         for (key, node) in read.array(*array).map_err(internal("the root names no array"))?.iter() {
             index.insert(key.clone(), entries.len());
             entries.push((key.clone(), Slot::Read(node.clone())));
@@ -52,6 +56,7 @@ impl Values {
         let Some(position) = self.index.get(key) else {
             return Ok(None);
         };
+        fault::invariant(fault::RECORD_INDEX, "an index names no entry")?;
         match self.entries.get(*position) {
             Some((_, Slot::Read(node))) => value_of(&self.read, node).map(Some),
             Some((_, Slot::Set(value))) => Ok(Some(value.clone())),

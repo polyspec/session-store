@@ -313,6 +313,29 @@ fn internal(case: &Value) -> Result<(), Failed> {
     }
 }
 
+/// SE-9.6: a call of a record session at an invariant branch of the kind internal, whose point the case arms; only the
+/// Rust tests read the group, because a session of a request is made by `open` of its store (SE-10.6). The member
+/// that the arming names is that of the call. The call without the arming succeeds, so only the point gives the kind.
+fn record_faults(case: &Value) -> Result<(), Failed> {
+    let raises = case.get("raises").ok_or("the case has no raises")?;
+    let found = match case.get("found") {
+        Some(Value::String(record)) => {
+            Some(Found { id: str_of(case, "identifier")?.to_owned(), record: latin1(record)? })
+        }
+        _ => None,
+    };
+    let [(name, arguments)] = calls(case)?.try_into().map_err(|_calls: Vec<_>| "the case has not one call")?;
+    // The same call without the arming reaches no branch of the kind internal: the input alone gives no failure.
+    if let Err(error) = run(&mut RecordSession::new(found.clone()), &name, &arguments)? {
+        return Err(format!("the call without faults fails: {error}").into());
+    }
+    let mut session = RecordSession::new(found);
+    match armed(case, &format!("record_session.{name}"), || run(&mut session, &name, &arguments))?? {
+        Ok(value) => Err(format!("the call gives {value}").into()),
+        Err(error) => expect_failure(&error, raises),
+    }
+}
+
 /// A runner of the cases of one group.
 type Group = fn(&Value) -> Result<(), Failed>;
 
@@ -323,12 +346,13 @@ fn main() {
         Err(error) => panic!("contracts/sessions.json is no JSON: {error}"),
     };
     let mut trials = Vec::new();
-    let groups: [(&str, Group); 5] = [
+    let groups: [(&str, Group); 6] = [
         ("identifier", identifier),
         ("created", created),
         ("store", store),
         ("record", record),
         ("internal", internal),
+        ("recordFaults", record_faults),
     ];
     for (group, run) in groups {
         let Some(Value::Array(cases)) = contract.get(group) else {

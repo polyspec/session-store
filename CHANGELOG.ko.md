@@ -1,7 +1,24 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 2baa72a36ba4baf3dca25430f817db806c237d92006769c6cc87c2e13602561f -->
+<!-- source-sha256: ceb0fdd08eae6376f29cb19af26c6f687d75658dd5d47d645855962e0746f147 -->
 
 ## Unreleased
+
+- record session의 `get`, `set`, `remove`가 닿는 kind `internal`의 모든 불변식 분기가 실패 주입점을 가진다(SE-9.6).
+  전에는 kind `internal`의 주입점이 `MemoryStore`의 `renew`에 있는 `session_store.internal` 하나뿐이어서,
+  `file_session`이나 `redis_session`의 `get`, `set`, `remove`를 부르는 쪽에는 그 kind를 내는 주입점이 없었다. 새
+  주입점은 각각 `broken`을 받고 `internal`을 채우며, 인터페이스 계약의 `faults`에 선언되고, `renew`의 주입점처럼 분기
+  바로 앞에서 `fault::invariant`로 확인된다. `packages/core/rust/src`의 주입점과 그 분기:
+  `session_store.session_waits`, `session.rs` 74행(`get`, `set`, `remove`, `renew`); `session_store.record_root`,
+  `record.rs` 47행(찾은 레코드의 첫 사용); `session_store.record_index`, `record.rs` 63행;
+  `session_store.value_reference`, `copy.rs` 116행; `session_store.value_root`, `copy.rs` 123행;
+  `session_store.copy_new_reference`, `copy.rs` 69행; `session_store.copy_array`, 82행; `session_store.copy_element`,
+  86행; `session_store.copy_object`, 91행; `session_store.copy_property`, 95행; `session_store.copy_reference`,
+  100행; `session_store.copy_set_reference`, 103행(`get`, 그리고 레코드의 복사를 거치는 `close`).
+  `contracts/sessions.json`의 새 group `recordFaults`는 주입점마다 한 호출 case를 하나씩 담고, 코어의 시험이 그
+  case를 record session에서 실행한다. 장전하지 않은 호출은 성공하고, 장전한 호출은 kind `internal`과 그 분기의
+  메시지로 실패한다. `MemoryStore`의 `get`, `set`, `remove`(`memory.rs` 73~85행)는 오류를 돌려주지 않고,
+  `random_hex`(`identifier.rs` 30~47행)는 kind `random`으로만 실패하므로, 이 경로는 `internal`을 내지 않으며
+  주입점이 없다. `close`만 닿는 `encode`의 분기(`record.rs` 97행과 104행)에는 주입점이 없다.
 
 - 실제 Redis 서버의 시험이 Apple `container`의 container 안에서 돌고, peer가 없으면 실패한다(SE-10.4). 전에는 `make
   test`가 PATH에서 `redis-server`, `redis-cli`, `openssl`을 찾고, 없으면 그것이 필요한 시험 21개를 무시된 시험으로

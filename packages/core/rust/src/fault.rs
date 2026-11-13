@@ -17,6 +17,44 @@ pub const OPEN: &str = "session_store.open";
 /// The read of the session directory, in `FileSessions::collect` (SF-5, SF-9.2).
 #[doc(hidden)]
 pub const READ_DIR: &str = "session_store.read_dir";
+/// The state of a record session that its start left waiting, in the start of `get`, `set`, `remove` and `renew` of a
+/// record session (SE-7.2).
+#[doc(hidden)]
+pub const SESSION_WAITS: &str = "session_store.session_waits";
+/// The array of a decoded record, which the root names, at the start of a record session that found a record (SE-6.3).
+#[doc(hidden)]
+pub const RECORD_ROOT: &str = "session_store.record_root";
+/// The entry that the index of the values names, in `get` of a record session (SE-6.5).
+#[doc(hidden)]
+pub const RECORD_INDEX: &str = "session_store.record_index";
+/// The value of a read element that is a reference, in `get` of a record session (SE-6.5).
+#[doc(hidden)]
+pub const VALUE_REFERENCE: &str = "session_store.value_reference";
+/// The top value of the copy that `get` of a record session gives (SE-6.5).
+#[doc(hidden)]
+pub const VALUE_ROOT: &str = "session_store.value_root";
+/// A new reference of a copy, made for a reference of the source (SE-6.5 to SE-6.7).
+#[doc(hidden)]
+pub const COPY_NEW_REFERENCE: &str = "session_store.copy_new_reference";
+/// The array of the source that a copy fills from (SE-6.5 to SE-6.7).
+#[doc(hidden)]
+pub const COPY_ARRAY: &str = "session_store.copy_array";
+/// An element placed into the array of a copy (SE-6.5 to SE-6.7).
+#[doc(hidden)]
+pub const COPY_ELEMENT: &str = "session_store.copy_element";
+/// The object of the source that a copy fills from (SE-6.5 to SE-6.7).
+#[doc(hidden)]
+pub const COPY_OBJECT: &str = "session_store.copy_object";
+/// A property placed into the object of a copy (SE-6.5 to SE-6.7).
+#[doc(hidden)]
+pub const COPY_PROPERTY: &str = "session_store.copy_property";
+/// The reference of the source that a copy fills from (SE-6.5 to SE-6.7).
+#[doc(hidden)]
+pub const COPY_REFERENCE: &str = "session_store.copy_reference";
+/// The value placed into a reference of a copy (SE-6.5 to SE-6.7).
+#[doc(hidden)]
+pub const COPY_SET_REFERENCE: &str = "session_store.copy_set_reference";
+
 /// The `io` fault armed at the point `name`: `Some` with the errno of the fault, which may name none, or `None` when no
 /// `io` fault is armed there. No point of the library takes `short` or `broken` as an I/O failure.
 #[doc(hidden)]
@@ -33,4 +71,14 @@ pub fn failed(name: &'static str) -> Option<Option<i32>> {
 #[must_use]
 pub fn broken(name: &'static str) -> bool {
     matches!(point(name), Some(Injected::Broken))
+}
+
+/// The kind `internal` with `what` when the invariant of the point `name` is armed as broken: a point at an invariant
+/// branch that gives `internal` and that no input reaches (SE-9.6, X-1).
+pub(crate) fn invariant(name: &'static str, what: &'static str) -> Result<(), crate::Error> {
+    if broken(name) {
+        Err(crate::Error::Internal { what })
+    } else {
+        Ok(())
+    }
 }

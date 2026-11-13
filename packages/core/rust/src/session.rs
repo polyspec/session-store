@@ -3,6 +3,7 @@
 use polyspec_php_serialization::PhpValue;
 
 use crate::error::Error;
+use crate::fault;
 use crate::identifier::new_identifier;
 use crate::record::Values;
 use crate::store::{key_of, Store};
@@ -65,6 +66,8 @@ impl RecordSession {
                 None => State::Started { values: Values::empty(), id: new_identifier()?, new: true },
             };
         }
+        // SE-9.6: the point imitates a start that left the session waiting, which no input reaches (X-1).
+        fault::invariant(fault::SESSION_WAITS, "a started session waits")?;
         match &mut self.state {
             State::Started { values, id, new } => Ok((values, id, new)),
             State::Failed(error) => Err(error.clone()),

@@ -244,6 +244,150 @@
       ],
       "reason": "SF-9.2",
       "place": "polyspec_session_store::FileSessions::collect"
+    },
+    {
+      "id": "session_waits",
+      "core": "polyspec_session_store::fault::SESSION_WAITS",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-7.2",
+      "place": "polyspec_session_store::RecordSession::set"
+    },
+    {
+      "id": "record_root",
+      "core": "polyspec_session_store::fault::RECORD_ROOT",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-6.3",
+      "place": "polyspec_session_store::RecordSession::get"
+    },
+    {
+      "id": "record_index",
+      "core": "polyspec_session_store::fault::RECORD_INDEX",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-6.5",
+      "place": "polyspec_session_store::RecordSession::get"
+    },
+    {
+      "id": "value_reference",
+      "core": "polyspec_session_store::fault::VALUE_REFERENCE",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-6.5",
+      "place": "polyspec_session_store::RecordSession::get"
+    },
+    {
+      "id": "value_root",
+      "core": "polyspec_session_store::fault::VALUE_ROOT",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-6.5",
+      "place": "polyspec_session_store::RecordSession::get"
+    },
+    {
+      "id": "copy_new_reference",
+      "core": "polyspec_session_store::fault::COPY_NEW_REFERENCE",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-6.6",
+      "place": "polyspec_session_store::RecordSession::get"
+    },
+    {
+      "id": "copy_array",
+      "core": "polyspec_session_store::fault::COPY_ARRAY",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-6.5",
+      "place": "polyspec_session_store::RecordSession::get"
+    },
+    {
+      "id": "copy_element",
+      "core": "polyspec_session_store::fault::COPY_ELEMENT",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-6.5",
+      "place": "polyspec_session_store::RecordSession::get"
+    },
+    {
+      "id": "copy_object",
+      "core": "polyspec_session_store::fault::COPY_OBJECT",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-6.5",
+      "place": "polyspec_session_store::RecordSession::get"
+    },
+    {
+      "id": "copy_property",
+      "core": "polyspec_session_store::fault::COPY_PROPERTY",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-6.5",
+      "place": "polyspec_session_store::RecordSession::get"
+    },
+    {
+      "id": "copy_reference",
+      "core": "polyspec_session_store::fault::COPY_REFERENCE",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-6.6",
+      "place": "polyspec_session_store::RecordSession::get"
+    },
+    {
+      "id": "copy_set_reference",
+      "core": "polyspec_session_store::fault::COPY_SET_REFERENCE",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "internal"
+      ],
+      "reason": "SE-6.6",
+      "place": "polyspec_session_store::RecordSession::get"
     }
   ],
   "units": [

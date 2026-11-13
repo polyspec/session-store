@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 1bf9f09da5e79d7eb26a910d077bf9af7371d3936b5c318be6ecc1483eb36831 -->
+<!-- source-sha256: 9d6848bba213722f79aea2b6202062a0a9e70ba670ec1ef44df3eea5a42565de -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -363,17 +363,48 @@
   않으면(`PHP`) 그 시험은 실패하므로, 그 레코드는 PHP의 레코드다. <a id="SE-10.4"></a> Redis case의 명령은
   프로토콜이 보내는 Redis 명령의 모델에 대해 실행되고, 같은 요청이 실제 Redis 서버에 대해 실행된다.
   시험의 모든 실제 서버(case의 서버, 그리고 SR-6의 ACL 사용자, TLS, Sentinel, Cluster)는 Makefile이 digest로 고정한
-  image(`REDIS_IMAGE`, `make redis-image`가 받는다)의 container 안에서 도는 Redis 8.10.3의 `redis-server`다.
-  container 프로그램은 플랫폼이 정한다. Darwin은 Apple `container`를, Linux는 `docker`를 실행한다. image와 그
-  digest는 하나다. 그래서 두 플랫폼의 시험이 같은 bytes의 서버에 연결하고, 어떤 시험도 장비에 설치된 서버를
-  실행하지 않는다. `scripts/container.sh`가 두 프로그램의 명령(받기, image의 존재, 실행, 삭제, run의 container
-  목록)을 갖고, 프로그램을 플랫폼만으로 정한다. 어떤 변수도 프로그램을 고르지 않는다. 프로그램을 찾지 못하면 run은
-  시작할 때 그 프로그램의 이름과 설치 방법을 적고 실패한다. image가 주어지지 않은 시험은 실패하고 그 target을
-  적는다. 그런 시험은 무시된 시험으로 보고되지 않는다. container는 두 프로그램 모두에서 자기 주소를 첫 줄로 쓴다.
-  시험은 자기 container의 주소에 연결하고, 서버가 연결을 받는다고 알리는 줄(Sentinel은
-  감시하는 primary, Cluster는 각 node의 state ok)을 기다리며, 시간을 기다리지 않는다. `make test`는 시험을
-  `scripts/test-run.sh`로 실행하고, 이 script는 run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때 그 run의
-  container와 임시 디렉터리를 지운다. `text_replies`를 가진 case(모델이 각 레코드를 status 응답으로 준다, SR-5.1)나
+  image(`REDIS_IMAGE`, `make redis-image`가 받는다)의 container 안에서 도는 Redis 8.10.3의 `redis-server`이고, 어떤
+  시험도 장비에 설치된 서버를 실행하지 않는다. 서버는 bay가 시작하고 지운다. bay는 Compose 프로젝트를 Darwin에서는
+  Apple `container`로, Linux에서는 Docker로 실행한다. 그래서 image와 그 digest는 하나이고, 두 플랫폼의 시험이 같은
+  bytes의 서버에 연결하며, 이 저장소의 어떤 파일도 engine이 서버를 실행하는 명령을 갖지 않는다.
+  `scripts/servers.sh`가 서버의 명령(`check`, `up`, `down`, `status`, `logs`, 그리고 image의 `present`와 `pull`)을
+  갖고, harness와 run은 이 script만 시작한다.
+  - 시험마다 프로젝트 하나. 시험은 자기가 필요한 서버의 Compose 파일을 run의 디렉터리(`SESSION_STORE_PROJECTS`) 아래
+    자기 디렉터리에 쓰고 프로젝트 하나로 시작한다. 서버마다 service 하나를 두고, image는 digest로 적고, 서버의
+    인자는 `command`로, 서버의 port는 `expose`로, 서버가 파일을 읽는 곳은 프로젝트의 디렉터리를 volume으로 적으며,
+    port를 host에 공개하지 않는다. 서버의 인자는 시험이 적는 내용의 일부이고(ACL 사용자, TLS 파일, Sentinel,
+    cluster 방식), 한 시험의 key와 사용자와 cluster는 다른 시험에 닿으면 안 된다. 그래서 시험끼리 서버를 함께 쓰지
+    않고, run은 자기가 실행하는 시험의 서버만 시작한다. `tests/contract.rs`의 case들은 이 뜻에서 시험 하나다. 서버
+    하나를 함께 쓰고, case마다 자기 database를 쓴다.
+  - 프로젝트의 이름은 그 디렉터리의 이름이다. run의 디렉터리 이름, 시험 process의 id, 순번으로 이루어진다. bay는
+    프로젝트의 이름을 파일에서만 읽으므로 Compose 파일이 `name`에 그 이름을 적는다. run의 디렉터리는 run의 process를
+    따라 이름 지으므로, 한 장비의 두 run이 같은 이름을 갖지 않는다.
+  - 서버의 주소는 bay가 주는 주소다. 시작한 뒤 harness는 `bay status --json`에서 그 service를 읽고(`address`, 곧
+    이름과 port, 그리고 `ipv4`), 시험은 그 주소에 연결한다. 이름의 domain은 bay의 것이므로 이 저장소의 어떤 파일도
+    그 domain을 적지 않고, 어떤 port도 host에 공개하지 않는다. 다른 서버의 이름을 적어야 하는 서버나 certificate가
+    자기 이름을 적는 서버는 그 주소를 읽은 뒤 같은 파일을 다시 `up`하여 시작한다. bay는 바뀌지 않은 service를
+    그대로 두고, 바뀐 service를 교체하고, 새 service를 시작한다. Sentinel은 이 방법으로 primary의 이름을 받고, TLS
+    서버는 certificate를 받는다.
+  - `up`의 반환이 시작의 event다. bay는 모든 service가 자기 port에서 연결을 받은 뒤 반환한다. harness는 시간 제한도,
+    sleep도, 반복해서 묻는 일도 갖지 않는다. cluster의 시험은 slot을 배정하고 node를 서로 소개하는 일을 자기가 보내는
+    Redis 명령으로 한다. `up`은 끝나는 service에 대해 실패하므로(그 service의 port를 기다린다) 프로젝트의 어떤
+    service도 한 번 실행되고 끝나는 명령이 아니기 때문이다. 그런 뒤 시험은 각 node가 state ok를 알리는 줄을
+    `bay logs -f`가 첫 줄부터 주는 출력에서 기다린다.
+  - TLS의 certificate는 host의 `openssl`(`OPENSSL`)이 서버의 이름에 대해 만들고, 읽기 전용 volume으로 서버에
+    전달된다. bay가 domain이 없는 service에 certificate를 발급할 때까지 이 방법이 남는다.
+  - bay나 플랫폼의 engine을 찾지 못하면 run은 시험을 실행하기 전, 시작할 때 그 프로그램의 이름과 설치 방법을 적고
+    실패한다. `bay check`가 bay의 장비 설정이 갖추어지지 않았다고 보고하면 run은 그 설정을 적용하는 `bay install`을
+    적고 실패한다. run은 장비의 설정을 바꾸지 않는다. image가 설치되지 않은 시험은 실패하고 `make redis-image`를
+    적는다. 그런 시험은 무시된 시험으로 보고되지 않고, 어떤 시험도 image를 받지 않는다. image의 존재 확인과 받기는
+    bay에 받는 명령이 생길 때까지 플랫폼의 engine, 곧 Darwin의 Apple `container`와 Linux의 `docker`의 명령이다.
+  - `make test`는 시험을 `scripts/test-run.sh`로 실행하고, 이 script가 run의 디렉터리를 소유한다. Compose 파일은
+    `up`보다 먼저 쓰이므로, 시작된 모든 프로젝트에는 파일이 있다. run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출
+    때 script는 시험을 기다리고, 디렉터리에 남은 모든 Compose 파일에 `down`을 실행하고, 디렉터리를 지운다. `down`이
+    지우지 못한 프로젝트가 있으면 run은 실패하고, 디렉터리를 남기고 그 파일을 적는다. 알려진 한계: engine이
+    container를 만드는 동안 신호가 `up`을 멈추면 bay는 engine을 기다리지 않고 끝나므로, 그 container가 run의 `down`
+    뒤에 나타날 수 있다.
+
+  `text_replies`를 가진 case(모델이 각 레코드를 status 응답으로 준다, SR-5.1)나
   `error_replies`를 가진 case(모델이 한 이름의 모든 명령에 적힌 오류 응답을 준다, SR-5.2)는 모델에 대해서만 실행되고
   서버에 대한 trial이 없다. 실제 서버는 이 key에 대한 이 명령에 둘 중 어느 것도 주지 않기 때문이다.
   <a id="SE-10.5"></a> `faults`를 가진 case는 생성된 바인딩 시험처럼 SE-9.6의 실패 주입점을 자기 한 호출에

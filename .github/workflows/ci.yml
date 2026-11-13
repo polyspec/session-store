@@ -1,6 +1,7 @@
 # CI of session-store: one workflow whose jobs run the targets of the Makefile, each job the target that names its list
-# (CI_SHARED and CI_RUST of the Makefile), past failures, with the report of ci-targets as an artifact. The release
-# workflow releases the commit whose run of this workflow succeeded.
+# (CI_SHARED and CI_RUST of the Makefile), past failures, with the report of ci-targets as an artifact. The last job
+# ci-passed passes only when every other job succeeded. The release workflow releases the commit whose run of this
+# workflow succeeded.
 #
 # make test is no target of this workflow: its tests of the store of Redis start Redis servers in Apple container
 # (SE-10.4), which runs on macOS alone, and a test whose peer is missing fails. The tests run on a development machine
@@ -59,3 +60,18 @@ jobs:
           name: report-rust
           path: var/report/ci-targets/
           if-no-files-found: ignore
+
+  # The result of the run: the job runs after every other job, also after a failed or cancelled one, and make ci-passed
+  # passes only when each job of needs has the result success; a skipped job fails it (FAIL_SKIPPED=1). make
+  # workflows-test fails this workflow when ci-passed is not its last job or when needs leaves a job out.
+  ci-passed:
+    if: ${{ always() }}
+    needs: [shared, rust]
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/bootstrap
+      - name: every job passed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: make ci-passed FAIL_SKIPPED=1

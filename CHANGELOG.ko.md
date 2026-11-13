@@ -1,7 +1,17 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: ce9b8c82d5707ea33a292ca5ebaf796c6b39ceb0fecdb6d82d8d8a1f74e7f0d3 -->
+<!-- source-sha256: c7c16c51433ea410bfc58c1b5095ad3d1ec6e507372d8dcf22b8160456fa1d19 -->
 
 ## Unreleased
+
+- workflow `ci`의 어떤 job도 run의 결과를 말하지 않았다. 실패한 job이 있는 run에서 읽을 job 하나가 없었다. job
+  `ci-passed`가 workflow의 마지막 job이다. 이 job은 다른 모든 job 뒤에, 실패한 job 뒤에도 실행되고
+  (`if: ${{ always() }}`), `shared`와 `rust`를 `needs`에 두고, 자기 needs의 JSON인 `RESULTS`와 함께
+  `make ci-passed FAIL_SKIPPED=1`을 실행한다. kit의 ci-passed가 그 값을 판정한다. 두 결과가 `success`이면 target은
+  상태 0으로 끝난다. 하나가 `failure`이거나 `skipped`이면 실패하고 그 job을 적는다. `RESULTS`가 없으면 판정한 것이
+  없으므로 실패한다. workflow 시험은 마지막 job이 `ci-passed`가 아닌 workflow `ci`, 조건이 다른 `ci-passed`,
+  `needs`가 다른 모든 job이 아닌 것, `RESULTS`나 `FAIL_SKIPPED=1`을 넘기지 않는 것을 실패시킨다. 이 job이 있기
+  전에 `make workflows-test`는 5개 통과, 1개 실패였고(`the last job is rust, not ci-passed`), job이 있으면 6개 통과,
+  0개 실패다.
 
 - manifest는 라이선스 `MIT`를 적었고 저장소에는 그 본문이 없었다. `LICENSE`는 MIT 라이선스의 본문을 polyspec
   저장소의 저작권 줄 `Copyright (c) 2026 Polyspec`과 함께 둔다. `config/owner-checks.json`이 이 경로를 소유한다.

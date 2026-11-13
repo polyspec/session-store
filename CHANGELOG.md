@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- No job of the workflow `ci` stated the result of a run: a run with a failed job had no one job to read. The job
+  `ci-passed` is the last job of the workflow. It runs after every other job, also after a failed one
+  (`if: ${{ always() }}`), needs `shared` and `rust`, and runs `make ci-passed FAIL_SKIPPED=1` with `RESULTS`, the JSON
+  of its needs, which ci-passed of kit judges. With both results `success` the target ends with status 0; with one
+  `failure` or one `skipped` it fails and names the job; without `RESULTS` it fails, because nothing was judged. The
+  workflow test fails a workflow `ci` whose last job is not `ci-passed`, whose `ci-passed` has another condition, whose
+  `needs` is not every other job, or that does not pass `RESULTS` or `FAIL_SKIPPED=1`: before the job existed
+  `make workflows-test` gave 5 passed and 1 failed (`the last job is rust, not ci-passed`), and with it 6 passed and 0
+  failed.
+
 - The manifests named the license `MIT` and the repository held no text of it. `LICENSE` holds the text of the MIT
   license with the copyright line of the polyspec repositories, `Copyright (c) 2026 Polyspec`.
   `config/owner-checks.json` owns the path: with the file and without its rule `make owner-validate` fails with

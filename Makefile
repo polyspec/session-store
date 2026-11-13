@@ -46,7 +46,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-rust ci-shared ci-rust owner-check owner-validate docs-check documents-stamp workflows-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-rust ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
 
@@ -76,6 +76,11 @@ ci-shared:
 
 ci-rust:
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_RUST)
+
+# The last job of .github/workflows/ci.yml: fails unless every job of RESULTS, the JSON of toJSON(needs), has the result
+# success; with FAIL_SKIPPED=1 a skipped job fails it too. RESULTS that is not set or names no job fails it with status 2.
+ci-passed:
+	$(NODE) $(KIT)/ci-passed.mjs
 
 # The documents of config/documents.json, each on its own (links, anchors, fences and the doc-id and source-sha256 of each
 # Korean twin), and the checklists of docs/plans, whose rows config/checklist.json declares.

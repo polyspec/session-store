@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 5632cb9fc51385af8075b91fc7de75a377e9b3069597cdffc77e80ffe2262c3e -->
+<!-- source-sha256: 863664cde09392a9ae386fe910f123b3c0e560e5c3c7954cb37f91587cdafc11 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -118,6 +118,10 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make release-coverage`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
   보고서 `var/report/ci-targets`를 올린다.
+- workflow `ci`의 마지막 job은 `ci-passed`다. 이 job은 다른 모든 job 뒤에, 실패한 job 뒤에도 실행되고, 그 job을 모두
+  `needs`에 둔다. `make ci-passed FAIL_SKIPPED=1`(kit의 ci-passed)은 각 job의 결과가 success일 때만 통과한다. 그래서
+  job 하나가 run의 결과를 말한다. `make workflows-test`는 마지막 job이 다른 job이거나 `needs`가 job 하나를 빠뜨린
+  workflow `ci`를 실패시킨다.
 - `make test`는 CI의 target이 아니다. Redis 저장소의 시험은 Apple container에서 Redis 서버를 시작하는데(SE-10.4),
   Linux runner에는 그것이 없고, peer가 없는 시험은 실패한다. 그래서 CI의 run은 시험의 증거가 아니다. `make test`는
   개발 장비에서 실행하고, 그 수는 변경 기록에 적는다.

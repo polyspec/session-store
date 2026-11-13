@@ -121,6 +121,10 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
   (`CI_RUST`: `make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
+- The last job of the workflow `ci` is `ci-passed`. It runs after every other job, also after a failed one, needs each
+  of them, and `make ci-passed FAIL_SKIPPED=1` (ci-passed of kit) passes only when each has the result success, so that
+  one job states the result of the run. `make workflows-test` fails a workflow `ci` whose last job is another or whose
+  `needs` leaves a job out.
 - `make test` is no target of CI. Its tests of the store of Redis start Redis servers in Apple container (SE-10.4),
   which a Linux runner does not have, and a test whose peer is missing fails. So no run of CI is evidence of the tests:
   `make test` runs on a development machine, and its counts are recorded in the change log.

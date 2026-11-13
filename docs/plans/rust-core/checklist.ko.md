@@ -1,10 +1,10 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 151fd720495dbbf7826cca9cbd1748ab761f381937fa82578aef4681ca47420d -->
+<!-- source-sha256: ffefa8da03d3705e6e44be84d0f12719ce179efc689d991373499231c17c5afe -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
 |---|---|---|---|---|
-| T1.1 | 저장소의 규칙과 그 case를 정의한다. 저장소 인터페이스, PHP 세션의 레코드, 파일 저장소, Redis 저장소다(96da077, 5d17159, f3948a5, 851faf6, 88348b5, cde837e) | `docs/spec/sessions.md`, `contracts/` | `make test` | [o] |
+| T1.1 | 저장소의 규칙과 그 case를 정의한다. 저장소 인터페이스, PHP 세션의 레코드, 파일 저장소, Redis 저장소다(96da077, 5d17159, f3948a5, 851faf6, 88348b5, cde837e, 2e4dc94, 685d512) | `docs/spec/sessions.md`, `contracts/` | `make test` | [o] |
 | T1.2 | 규칙을 코어, 파일 저장소, Redis 저장소, 라이브러리의 Rust crate로 쓴다. 하나의 error enum이 모든 실패에 kind를 준다(82de061, 1ef5217, 98982bb, 25a86d3, cf97bac, 598a5b4, 49bbb85, f60156a, c9e30e1) | `packages/core/rust`, `packages/file/rust`, `packages/redis/rust`, `packages/rust` | `make test`, `make lint-rust` | [o] |
 | T1.3 | Redis 저장소를 Apple container가 고정된 image로 돌리는 실제 Redis 서버로 시험한다(02f874a, 0199e81) | `scripts/test-run.sh`, `packages/redis/rust/tests` | `make test` | [o] |
 | T1.4 | binding의 다섯 target을 위한 인터페이스 계약을 crate에 담아 쓴다. kind마다 case를 두고, 어떤 입력도 닿지 않는 실패마다 fault 주입점을 둔다(e2c3189, 0db652a, 6971e8a, 99e777f, 8fb66de, d736bae, ce680ac, 53c2c7d, 88348b5, 3202fe0, 5df4559, a13cfa7) | `packages/rust/interface.json`, `packages/core/rust/src/fault.rs` | `make binding-check` | [o] |

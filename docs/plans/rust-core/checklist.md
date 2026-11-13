@@ -3,7 +3,7 @@
 
 | ID | Task | Deliverables | Verification | State |
 |---|---|---|---|---|
-| T1.1 | Define the rules of the stores and their cases: the store interface, the record of a PHP session, the store of files and the store of Redis (96da077, 5d17159, f3948a5, 851faf6, 88348b5, cde837e) | `docs/spec/sessions.md`, `contracts/` | `make test` | [o] |
+| T1.1 | Define the rules of the stores and their cases: the store interface, the record of a PHP session, the store of files and the store of Redis (96da077, 5d17159, f3948a5, 851faf6, 88348b5, cde837e, 2e4dc94, 685d512) | `docs/spec/sessions.md`, `contracts/` | `make test` | [o] |
 | T1.2 | Write the rules as the Rust crates of the core, the store of files, the store of Redis and the library, with one error enum that gives a kind for every failure (82de061, 1ef5217, 98982bb, 25a86d3, cf97bac, 598a5b4, 49bbb85, f60156a, c9e30e1) | `packages/core/rust`, `packages/file/rust`, `packages/redis/rust`, `packages/rust` | `make test`, `make lint-rust` | [o] |
 | T1.3 | Test the store of Redis against real Redis servers that Apple container runs from the pinned image (02f874a, 0199e81) | `scripts/test-run.sh`, `packages/redis/rust/tests` | `make test` | [o] |
 | T1.4 | Write the interface contract for the five targets of binding, shipped in the crate, with a case for every kind and a fault injection point for every failure that no input reaches (e2c3189, 0db652a, 6971e8a, 99e777f, 8fb66de, d736bae, ce680ac, 53c2c7d, 88348b5, 3202fe0, 5df4559, a13cfa7) | `packages/rust/interface.json`, `packages/core/rust/src/fault.rs` | `make binding-check` | [o] |

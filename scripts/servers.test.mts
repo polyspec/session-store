@@ -41,7 +41,8 @@ function stand(t: TestContext, machine: Machine): Stand {
   const calls = join(directory, 'calls');
   if (machine.bay) {
     // Each command is one line of the file calls, its words joined by a tab. The command of bay is its first word
-    // after the option -f and its value. pull keeps the Compose file that it received, exec keeps its standard input,
+    // after the option -f and its value. pull keeps the Compose file that it received, exec keeps its standard input, or
+    // the word pipe when that input is a pipe,
     // and the commands that print JSON print a document that names the command.
     const cases = Object.entries(machine.status ?? {}).map(([command, status]) => `${command}) echo "bay: ${command} fails" >&2; exit ${status} ;;`).join('\n');
     writeFileSync(join(bin, 'bay'), [
@@ -54,7 +55,7 @@ function stand(t: TestContext, machine: Machine): Stand {
       'case "$1" in',
       cases,
       `pull) cat "$file" > '${join(directory, 'pulled')}' ;;`,
-      `exec) cat > '${join(directory, 'input')}' ;;`,
+      `exec) if [ -p /dev/stdin ]; then echo pipe; else cat; fi > '${join(directory, 'input')}' ;;`,
       `plan | up) echo "{\\"command\\":\\"$1\\"}" ;;`,
       `check) echo 'ok       dns agent' ;;`,
       'esac',
@@ -106,7 +107,7 @@ test('a command of bay that fails fails its verb with the status and the words o
   }
 });
 
-test('exec runs a command in the container of a service, with an empty standard input, and ends with its status', (t) => {
+test('exec runs a command in the container of a service, with the empty standard input of every verb, and ends with its status', (t) => {
   const made = stand(t, present);
   const ran = run(t, present, ['exec', FILE, 'node-0', 'redis-cli', '--cluster', 'create', '192.0.2.1:6379', '--cluster-yes'], made);
   assert.deepEqual(ran.calls, [['bay', '-f', FILE, 'exec', 'node-0', 'redis-cli', '--cluster', 'create', '192.0.2.1:6379', '--cluster-yes']]);

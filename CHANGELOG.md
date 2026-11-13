@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- The repository had no plan, no checklist and no check of its documents. `docs/plans/rust-core` holds the plan and
+  the checklist with their Korean twins: the done steps name their commits, and the bindings, their end-to-end check
+  and the Go binding wait for binding, which refuses to generate the contract for every target. `make docs-check` runs
+  check-documents of @polyspec/kit, which `package.json` pins by the URL of its release and `package-lock.json` by its
+  integrity and `make bootstrap` installs, on the documents of `config/documents.json` and the checklist of
+  `config/checklist.json`, and `make check` runs it. `make documents-stamp` writes the `source-sha256` of a Korean twin.
+
 - The interface contract states `core.result: true` for `memory_store.get`, `memory_store.set` and
   `memory_store.remove` (binding CK-21). They raise no kind, so without it the contract read their core paths as
   returning no `Result`, but the paths are the methods of the trait `Store`, which return a `Result`; a generated

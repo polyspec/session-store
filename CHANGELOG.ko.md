@@ -1,7 +1,14 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: dea1da4bb557e1cab3664886c354e0fff437cd24f8ccfb40a542fd3375fba7c5 -->
+<!-- source-sha256: a6e7f6b5285ce95a720b85ba955d04f79e4ae2eecc248d76e099b59dcd8708af -->
 
 ## Unreleased
+
+- 저장소에는 계획도 checklist도 문서 검사도 없었다. `docs/plans/rust-core`가 계획과 checklist를 한국어 쌍과 함께
+  담는다. 끝난 단계는 자기 commit을 적고, 바인딩과 그 end-to-end 검사와 Go 바인딩은 binding을 기다린다. binding이 모든
+  target에서 계약의 생성을 거부하기 때문이다. `make docs-check`는 @polyspec/kit의 check-documents를
+  `config/documents.json`의 문서와 `config/checklist.json`의 checklist에 실행하고, `make check`가 그것을 실행한다.
+  @polyspec/kit은 `package.json`이 release의 URL로, `package-lock.json`이 integrity로 고정하며 `make bootstrap`이
+  설치한다. `make documents-stamp`는 한국어 쌍의 `source-sha256`을 쓴다.
 
 - 인터페이스 계약은 `memory_store.get`, `memory_store.set`, `memory_store.remove`에 `core.result: true`를 적는다
   (binding CK-21). 그것들은 kind를 내지 않으므로, 그것 없이는 계약이 그 코어 경로를 `Result`를 돌려주지 않는 것으로

@@ -1,0 +1,16 @@
+{
+  "name": "session-store-development",
+  "private": true,
+  "description": "The development tools of the repository: the shared tools of polyspec (@polyspec/kit), whose check-documents and documents-stamp read and stamp the documents",
+  "license": "MIT",
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": "12.2.0",
+      "onFail": "error"
+    }
+  },
+  "devDependencies": {
+    "@polyspec/kit": "https://github.com/polyspec/kit/releases/download/v0.0.109/polyspec-kit-0.0.109.tgz"
+  }
+}

@@ -1,3 +1,7 @@
+# The shared tools of polyspec, which make bootstrap installs from package-lock.json into node_modules: check-documents
+# and documents-stamp of @polyspec/kit run on the Node.js of the machine, whose release the engines of kit bound.
+KIT := $(CURDIR)/node_modules/@polyspec/kit/dist
+NODE ?= node
 CARGO := cargo
 # Extra arguments of every cargo build, for example --ignore-rust-version on a machine without the pinned release.
 CARGOFLAGS ?=
@@ -8,7 +12,7 @@ LIBRARY := polyspec-session-store
 # The five targets of the contract (binding BD-27).
 TARGETS := php python node go wasm
 # binding at the commit of Cargo.lock (scripts/binding.mts).
-BINDING := node scripts/binding.mts
+BINDING := $(NODE) scripts/binding.mts
 # The real peers of the tests, each required: PHP reads the records back (SE-10.3), Apple container runs the Redis
 # servers of the stores of Redis from the image REDIS_IMAGE, and openssl makes their certificates of TLS (SE-10.4). A
 # test whose peer is not given fails and names what gives it.
@@ -42,10 +46,28 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap docs-check documents-stamp check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go
 
-check: lint-rust fmt-check test binding-check
+check: lint-rust fmt-check test binding-check docs-check
+
+# The npm that devEngines of package.json names installs the lock, @polyspec/kit included. It runs outside the checkout with
+# --prefix, since an npm of another release refuses a folder whose devEngines names npm 12.2.0 (EBADDEVENGINES); npm reads
+# allow-remote of the .npmrc of the checkout.
+BOOTSTRAP_NPM := $(abspath $(shell command -v npm))
+bootstrap:
+	root="$$PWD"; version="$$(node -p 'require("./package.json").devEngines.packageManager.version')"; \
+	cd "$${TMPDIR:-/tmp}" && npm_config_cache="$$root/var/bootstrap/npm-cache" "$(BOOTSTRAP_NPM)" exec --yes --package="npm@$$version" -- npm --prefix "$$root" ci --ignore-scripts
+
+# The documents of config/documents.json, each on its own (links, anchors, fences and the doc-id and source-sha256 of each
+# Korean twin), and the checklists of docs/plans, whose rows config/checklist.json declares.
+docs-check:
+	$(NODE) $(KIT)/check-documents.mjs --checklist-place --private-path /Users/ --private-path /home/ --kit-rows
+
+# Writes the source-sha256 of each English document into the Korean twins that PATHS names, after they are translated
+# again; with no PATHS it lists each twin whose source moved.
+documents-stamp:
+	$(NODE) $(KIT)/documents-stamp.mjs $(PATHS)
 
 # scripts/test-run.sh owns the containers and the temporary directory of the run and removes them when the run ends,
 # fails or is stopped by SIGINT or SIGTERM. A peer that is not found is passed empty, and the test that needs it fails.

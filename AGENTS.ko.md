@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 65244f4c10402ddde122310ddedce1548495b57cf1d8840e91e85ab827737680 -->
+<!-- source-sha256: 8fe3c69ee7dbcbae97100fa089a71e2a5566cdbdbd6e8d4fa897da981cd42941 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -44,7 +44,13 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
 ## Rust
 
 - toolchain은 `rust-toolchain.toml`이 고정하는 릴리스다. `make check`는 `-D warnings`를 준 clippy, rustfmt,
-  시험, 계약 검사를 실행한다.
+  시험, 계약 검사, `make docs-check`를 실행한다.
+- `make docs-check`는 `config/documents.json`이 고르는 각 문서를 그 링크, anchor, fence, 각 한국어 쌍의 `doc-id`와
+  `source-sha256`과 함께 읽고, `config/checklist.json`이 행을 선언하는 checklist `docs/plans/rust-core/checklist.md`를
+  읽는다. 그것이 실행하는 @polyspec/kit은 `make bootstrap`이 설치한다. 저장소의 계획은 `docs/plans/rust-core/plan.md`다.
+  작업은 그 checklist의 행이며, 확인 명령이 commit된 tree에서 통과한 뒤에만 `[o]`로 표시한다. commit 전에 그것을
+  실행한다. 한국어 쌍을 다시 번역한 뒤에는 `make documents-stamp PATHS=<쌍>`이 그 `source-sha256`을 쓴다. marker는 손으로
+  쓰지 않는다.
 - workspace의 lint는 모든 경고, unsafe 코드, `unwrap`, `expect`, `as` 변환과 값을 잃는 cast, 써야 하는 값이나
   타입을 적지 않은 값의 `let _`, 이유 없는 allow attribute를 거부한다.
   `clippy.toml`은 `Option::{unwrap_or, unwrap_or_default, unwrap_or_else, map_or, map_or_else}`와

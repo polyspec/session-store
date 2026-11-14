@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 1a8d869fd5f9d5da019924f7ba5b0ed1b1db105f5b1cd58b4dfc81efe7b67ac7 -->
+<!-- source-sha256: 323cea5ef112fa41ce89d4a39d6edc7378e089e028145028efae068093567d84 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -10,7 +10,7 @@
 | T1.4 | binding의 다섯 target을 위한 인터페이스 계약을 crate에 담아 쓴다. kind마다 case를 두고, 어떤 입력도 닿지 않는 실패마다 fault 주입점을 둔다 | `packages/rust/interface.json`, `packages/core/rust/src/fault.rs` | `make binding-check` | [o] |
 | T1.5 | 코어와 binding scaffold가 쓰는 바인딩 crate를 binding의 한 commit에 고정된 하나의 workspace에 둔다 | `Cargo.toml`, `Cargo.lock`, `packages/php-ext`, `packages/python`, `packages/ts`, `packages/ts/wasm`, `packages/go`, `scripts/binding.mts` | `make binding-check` | [o] |
 | T1.6 | 계획과 checklist를 한국어 쌍과 함께 두고, 모든 문서와 이 checklist를 `make docs-check`로 읽는다 | `docs/plans/rust-core`, `config/documents.json`, `config/checklist.json`, `package.json`, `package-lock.json`, `Makefile` | `make docs-check` | [o] |
-| T1.6-1 | Runtime 설치 선행 조건을 별도 task로 기록하고 API 생성 뒤, 전체 binding job 완료 전에 runner를 개발하도록 순서를 정한다. 기존 runtime 상태와 검증 요건은 유지한다 | `docs/plans/rust-core/plan.md`, `docs/plans/rust-core/checklist.md` and their Korean twins | `make docs-check` | [v] |
+| T1.6-1 | Runtime 설치 선행 조건을 별도 task로 기록하고 API 생성 뒤, 전체 binding job 완료 전에 runner를 개발하도록 순서를 정한다. 기존 runtime 상태와 검증 요건은 유지한다 | `docs/plans/rust-core/plan.md`, `docs/plans/rust-core/checklist.md` and their Korean twins | `make docs-check` | [o] |
 | T1.7 | PHP, Python, Node, WASM 바인딩을 binding이 생성하는 시험과 contract case로 각 언어의 표준 runner에서 시험한다. 각 target은 자기 `make bindings-<target>`이 생성한다 | `packages/php-ext/tests`, `packages/python/tests`, `packages/ts/tests`, `Makefile` | `make test-php`, `make test-python`, `make test-node`, `make test-wasm` | [!] 원인: 고정된 binding 0.0.6이 계약의 키 `services`를 거부하므로(CK-1) `binding generate`가 어떤 target도 쓰지 않는다. binding 0.0.7의 소스로는 다섯 target을 모두 쓴다(T1.30-9); 재시도: T1.32가 tag로 고정된 하나의 provider graph를 해석하고 PHP, Python, Node, WASM API가 생성된다. 전체 binding job 완료는 선행 조건이 아니다 |
 | T1.8 | 이 저장소에 대한 binding의 end-to-end 검사를 php, python, node, wasm에서 통과한다 | binding의 추적되지 않는 `var/report/e2e/session-store.json` | binding의 `make e2e` | [!] 원인: end-to-end 검사는 binding이 거부하는 T1.7의 생성에 닿는다; 재시도: T1.7이 끝난다 |
 | T1.9 | Go 바인딩을 binding이 생성하는 시험과 `packages/go/tests`의 contract case로 시험한다 | `packages/go` | `make test-go` | [!] 원인: T1.7의 지적에서 Go의 `binding generate`가 멈춘다(T1.30-4); 재시도: T1.32가 tag로 고정된 하나의 provider graph를 해석하고 Go API가 생성된다. 전체 binding job 완료는 선행 조건이 아니다 |

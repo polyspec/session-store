@@ -1543,6 +1543,14 @@
       "to": "store"
     }
   ],
+  "services": [
+    {
+      "id": "redis",
+      "address": "SESSION_STORE_REDIS_URL",
+      "state": "SESSION_STORE_REDIS_STATE",
+      "reason": "SE-10.7"
+    }
+  ],
   "cases": [
     {
       "member": "memory_store.new",
@@ -1630,6 +1638,20 @@
       "group": "opening"
     },
     {
+      "member": "redis_sessions.open",
+      "file": "contracts/redis-sessions.json",
+      "group": "redis_sessions.open.served",
+      "only": {
+        "targets": [
+          "php",
+          "python",
+          "node",
+          "go"
+        ],
+        "reason": "SE-10.7"
+      }
+    },
+    {
       "member": "file_session.get",
       "file": "contracts/file-sessions.json",
       "group": "file_session.get.made"
@@ -1667,9 +1689,37 @@
       "group": "redis_session.get.made"
     },
     {
+      "member": "redis_session.get",
+      "file": "contracts/redis-sessions.json",
+      "group": "redis_session.get.served",
+      "only": {
+        "targets": [
+          "php",
+          "python",
+          "node",
+          "go"
+        ],
+        "reason": "SE-10.7"
+      }
+    },
+    {
       "member": "redis_session.set",
       "file": "contracts/redis-sessions.json",
       "group": "redis_session.set.made"
+    },
+    {
+      "member": "redis_session.set",
+      "file": "contracts/redis-sessions.json",
+      "group": "redis_session.set.served",
+      "only": {
+        "targets": [
+          "php",
+          "python",
+          "node",
+          "go"
+        ],
+        "reason": "SE-10.7"
+      }
     },
     {
       "member": "redis_session.remove",
@@ -1677,14 +1727,56 @@
       "group": "redis_session.remove.made"
     },
     {
+      "member": "redis_session.remove",
+      "file": "contracts/redis-sessions.json",
+      "group": "redis_session.remove.served",
+      "only": {
+        "targets": [
+          "php",
+          "python",
+          "node",
+          "go"
+        ],
+        "reason": "SE-10.7"
+      }
+    },
+    {
       "member": "redis_session.renew",
       "file": "contracts/redis-sessions.json",
       "group": "redis_session.renew.made"
     },
     {
+      "member": "redis_session.renew",
+      "file": "contracts/redis-sessions.json",
+      "group": "redis_session.renew.served",
+      "only": {
+        "targets": [
+          "php",
+          "python",
+          "node",
+          "go"
+        ],
+        "reason": "SE-10.7"
+      }
+    },
+    {
       "member": "redis_session.close",
       "file": "contracts/redis-sessions.json",
       "group": "redis_session.close.made"
+    },
+    {
+      "member": "redis_session.close",
+      "file": "contracts/redis-sessions.json",
+      "group": "redis_session.close.served",
+      "only": {
+        "targets": [
+          "php",
+          "python",
+          "node",
+          "go"
+        ],
+        "reason": "SE-10.7"
+      }
     },
     {
       "member": "redis_session.found",

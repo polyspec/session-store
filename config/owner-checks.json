@@ -60,7 +60,10 @@
         "packages/rust/interface.json",
         "contracts/*.json",
         "composer.json",
-        "composer.lock"
+        "composer.lock",
+        "scripts/test-run.mts",
+        "scripts/redis-state.mts",
+        "scripts/redis-state.sh"
       ],
       "targets": [
         "test-bindings"
@@ -97,6 +100,16 @@
       ],
       "targets": [
         "servers-test"
+      ]
+    },
+    {
+      "paths": [
+        "scripts/redis-state.test.mts",
+        "scripts/redis-state.mts",
+        "scripts/redis-state.sh"
+      ],
+      "targets": [
+        "redis-state-test"
       ]
     },
     {

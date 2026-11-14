@@ -26,7 +26,11 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   (binding CK-20). `BINDING` of the Makefile starts its `dist/cli.js`, and the binding targets run Cargo offline
   (`CARGO_NET_OFFLINE`), because binding reads the crates with `cargo metadata` and a check that downloads depends on
   the network.
-- `scripts/test-run.mts`: runs the tests of `make test` as a run that owns its servers and its temporary directory (SE-10.4).
+- `scripts/test-run.mts`: runs the tests of `make test` as a run that owns its servers and its temporary directory
+  (SE-10.4); with `--service redis` it also starts the Redis service of the generated binding tests (SE-10.7).
+- `scripts/redis-state.mts` with `scripts/redis-state.sh`, which starts it on the node of the checkout: the program of
+  the state of the Redis service of the generated binding tests (SE-10.7). `scripts/redis-state.test.mts` is its test,
+  which `make redis-state-test` runs against a stand-in of a server.
 - `scripts/servers.sh`: the commands of bay for the Redis servers of the tests, which the tests,
   `scripts/test-run.mts` and `make redis-image` run (SE-10.4): bay starts and removes the servers as Compose projects,
   gives their names, certificates and addresses, and pulls and finds the image. `scripts/servers.test.mts` is the
@@ -152,9 +156,15 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 - No contract case runner is written yet: `make bindings` generates no target, so no binding API exists that a runner
   could call and be checked against. The interface contract declares only cases of one call, because the generator
   refuses a case of several requests (binding G-5): the groups `requests` and `store`, whose cases hold several calls,
-  are read by the Rust tests alone (SE-10.6). 15 kinds of the store of Redis need a Redis server, which no case form of
-  binding gives until binding B2.269 (a case that runs against a service of the test run), so the contract check
-  reports each (CK-22), and that finding stops `binding generate` for each of the five targets (T1.30-4). The pinned
+  are read by the Rust tests alone (SE-10.6). 13 kinds of the store of Redis that only a state of a Redis server
+  reaches have cases of one call against the service `redis` of the test run (SE-10.7, binding GN-13j): the interface
+  contract declares it in `services`, `scripts/test-run.mts --service redis` starts its server for the generated tests
+  of PHP, Python, Node and Go and gives them `SESSION_STORE_REDIS_URL` and `SESSION_STORE_REDIS_STATE`, the path of
+  `scripts/redis-state.sh`, the program that sets up, changes and checks the keys of the scope of a case, and
+  `make redis-state-test` tests that program. That form needs binding 0.0.7, which is not pinned yet: binding 0.0.6
+  refuses the key `services` of the contract (CK-1). `reply` of `redis_sessions.open` and of `redis_session.close`
+  has no case, because no state of a Redis server gives a reply of another type (SE-10.7), so the contract check
+  reports both (CK-22), and that finding stops `binding generate` for each of the five targets (T1.30-4). The pinned
   binding 0.0.6 reads the `only` of the parameter `cancel` of `file_sessions.open`, so Go needs no first parameter
   `ctx` for it (T1.30-5).
 - In the Go module binding owns the files `zz_generated_*.go` (binding GN-3); they are tracked, because a Go module is
@@ -189,15 +199,18 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   workflow or an action that breaks one of these rules.
 - The workflow `ci` starts on a push of `main` and on `workflow_dispatch` alone. Its job `shared` runs
   `make ci-shared` (`CI_SHARED` of the Makefile: `make docs-check`, `make owner-validate`, `make workflows-test`,
-  `make tool-pins-test`, `make servers-test`, `make install-bay-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
+  `make tool-pins-test`, `make servers-test`, `make redis-state-test`, `make install-bay-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
   (`CI_RUST`: `make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
 - The job `bindings` of the workflow `ci` sets up the PHP of `.php-version` and runs `make install-rust`,
-  `make install-tools`, `make install-php-tools` and `make ci-bindings` (`CI_BINDINGS`: `make lint-bindings`,
+  `make install-tools`, `make install-php-tools`, `make install-bay`, `make setup-bay BAY_SUDO=1`,
+  `make redis-image BAY_SUDO=1` and `make ci-bindings BAY_SUDO=1` (`CI_BINDINGS`: `make lint-bindings`,
   `make check-declarations`, `make test-python`, `make test-node`, `make test-wasm`, `make test-php` and
   `make test-go`), so that no binding package of a release is untested; `ci-passed` needs it, and
-  `make workflows-test` fails a workflow `ci` without it or a `CI_BINDINGS` that leaves a target out. The job starts no
-  Redis server, because the cases of a Redis server have no form that a generated binding test runs yet (T1.34).
+  `make workflows-test` fails a workflow `ci` without it, without those steps in that order or with a `CI_BINDINGS`
+  that leaves a target out. bay and the image are installed as in the job `test`, because `make test-python`,
+  `make test-node`, `make test-php` and `make test-go` run their generated tests in a run of `scripts/test-run.mts`
+  that starts the Redis service of the cases (SE-10.7).
 - The last job of the workflow `ci` is `ci-passed`. It runs after every other job, also after a failed one, needs each
   of them, and `make ci-passed FAIL_SKIPPED=1` (ci-passed of kit) passes only when each has the result success, so that
   one job states the result of the run. `make workflows-test` fails a workflow `ci` whose last job is another or whose

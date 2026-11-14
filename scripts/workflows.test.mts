@@ -7,7 +7,9 @@
 //   - the workflows ci and release call assets.yml, which builds the assets of each platform (binding GN-19i);
 //   - the workflow ci has the job bindings, which runs `make ci-bindings`, and CI_BINDINGS of the Makefile names the
 //     tests of every target of the contract (binding BD-27): lint-bindings, check-declarations, test-python, test-node,
-//     test-wasm, test-php and test-go, so that no binding package is released untested;
+//     test-wasm, test-php and test-go, so that no binding package is released untested; the job starts the Redis
+//     service of the generated tests as the job test starts its servers (SE-10.7): it runs `make install-bay`,
+//     `make setup-bay BAY_SUDO=1`, `make redis-image BAY_SUDO=1` and `make ci-bindings BAY_SUDO=1`, in that order;
 //   - every action is a local action of .github/actions or is pinned by its full commit, and a comment of the file names
 //     its release, `# <owner>/<repository> <release>`;
 //   - no job and no step sets timeout-minutes;
@@ -205,16 +207,22 @@ function callFindings(file: string, text: string): string[] {
 
 // The targets that test the bindings of every target of the contract (binding BD-27), which the job bindings runs.
 const BINDING_TESTS = ['lint-bindings', 'check-declarations', 'test-python', 'test-node', 'test-wasm', 'test-php', 'test-go'];
+// The steps of the job bindings, in this order: bay and the Redis image of the service of the generated tests (SE-10.7),
+// as the job test installs them, and the tests, whose commands of bay run as root.
+const BINDING_STEPS = ['make install-bay', 'make setup-bay BAY_SUDO=1', 'make redis-image BAY_SUDO=1', 'make ci-bindings BAY_SUDO=1'];
 
 /**
- * The findings of the job bindings of the workflow ci: it runs `make ci-bindings`, and CI_BINDINGS of the Makefile names
- * each target of BINDING_TESTS.
+ * The findings of the job bindings of the workflow ci: it runs the steps of BINDING_STEPS in their order, and
+ * CI_BINDINGS of the Makefile names each target of BINDING_TESTS.
  */
 function bindingsJobFindings(file: string, text: string, makefile: string): string[] {
   const found: string[] = [];
   const lines = jobsOf(text).get('bindings');
   if (lines === undefined) found.push(`${file}: has no job bindings`);
-  else if (!lines.some((line) => valueOf(line, 'run') === 'make ci-bindings')) found.push(`${file}: the job bindings does not run make ci-bindings`);
+  else {
+    const runs = lines.map((line) => valueOf(line, 'run')).filter((run) => run !== undefined && BINDING_STEPS.includes(run));
+    if (JSON.stringify(runs) !== JSON.stringify(BINDING_STEPS)) found.push(`${file}: the job bindings runs ${JSON.stringify(runs)}, not ${JSON.stringify(BINDING_STEPS)}`);
+  }
   const named = /^CI_BINDINGS := (.*)$/m.exec(makefile)?.[1]?.trim().split(/ +/) ?? [];
   const missing = BINDING_TESTS.filter((target) => !named.includes(target));
   if (missing.length > 0) found.push(`Makefile: CI_BINDINGS names no ${missing.join(', ')}`);
@@ -365,12 +373,16 @@ test('a workflow that calls assets.yml has no finding of the call, and one that 
   assert.deepEqual(callFindings(CI, GOOD), [`${CI}: no job calls ./${ASSETS}`]);
 });
 
-test('the job bindings runs make ci-bindings, whose list names the tests of every target', () => {
-  const job = `${GOOD}  bindings:\n    runs-on: ubuntu-26.04-arm\n    steps:\n      - run: make ci-bindings\n`;
+test('the job bindings starts the Redis service and runs make ci-bindings, whose list names the tests of every target', () => {
+  const job = `${GOOD}  bindings:\n    runs-on: ubuntu-26.04-arm\n    steps:\n${BINDING_STEPS.map((run) => `      - run: ${run}\n`).join('')}`;
   const makefile = `CI_BINDINGS := ${BINDING_TESTS.join(' ')}\n`;
   assert.deepEqual(bindingsJobFindings(CI, job, makefile), []);
   assert.deepEqual(bindingsJobFindings(CI, GOOD, makefile), [`${CI}: has no job bindings`]);
-  assert.deepEqual(bindingsJobFindings(CI, job.replace('make ci-bindings', 'make docs-check'), makefile), [`${CI}: the job bindings does not run make ci-bindings`]);
+  const without = (run: string): string => JSON.stringify(BINDING_STEPS.filter((step) => step !== run));
+  assert.deepEqual(bindingsJobFindings(CI, job.replace('make ci-bindings BAY_SUDO=1', 'make docs-check'), makefile), [`${CI}: the job bindings runs ${without('make ci-bindings BAY_SUDO=1')}, not ${JSON.stringify(BINDING_STEPS)}`]);
+  assert.deepEqual(bindingsJobFindings(CI, job.replace('      - run: make redis-image BAY_SUDO=1\n', ''), makefile), [`${CI}: the job bindings runs ${without('make redis-image BAY_SUDO=1')}, not ${JSON.stringify(BINDING_STEPS)}`]);
+  const swapped = job.replace('make install-bay\n', 'make setup-bay BAY_SUDO=1\n').replace(/(setup-bay BAY_SUDO=1\n[\s\S]*?)make setup-bay BAY_SUDO=1\n/, '$1make install-bay\n');
+  assert.equal(bindingsJobFindings(CI, swapped, makefile).length, 1);
   assert.deepEqual(bindingsJobFindings(CI, job, makefile.replace(' test-php', '')), ['Makefile: CI_BINDINGS names no test-php']);
   assert.deepEqual(bindingsJobFindings(CI, job, ''), [`Makefile: CI_BINDINGS names no ${BINDING_TESTS.join(', ')}`]);
 });

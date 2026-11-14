@@ -74,21 +74,21 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay setup-bay install-bay-test ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay setup-bay install-bay-test ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
 	release-recipes
 
 # The targets of each job of .github/workflows/ci.yml, which ci-targets of kit runs past failures into CI_REPORT. The
 # job test runs make redis-image and make test, one target each.
-CI_SHARED := docs-check owner-validate workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test release-coverage
+CI_SHARED := docs-check owner-validate workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test release-coverage
 CI_RUST := lint-rust fmt-check binding-check
 # The tests of the bindings of every target of the contract (binding BD-27), which the job bindings runs, so that no
 # binding package is released untested.
 CI_BINDINGS := lint-bindings check-declarations test-python test-node test-wasm test-php test-go
 CI_REPORT ?= var/report/ci-targets
 
-check: lint-rust fmt-check test binding-check test-bindings docs-check owner-validate workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test release-coverage
+check: lint-rust fmt-check test binding-check test-bindings docs-check owner-validate workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test release-coverage
 
 # The npm that devEngines of package.json names installs the lock, @polyspec/kit included, before the tools of the
 # checkout exist, since install-tools TOOLS=npm runs the bootstrap of the installed kit. It runs on the node of the
@@ -175,6 +175,11 @@ tool-pins-test:
 servers-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/servers.test.mts
 
+# The program of the state of the Redis service of the generated binding tests (scripts/redis-state.mts, SE-10.7),
+# against a stand-in of a Redis server that the test serves, so it needs no Redis server.
+redis-state-test:
+	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/redis-state.test.mts
+
 # The install of the pinned release of bay (scripts/install-bay.mts), with an archive that the test packs, so it
 # downloads nothing.
 install-bay-test:
@@ -244,6 +249,12 @@ check-declarations: bindings-node bindings-wasm
 	$(TSC) --noEmit --strict packages/ts/generated/index.d.ts
 	$(TSC) --noEmit --strict packages/ts/wasm/generated/index.d.ts
 
+# The run of the generated binding tests of a target whose core reaches a socket (SE-10.7): scripts/test-run.mts starts
+# the Redis service of the cases with a service (binding GN-13j) from the image REDIS_IMAGE with bay, gives the tests
+# SESSION_STORE_REDIS_URL and SESSION_STORE_REDIS_STATE, and removes the server when the tests end, fail or are stopped.
+# The WASM tests run without it, because their core has no socket and the cases of a service have no WASM test.
+SERVICE_RUN = BAY='$(BAY)' REDIS_IMAGE='$(REDIS_IMAGE)' $(NODE) $(CURDIR)/scripts/test-run.mts --service redis
+
 # The wheel that the maturin of mise.toml builds, installed into a virtual environment without an index; the generated
 # tests (binding G-5) and the contract cases (SE-10).
 test-python: bindings-python
@@ -251,7 +262,7 @@ test-python: bindings-python
 	rm -rf $(VAR)/wheels
 	cd packages/python && $(MATURIN) build --locked --interpreter $(VAR)/venv/bin/python --features panic-test,fault-test --out $(VAR)/wheels $(CARGOFLAGS)
 	$(VAR)/venv/bin/pip install -q --no-index --force-reinstall $(VAR)/wheels/*.whl
-	cd $(VAR) && venv/bin/python -m unittest discover -s $(CURDIR)/packages/python/generated/tests -t $(CURDIR)/packages/python/generated/tests
+	cd $(VAR) && $(SERVICE_RUN) venv/bin/python -m unittest discover -s $(CURDIR)/packages/python/generated/tests -t $(CURDIR)/packages/python/generated/tests
 	cd $(VAR) && SESSION_STORE_CASES=$(CASES) venv/bin/python -m unittest discover -s $(CURDIR)/packages/python/tests -t $(CURDIR)/packages/python/tests
 
 # The package and the platform package of the addon, packed and installed into var/node. The addon is the npm package
@@ -278,7 +289,7 @@ node-package: bindings-node bindings-wasm
 # The generated tests and the contract cases of the Node binding on node --test, against the installed package.
 test-node: node-package
 	cp packages/ts/generated/tests/generated.test.mjs packages/ts/tests/cases.test.mjs $(VAR)/node/
-	cd $(VAR)/node && SESSION_STORE_CASES=$(CASES) $(NODE) --test generated.test.mjs cases.test.mjs
+	cd $(VAR)/node && $(SERVICE_RUN) env SESSION_STORE_CASES=$(CASES) $(NODE) --test generated.test.mjs cases.test.mjs
 
 # The generated tests and the contract cases of the WASM binding through the subpath ./wasm of the installed package
 # (binding P-5); --expose-gc serves the generated tests that collect instances (binding GN-18a).
@@ -292,7 +303,7 @@ test-wasm: node-package
 test-php: bindings-php
 	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-php-ext --locked --features panic-test,fault-test
 	$(PHP) -l packages/php-ext/generated/polyspec_session_store.stub.php
-	$(PHP) -d extension=$(CARGO_TARGET_DIR)/debug/libpolyspec_session_store.$(CDYLIB) $(PHPUNIT) packages/php-ext/generated/tests
+	$(SERVICE_RUN) $(PHP) -d extension=$(CARGO_TARGET_DIR)/debug/libpolyspec_session_store.$(CDYLIB) $(PHPUNIT) packages/php-ext/generated/tests
 	SESSION_STORE_CASES=$(CASES) $(PHP) -d extension=$(CARGO_TARGET_DIR)/debug/libpolyspec_session_store.$(CDYLIB) $(PHPUNIT) packages/php-ext/tests
 
 # The static library with the test features (binding GN-13b), which Go links through CGO_LDFLAGS; gofmt and go vet,
@@ -305,7 +316,7 @@ test-go: bindings-go
 	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-go --locked --features panic-test,codec-test
 	test -z "$$(cd packages/go && $(GOFMT) -l .)"
 	cd packages/go && $(GO_ENV) $(GO) vet ./...
-	cd packages/go && $(GO_ENV) SESSION_STORE_CASES=$(CASES) $(GO) test -count=1 -v ./...
+	cd packages/go && $(SERVICE_RUN) env $(GO_ENV) SESSION_STORE_CASES=$(CASES) $(GO) test -count=1 -v ./...
 
 # ---- Release recipes of the bindings (binding GN-19h) ----
 # binding release-recipes writes the recipes that build the assets of each platform (the static library of the Go module,

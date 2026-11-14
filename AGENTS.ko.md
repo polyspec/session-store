@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 9b2cd3d5ef25ced8669ff2acabf4596d637c836d14df4d02ea25babd28443fcb -->
+<!-- source-sha256: 212a5d304a3576130a2dd84cd249a4acebe2e184b4885121cfbae1ea66a4b39f -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -27,6 +27,10 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   Makefile의 `BINDING`은 그 `dist/cli.js`를 시작하고, binding target은 Cargo를 offline으로 실행한다
   (`CARGO_NET_OFFLINE`). binding은 `cargo metadata`로 crate를 읽고, 내려받는 검사는 네트워크에 의존하기 때문이다.
 - `scripts/test-run.mts`: `make test`의 시험을 자기 서버와 임시 디렉터리를 소유하는 run으로 실행한다(SE-10.4).
+  `--service redis`와 함께면 생성된 바인딩 시험의 Redis 서비스도 시작한다(SE-10.7).
+- `scripts/redis-state.mts`와 그것을 checkout의 node로 시작하는 `scripts/redis-state.sh`: 생성된 바인딩 시험의 Redis
+  서비스 상태의 프로그램이다(SE-10.7). `scripts/redis-state.test.mts`가 그 시험이고, `make redis-state-test`가 서버
+  대역에 대해 그것을 실행한다.
 - `scripts/servers.sh`: 시험의 Redis 서버를 위한 bay의 명령이다. 시험, `scripts/test-run.mts`, `make redis-image`가 이
   script를 실행한다(SE-10.4). bay가 서버를 Compose 프로젝트로 시작하고 지우며, 서버의 이름과 certificate와 주소를 주고,
   image를 받고 찾는다. `scripts/servers.test.mts`가 두 script의 시험이며, `make servers-test`가 bay의 대역으로
@@ -144,10 +148,15 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   받지 못하는 target은 원인과 함께 실패하는 target으로 남는다. 어떤 target도 빠지거나 건너뛰지 않는다(binding BD-27).
 - contract case runner는 아직 쓰지 않았다. `make bindings`는 어떤 target도 생성하지 않으므로, runner가 호출하고
   그것으로 검증될 바인딩 API가 없다. 생성기는 여러 요청의 case를 거부하므로(binding G-5) 인터페이스 계약은 호출
-  하나의 case만 선언한다. 여러 호출을 담은 group `requests`와 `store`는 Rust 시험만 읽는다(SE-10.6). Redis 저장소의
-  kind 15개에는 Redis 서버가 필요하고, binding B2.269(시험 run의 서비스에 대해 실행하는 case)가 나오기 전에는 어떤
-  binding의 case 형태도 그것을 주지 않는다. 그래서 계약 검사는 그 하나하나를 지적하고(CK-22), 그 지적은 다섯
-  target 모두의 `binding generate`를 멈춘다(T1.30-4). 고정한 binding 0.0.6은 `file_sessions.open`의 parameter
+  하나의 case만 선언한다. 여러 호출을 담은 group `requests`와 `store`는 Rust 시험만 읽는다(SE-10.6). Redis 서버의
+  상태만 닿는 Redis 저장소의 kind 13개에는 시험 run의 서비스 `redis`에 대한 호출 하나의 case가 있다(SE-10.7, binding
+  GN-13j). 인터페이스 계약은 그것을 `services`에 선언하고, `scripts/test-run.mts --service redis`는 PHP, Python, Node,
+  Go의 생성된 시험을 위해 그 서버를 시작하며 그 시험에 `SESSION_STORE_REDIS_URL`과 `SESSION_STORE_REDIS_STATE`를 준다.
+  후자는 case의 scope의 키를 setup, change, check하는 프로그램 `scripts/redis-state.sh`의 경로이고,
+  `make redis-state-test`가 그 프로그램을 시험한다. 이 형식에는 아직 고정되지 않은 binding 0.0.7이 필요하다. binding
+  0.0.6은 계약의 키 `services`를 거부한다(CK-1). `redis_sessions.open`과 `redis_session.close`의 `reply`에는 case가
+  없다. 어떤 Redis 서버 상태도 다른 형의 응답을 주지 않기 때문이다(SE-10.7). 그래서 계약 검사는 둘을 지적하고(CK-22),
+  그 지적은 다섯 target 모두의 `binding generate`를 멈춘다(T1.30-4). 고정한 binding 0.0.6은 `file_sessions.open`의 parameter
   `cancel`의 `only`를 읽으므로, Go는 그것을 위해 첫 parameter `ctx`를 두지 않는다(T1.30-5).
 - Go 모듈에서 binding은 파일 `zz_generated_*.go`를 소유한다(binding GN-3). Go 모듈은 소스로 받아지므로 이 파일들은
   추적되고, `make bindings`가 다시 쓴다. `packages/ts/wasm/generated`와 `packages/go/internal/ffi/generated`는 추적하지
@@ -178,17 +187,20 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   recipe(`packages/release.mk`)가 정의하는 make target 하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
   workflow와 action을 실패시킨다.
 - workflow `ci`는 `main`의 push와 `workflow_dispatch`에서만 시작한다. job `shared`는 `make ci-shared`(Makefile의
-  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make tool-pins-test`, `make servers-test`, `make install-bay-test`,
+  `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make tool-pins-test`, `make servers-test`, `make redis-state-test`, `make install-bay-test`,
   `make commit-names-check`,
   `make commit-names-test`, `make release-coverage`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
   보고서 `var/report/ci-targets`를 올린다.
 - workflow `ci`의 job `bindings`는 `.php-version`의 PHP를 설치하고 `make install-rust`, `make install-tools`,
-  `make install-php-tools`, `make ci-bindings`(`CI_BINDINGS`: `make lint-bindings`, `make check-declarations`,
+  `make install-php-tools`, `make install-bay`, `make setup-bay BAY_SUDO=1`, `make redis-image BAY_SUDO=1`,
+  `make ci-bindings BAY_SUDO=1`(`CI_BINDINGS`: `make lint-bindings`, `make check-declarations`,
   `make test-python`, `make test-node`, `make test-wasm`, `make test-php`, `make test-go`)를 실행한다. 그래서
   릴리스의 바인딩 package는 시험되지 않은 채로 나가지 않는다. `ci-passed`가 이 job을 `needs`에 두고,
-  `make workflows-test`는 이 job이 없는 workflow `ci`와 target 하나를 빠뜨린 `CI_BINDINGS`를 실패시킨다. 이 job은
-  Redis 서버를 시작하지 않는다. Redis 서버의 case에는 생성된 바인딩 시험이 실행하는 형식이 아직 없기 때문이다(T1.34).
+  `make workflows-test`는 이 job이 없거나 그 단계를 그 순서로 갖지 않은 workflow `ci`와 target 하나를 빠뜨린
+  `CI_BINDINGS`를 실패시킨다. bay와 이미지는 job `test`에서처럼 설치된다. `make test-python`, `make test-node`,
+  `make test-php`, `make test-go`가 case의 Redis 서비스를 시작하는 `scripts/test-run.mts`의 run 안에서 생성된 시험을
+  실행하기 때문이다(SE-10.7).
 - workflow `ci`의 마지막 job은 `ci-passed`다. 이 job은 다른 모든 job 뒤에, 실패한 job 뒤에도 실행되고, 그 job을 모두
   `needs`에 둔다. `make ci-passed FAIL_SKIPPED=1`(kit의 ci-passed)은 각 job의 결과가 success일 때만 통과한다. 그래서
   job 하나가 run의 결과를 말한다. `make workflows-test`는 마지막 job이 다른 job이거나 `needs`가 job 하나를 빠뜨린

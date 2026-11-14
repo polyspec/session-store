@@ -520,28 +520,75 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   `record_not_array` (SE-6.4), and bytes that unserialize refuses give `record` (SE-6.3).
   The group `requests` holds cases of several requests (`steps`), which the generator of binding refuses by name
   (binding G-5), so the interface contract does not declare it, and the Rust tests alone run it: `tests/contract.rs` of
-  the store of files, and that of the store of Redis against the model and a Redis server (SE-10.4). Binding has no
-  form yet of a case that runs against a service of the test run, such as the Redis server of `make test` (binding
-  B2.269, a case that runs against a service of the test run), so 15 kinds of the store of Redis have no case that a
-  generated binding test runs. The contract check reports each of them (binding CK-22), and that finding stops
-  `binding generate` for every target until B2.269 gives the form. No fault injection point imitates these kinds,
-  because a stored record and a reply of a server are inputs (SE-9.6), and no kind leaves `raises`. Each kind and the
-  trials of `packages/redis/rust/tests/contract.rs` that reach it (`model::` against the model, `server::` against
-  the server):
+  the store of files, and that of the store of Redis against the model and a Redis server (SE-10.4). No case of the
+  group `requests` arms a point. <a id="SE-10.7"></a> A kind of the store of Redis that only a state of a Redis server
+  reaches, a stored record, a lock that another holder took or a key of another type, has a case of one call that runs
+  against the service `redis` of the test run (binding GN-13j, CK-95), because a stored record and a reply of a server
+  are inputs, which no fault injection point imitates (SE-9.6). The interface contract declares the service in
+  `services`: its `address` is the variable `SESSION_STORE_REDIS_URL`, the URL `redis://<name>:<port>` of the server,
+  and its `state` is the variable `SESSION_STORE_REDIS_STATE`, the absolute path of `scripts/redis-state.sh`, which runs
+  `scripts/redis-state.mts` on the node of the checkout.
+  - The run. `scripts/test-run.mts --service redis` starts the server for the generated binding tests of `make
+    test-python`, `make test-node`, `make test-php` and `make test-go`, each target in a run of its own: it writes the
+    Compose file of one project in the directory of the projects of the run with the one service `redis`,
+    `redis-server` of `REDIS_IMAGE` with the arguments of the server of the cases (SE-10.4), starts it by one `up`,
+    reads the address of the service from the output of `up`, sets both variables for the tests, and removes the
+    project with the other projects of the run when the run ends, fails or is stopped. A start that fails, an image
+    that is not installed (`make redis-image` pulls it) and an output of `up` of another `schemaVersion` or without the
+    service fail the run before the tests. The WASM tests run without the service: the core of WASM has no socket, so
+    each row of `cases` of a group of such cases has `only` for `php`, `python`, `node` and `go`, with this rule as its
+    reason (binding GN-13h, CK-95). The job `bindings` of the workflow `ci` installs bay, applies its setup and pulls the
+    image as the job `test` does, and runs `make ci-bindings BAY_SUDO=1`.
+  - The program. The test runs it as `<program> setup|change|check <scope>` with a JSON object on its standard input,
+    which maps the name of a key after the scope to its value: a text, whose characters U+0000 to U+00FF are the bytes
+    of a string (SE-10.2), or `{"list": [<text>, ...]}`, a list of at least one such item; in `change`, null removes
+    the key. `setup` removes every key whose name starts with the scope and writes each key of the object, so that the
+    scope holds exactly that state; `change` writes each key of the object in place of what the key held, also a key of
+    another type, and removes each key that is null, as another client of the server does while the session lives;
+    `check` reads every key of the scope and exits with 0 when they are exactly the keys of the object with those
+    values, and otherwise prints each key that differs with its expected and its found value and exits with 1. The
+    program speaks the protocol of Redis (RESP2) itself over a socket of `node:net`, so it needs no package; it sends one
+    command and reads its reply before the next and waits for no time. An error reply, a connection that fails or
+    closes, and an input of another form fail it with the status 1 and the reason. `make redis-state-test` runs it
+    against a stand-in of a server that the test serves.
+  - The scope. A case gives its store the scope, `<target>:<member id>:<case id>:`, as the option `prefix` (SR-1.2)
+    by the value `{"service": "scope"}`, and the URL by `{"service": "address"}`, so the key of its session and of its
+    lock (SR-2.1) are keys of its scope, and no two cases, of one target or of two targets that run at once, share a key
+    on one server.
+  - The groups. `redis_sessions.open.served`, `redis_session.<member>.served` of `get`, `set`, `remove` and `renew` and
+    `redis_session.close.served` of `contracts/redis-sessions.json` hold the cases, whose session has the identifier of
+    32 `a`. `lock_timeout` of `redis_sessions.open`: the setup stores the session and the secret `another holder` in
+    its lock key, and the store tries the lock once (`lock_retries` 0); the check finds both keys unchanged. `redis` of
+    `redis_sessions.open`: the key of the session holds a list, so `GET` gets the error reply `WRONGTYPE` after the
+    lock is taken, and the release follows. `record_not_array` and `record` of `get`, `set`, `remove` and `renew`: the
+    stored key holds `i:1;` (SE-6.4) and bytes that unserialize refuses (SE-6.3). `lock_lost` of `redis_session.close`:
+    a call of `then` sets a value, and its `change` writes the secret of another holder into the lock key, so the close
+    finds another secret and writes nothing (SR-4.3). `redis` of `redis_session.close`: the `change` makes the lock key
+    a list, so the `GET` of the lock gets the error reply `WRONGTYPE`; the release script then fails on the same key,
+    and its error does not replace the first one (SR-4.5). `record_write` of `redis_session.close`: a new session sets
+    a value of 4096 nested lists, and its close connects to the server and fails before it writes a key. The Rust tests
+    do not run these groups, which need the program of the run; the trials of the table below reach the same kinds.
+  - `reply` of `redis_sessions.open` and of `redis_session.close` has no case of one call, because no state of a Redis
+    server reaches it: a Redis server answers `GET` with a bulk string, nil or an error reply, `EXISTS`, `EXPIRE`, `DEL`
+    and the release script with an integer or an error reply, `SET ... NX PX` with `OK`, nil or an error reply and
+    `SETEX` with `OK` or an error reply, whatever its keys hold; only a server that does not follow the protocol of
+    Redis gives a reply of another type. Each of the two keeps its trial against the model (`text_replies`,
+    `status_replies`), and the contract check reports each (binding CK-22), which stops `binding generate` for every
+    target. No fault injection point imitates it (SE-9.6).
 
-  | Member | Kind | Trials |
-  |---|---|---|
-  | `redis_sessions.open` | `lock_timeout` | `model::` and `server::a_request_that_finds_the_lock_taken_fails_and_changes_nothing` |
-  | `redis_sessions.open` | `reply` | `model::a_reply_that_is_not_bytes_fails_and_releases_the_lock` |
-  | `redis_sessions.open` | `redis` | `model::an_error_reply_to_the_read_fails_and_releases_the_lock` |
-  | `redis_session.get` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_the_call`, `a_key_that_cannot_be_decoded_fails_the_call` |
-  | `redis_session.set` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_set`, `a_key_that_cannot_be_decoded_fails_set` |
-  | `redis_session.remove` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_remove`, `a_key_that_cannot_be_decoded_fails_remove` |
-  | `redis_session.renew` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_renew`, `a_key_that_cannot_be_decoded_fails_renew` |
-  | `redis_session.close` | `lock_lost` | `model::` and `server::a_request_that_lost_its_lock_writes_nothing_and_fails` |
-  | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock` |
-  | `redis_session.close` | `redis` | `model::an_error_reply_to_the_write_fails_and_releases_the_lock` |
-  | `redis_session.close` | `record_write` | `model::` and `server::a_value_too_deep_for_a_record_fails_the_close` |
+  Each kind and the trials of `packages/redis/rust/tests/contract.rs` that reach it (`model::` against the model,
+  `server::` against the server), with the case of one call of the service:
 
-  `record_write` of `redis_session.close` needs a server too, because the close connects before it takes the outcome
-  of `finish`. No case of the group `requests` arms a point.
+  | Member | Kind | Trials | Case of the service |
+  |---|---|---|---|
+  | `redis_sessions.open` | `lock_timeout` | `model::` and `server::a_request_that_finds_the_lock_taken_fails_and_changes_nothing` | `a_lock_that_another_holds_fails_the_opening_with_lock_timeout` |
+  | `redis_sessions.open` | `reply` | `model::a_reply_that_is_not_bytes_fails_and_releases_the_lock` | none |
+  | `redis_sessions.open` | `redis` | `model::an_error_reply_to_the_read_fails_and_releases_the_lock` | `a_session_key_of_another_type_fails_the_opening_with_redis` |
+  | `redis_session.get` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_the_call`, `a_key_that_cannot_be_decoded_fails_the_call` | `a_stored_key_that_holds_no_array_fails_get_with_record_not_array`, `a_stored_key_that_cannot_be_decoded_fails_get_with_record` |
+  | `redis_session.set` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_set`, `a_key_that_cannot_be_decoded_fails_set` | the same for `set` |
+  | `redis_session.remove` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_remove`, `a_key_that_cannot_be_decoded_fails_remove` | the same for `remove` |
+  | `redis_session.renew` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_renew`, `a_key_that_cannot_be_decoded_fails_renew` | the same for `renew` |
+  | `redis_session.close` | `lock_lost` | `model::` and `server::a_request_that_lost_its_lock_writes_nothing_and_fails` | `a_lock_that_another_took_fails_the_close_with_lock_lost` |
+  | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock` | none |
+  | `redis_session.close` | `redis` | `model::an_error_reply_to_the_write_fails_and_releases_the_lock` | `a_lock_key_of_another_type_fails_the_close_with_redis` |
+  | `redis_session.close` | `record_write` | `model::` and `server::a_value_too_deep_for_a_record_fails_the_close` | `a_value_too_deep_for_a_record_fails_the_close_with_record_write` |

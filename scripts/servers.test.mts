@@ -22,6 +22,8 @@ interface Machine {
   bay: boolean;
   /** The exit status of the stand-in bay for each command that is named; 0 for the others. */
   status?: Record<string, number>;
+  /** The document that up prints, in place of one that names the command. */
+  up?: string;
 }
 
 /** The line that the stand-in bay gives of its version. */
@@ -61,6 +63,7 @@ function stand(t: TestContext, machine: Machine): Stand {
       cases,
       `pull) cat "$file" > '${join(directory, 'pulled')}' ;;`,
       `exec) if [ -p /dev/stdin ]; then echo pipe; else cat; fi > '${join(directory, 'input')}' ;;`,
+      ...(machine.up === undefined ? [] : [`up) cat "$file" > '${join(directory, 'started')}'; printf '%s\\n' '${machine.up}' ;;`]),
       `plan | up) echo "{\\"command\\":\\"$1\\"}" ;;`,
       `check) echo 'ok       dns agent' ;;`,
       `version) echo '${VERSION}' ;;`,
@@ -204,10 +207,9 @@ const SHELLS = ['/bin/sh', '/bin/dash'].filter((shell) => existsSync(shell));
  * Runs scripts/test-run.mts on `machine` with a command of `shell`. The command reads PROJECTS_SEEN, the file into which it
  * writes the directory of the projects of its run.
  */
-function runTests(t: TestContext, machine: Machine, command: string, shell = '/bin/sh'): Run & { projects: string } {
-  const made = stand(t, machine);
+function runTests(t: TestContext, machine: Machine, command: string, shell = '/bin/sh', options: string[] = [], env: Record<string, string> = {}, made = stand(t, machine)): Run & { projects: string } {
   const seen = join(made.directory, 'seen');
-  const result = spawnSync(process.execPath, [testRun, shell, '-c', command], { encoding: 'utf8', env: { ...made.env, PROJECTS_SEEN: seen } });
+  const result = spawnSync(process.execPath, [testRun, ...options, shell, '-c', command], { encoding: 'utf8', env: { ...made.env, ...env, PROJECTS_SEEN: seen } });
   return { status: result.status, stdout: result.stdout, stderr: result.stderr, calls: made.calls(), projects: existsSync(seen) ? readFileSync(seen, 'utf8').trim() : '' };
 }
 
@@ -259,6 +261,48 @@ test('a project that down does not remove fails the run, which keeps its directo
     assert.equal(kept.stderr, `scripts/test-run.mts: the servers of ${file} are not removed; the directory of the run is kept:\nbay: down fails\n`, shell);
     assert.equal(existsSync(file), true);
   }
+});
+
+/** The output of up of a project whose service redis bay started. */
+const STARTED = JSON.stringify({ schemaVersion: 1, services: [{ name: 'redis', address: 'redis.p.test:6379', ipv4: '10.0.0.2' }] });
+
+test('a run with the service redis starts its server before the command, gives its address and its program and removes it', (t) => {
+  const made = stand(t, { bay: true, up: STARTED });
+  const variables = 'printf "%s %s\\n" "$SESSION_STORE_REDIS_URL" "$SESSION_STORE_REDIS_STATE"';
+  const ended = runTests(t, present, `${leave([])} && ${variables}`, '/bin/sh', ['--service', 'redis'], { REDIS_IMAGE: IMAGE }, made);
+  const file = join(ended.projects, `${basename(ended.projects)}-redis`, 'compose.yaml');
+  assert.deepEqual([ended.status, ended.stderr], [0, '']);
+  assert.equal(ended.stdout, `${VERSION}\nredis://redis.p.test:6379 ${join(dirname(testRun), 'redis-state.sh')}\n`);
+  assert.deepEqual(ended.calls, [...CHECKED, ['bay', '-f', file, 'up', '-no-pull', '--json'], ['bay', '-f', file, 'down']]);
+  assert.equal(readFileSync(join(made.directory, 'started'), 'utf8'), [
+    'services:',
+    '  "redis":',
+    `    image: "${IMAGE}"`,
+    '    entrypoint: ["redis-server"]',
+    '    command: ["--save", "", "--appendonly", "no", "--protected-mode", "no"]',
+    '    expose: ["6379"]',
+    '',
+  ].join('\n'));
+  assert.equal(existsSync(dirname(ended.projects)), false);
+});
+
+test('a service that does not start, or whose start gives another document, fails the run before its command and is removed', (t) => {
+  const command = `${leave([])} && echo ran`;
+  const withoutImage = runTests(t, present, command, '/bin/sh', ['--service', 'redis']);
+  assert.deepEqual([withoutImage.status, withoutImage.stdout], [1, `${VERSION}\n`]);
+  assert.match(withoutImage.stderr, /REDIS_IMAGE is not set/);
+  const missing = runTests(t, { bay: true, status: { up: 1, images: 1 } }, command, '/bin/sh', ['--service', 'redis'], { REDIS_IMAGE: IMAGE });
+  assert.deepEqual([missing.status, missing.stdout], [1, `${VERSION}\n`]);
+  assert.match(missing.stderr, /the image .* is not installed, and make redis-image pulls it/);
+  assert.deepEqual(missing.calls.map((words) => words.at(-1)), ['version', 'run', '--json', 'images', 'down']);
+  for (const document of [JSON.stringify({ schemaVersion: 2, services: [] }), JSON.stringify({ schemaVersion: 1, services: [] })]) {
+    const other = runTests(t, { bay: true, up: document }, command, '/bin/sh', ['--service', 'redis'], { REDIS_IMAGE: IMAGE });
+    assert.deepEqual([other.status, other.stdout], [1, `${VERSION}\n`], document);
+    assert.match(other.stderr, /`bay up --json` gives no (document of schemaVersion 1|address of the service redis)/, document);
+    assert.deepEqual(other.calls.at(-1)?.at(-1), 'down');
+  }
+  const unknown = runTests(t, present, command, '/bin/sh', ['--service', 'postgres']);
+  assert.deepEqual([unknown.status, unknown.calls], [2, []]);
 });
 
 /**

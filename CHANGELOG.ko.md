@@ -1,7 +1,22 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 47583cd25298da2d1d14ae6ba9f563656feac16a9474a5e9a2dcba181d7bf903 -->
+<!-- source-sha256: 9d960f89d0b2783d665baf44461c9f3432261566fa6cff2304afc43c8b2e298f -->
 
 ## Unreleased
+
+- Redis 저장소의 kind 15개에는 생성한 바인딩 시험이 실행하는 case가 없었다. Redis 서버의 상태만 그것에 닿고, binding에는
+  시험 run의 서비스에 대한 case의 형식이 없었기 때문이다. 계약 검사는 그 하나하나를 지적했다(CK-22). 이제 인터페이스
+  계약은 서비스 `redis`를 `services`에 선언하고(binding GN-13j, CK-95), `contracts/redis-sessions.json`은 그 가운데
+  13개 kind에 그 서비스에 대한 호출 하나의 case를 group `redis_sessions.open.served`, `redis_session.<member>.served`,
+  `redis_session.close.served`에 준다. 그 `cases` 행은 socket이 없는 WASM을 뺀다(SE-10.7). case는 자기 저장소의
+  `prefix`인 scope의 키를 `scripts/redis-state.mts`로 setup, change, check한다. 그 프로그램은 `node:net` 위에서 RESP를
+  말하므로 패키지가 필요 없고, `scripts/redis-state.sh`가 checkout의 node로 그것을 시작한다. `make redis-state-test`가
+  서버 대역에 대해 그것을 시험한다(시험 6개). `scripts/test-run.mts --service redis`는 `make test-python`,
+  `make test-node`, `make test-php`, `make test-go`의 생성된 시험을 위해 고정된 이미지의 서버를 시작하고 그 시험에
+  `SESSION_STORE_REDIS_URL`과 `SESSION_STORE_REDIS_STATE`를 준다(`make servers-test`, 시험 19개). `ci`의 job
+  `bindings`는 job `test`처럼 bay와 Redis 이미지를 설치한다. `redis_sessions.open`과 `redis_session.close`의 `reply`는
+  모델에 대한 trial만 유지한다. 어떤 Redis 서버 상태도 다른 형의 응답을 주지 않기 때문이다. 그래서 계약 검사는 여전히
+  그 둘을 지적한다(CK-22). 이 형식에는 binding 0.0.7이 필요하다. 고정된 0.0.6은 `services`를 거부하므로(CK-1),
+  0.0.7이 고정될 때까지 `make binding-check`와 `make workflows-test`가 실패한다(T1.30-9).
 
 - binding은 릴리스 0.0.3으로 고정되어 있었고, 그 Go 생성기는 `only`가 python과 node를 적는데도 `file_sessions.open`의
   parameter `cancel`을 거부했다. 이제 binding은 릴리스 0.0.6이다(B2.253이 parameter의 `only`를 읽는다).

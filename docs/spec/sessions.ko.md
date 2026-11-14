@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 44591139d9ce7ae2b12498dda61a45cdc398f3cab86d85ca312178828c00d43f -->
+<!-- source-sha256: c33a0c44d6873408a56913f447b6320377b5eece880d6ba8742b6d64f86a2da4 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -502,27 +502,68 @@
   unserialize가 거부하는 바이트는 `record`를 준다(SE-6.3).
   group `requests`는 여러 요청의 case(`steps`)를 담고, binding의 생성기는 그것을 이름으로 거부한다(binding G-5).
   그래서 인터페이스 계약은 그 group을 선언하지 않고, Rust 시험만 그것을 실행한다: 파일 저장소의 `tests/contract.rs`,
-  그리고 모델과 Redis 서버에 대해 실행하는 Redis 저장소의 `tests/contract.rs`다(SE-10.4). binding에는 시험 run의
-  서비스, 예를 들어 `make test`의 Redis 서버에 대해 실행하는 case의 형태가 아직 없다(binding B2.269, 시험 run의
-  서비스에 대해 실행하는 case). 그래서 Redis 저장소의 kind 15개에는 생성한 바인딩 시험이 실행하는 case가 없다. 계약
-  검사는 그 하나하나를 지적하고(binding CK-22), 그 지적은 B2.269가 그 형태를 줄 때까지 모든 target의
-  `binding generate`를 멈춘다. 저장된 레코드와 서버의 응답은 입력이므로(SE-9.6) 어떤 실패 주입점도 이 kind들을 흉내
-  내지 않고, 어떤 kind도 `raises`에서 빠지지 않는다. 각 kind와 그것에 닿는 `packages/redis/rust/tests/contract.rs`의
-  trial(`model::`은 모델에 대해, `server::`는 서버에 대해 실행한다):
+  그리고 모델과 Redis 서버에 대해 실행하는 Redis 저장소의 `tests/contract.rs`다(SE-10.4). group `requests`의 어떤
+  case도 주입점을 장전하지 않는다. <a id="SE-10.7"></a> Redis 서버의 상태, 곧 저장된 레코드, 다른 보유자가 잡은 잠금,
+  다른 형의 키만 닿는 Redis 저장소의 kind에는 시험 run의 서비스 `redis`에 대해 실행하는 호출 하나의 case가 있다(binding
+  GN-13j, CK-95). 저장된 레코드와 서버의 응답은 입력이고, 어떤 결함 주입점도 입력을 흉내 내지 않기 때문이다(SE-9.6).
+  인터페이스 계약은 그 서비스를 `services`에 선언한다. 그 `address`는 서버의 URL `redis://<name>:<port>`를 담는 변수
+  `SESSION_STORE_REDIS_URL`이고, 그 `state`는 `scripts/redis-state.sh`의 절대 경로를 담는 변수
+  `SESSION_STORE_REDIS_STATE`다. 그 스크립트는 checkout의 node로 `scripts/redis-state.mts`를 실행한다.
+  - run. `scripts/test-run.mts --service redis`는 `make test-python`, `make test-node`, `make test-php`, `make test-go`의
+    생성된 바인딩 시험을 위해 서버를 시작하고, 각 target은 자기 run을 갖는다. run은 run의 프로젝트 디렉터리에 서비스
+    `redis` 하나를 가진 프로젝트의 Compose 파일을 쓴다. 그 서비스는 case 서버의 인자(SE-10.4)를 가진 `REDIS_IMAGE`의
+    `redis-server`다. run은 그것을 `up` 하나로 시작하고, `up`의 출력에서 서비스의 주소를 읽고, 시험에 두 변수를
+    주고, run이 끝나거나 실패하거나 멈출 때 run의 다른 프로젝트와 함께 그 프로젝트를 지운다. 실패한 시작, 설치되지 않은
+    이미지(`make redis-image`가 받는다), 다른 `schemaVersion`이거나 서비스가 없는 `up`의 출력은 시험 전에 run을
+    실패시킨다. WASM 시험은 서비스 없이 실행된다. WASM의 코어에는 socket이 없으므로, 그런 case의 group을 가리키는
+    `cases`의 각 행은 이 규칙을 이유로 `php`, `python`, `node`, `go`의 `only`를 갖는다(binding GN-13h, CK-95).
+    workflow `ci`의 job `bindings`는 job `test`처럼 bay를 설치하고 그 설정을 적용하고 이미지를 받으며,
+    `make ci-bindings BAY_SUDO=1`을 실행한다.
+  - 프로그램. 시험은 그것을 표준 입력의 JSON 객체와 함께 `<program> setup|change|check <scope>`로 실행한다. 그
+    객체는 scope 뒤의 키 이름을 그 값에 대응시킨다. 값은 문자 U+0000부터 U+00FF가 문자열의 바이트인 텍스트(SE-10.2)이거나,
+    그런 항목을 하나 이상 가진 목록 `{"list": [<text>, ...]}`이고, `change`에서 null은 그 키를 지운다. `setup`은
+    이름이 scope로 시작하는 모든 키를 지우고 객체의 각 키를 써서, scope가 정확히 그 상태를 갖게 한다. `change`는
+    세션이 사는 동안 서버의 다른 클라이언트가 하듯이, 객체의 각 키를 그 키가 담던 것, 다른 형의 키도, 대신 쓰고
+    null인 각 키를 지운다. `check`는 scope의 모든 키를 읽어 그것이 정확히 객체의 키와 그 값이면 0으로 끝나고, 아니면
+    다른 각 키를 기대한 값과 찾은 값과 함께 출력하고 1로 끝난다. 프로그램은 Redis의 프로토콜(RESP2)을 `node:net`의
+    socket 위에서 스스로 말하므로 패키지가 필요 없다. 명령 하나를 보내고 그 응답을 읽은 뒤 다음 명령을 보내며, 시간을
+    기다리지 않는다. 오류 응답, 실패하거나 닫히는 연결, 다른 형식의 입력은 프로그램을 상태 1과 그 이유로 실패시킨다.
+    `make redis-state-test`는 시험이 제공하는 서버 대역에 대해 그것을 실행한다.
+  - scope. case는 자기 저장소에 scope `<target>:<member id>:<case id>:`를 값 `{"service": "scope"}`로 옵션
+    `prefix`(SR-1.2)로 주고, URL을 `{"service": "address"}`로 준다. 그래서 그 세션의 키와 잠금의 키(SR-2.1)는 그
+    scope의 키이고, 한 target의 두 case도, 동시에 실행하는 두 target의 case도 한 서버에서 키를 나누지 않는다.
+  - group. `contracts/redis-sessions.json`의 `redis_sessions.open.served`, `get`, `set`, `remove`, `renew`의
+    `redis_session.<member>.served`, `redis_session.close.served`가 case를 담고, 그 세션의 식별자는 `a` 32개다.
+    `redis_sessions.open`의 `lock_timeout`: setup이 세션과 그 잠금 키의 비밀 `another holder`를 저장하고, 저장소는
+    잠금을 한 번 시도한다(`lock_retries` 0). check는 두 키가 바뀌지 않았음을 확인한다. `redis_sessions.open`의 `redis`:
+    세션의 키가 목록을 담으므로 잠금을 잡은 뒤 `GET`이 오류 응답 `WRONGTYPE`을 받고, 해제가 뒤따른다. `get`, `set`,
+    `remove`, `renew`의 `record_not_array`와 `record`: 저장된 키가 `i:1;`(SE-6.4)과 unserialize가 거부하는
+    바이트(SE-6.3)를 담는다. `redis_session.close`의 `lock_lost`: `then`의 호출이 값을 설정하고, 그 `change`가 잠금
+    키에 다른 보유자의 비밀을 쓰므로 close는 다른 비밀을 찾고 아무것도 쓰지 않는다(SR-4.3). `redis_session.close`의
+    `redis`: `change`가 잠금 키를 목록으로 만들므로 잠금의 `GET`이 오류 응답 `WRONGTYPE`을 받는다. 그 뒤 해제
+    스크립트도 같은 키에서 실패하지만 그 오류는 첫 오류를 대신하지 않는다(SR-4.5). `redis_session.close`의
+    `record_write`: 새 세션이 4096겹의 중첩 목록 값을 설정하고, 그 close는 서버에 연결한 뒤 키를 쓰기 전에 실패한다.
+    Rust 시험은 run의 프로그램이 필요한 이 group을 실행하지 않고, 아래 표의 trial이 같은 kind에 닿는다.
+  - `redis_sessions.open`과 `redis_session.close`의 `reply`에는 호출 하나의 case가 없다. 어떤 Redis 서버 상태도 그것에
+    닿지 않기 때문이다. Redis 서버는 키가 무엇을 담든 `GET`에 bulk string, nil, 오류 응답으로, `EXISTS`, `EXPIRE`,
+    `DEL`과 해제 스크립트에 정수나 오류 응답으로, `SET ... NX PX`에 `OK`, nil, 오류 응답으로, `SETEX`에 `OK`나 오류
+    응답으로 답한다. 다른 형의 응답은 Redis의 프로토콜을 따르지 않는 서버만 준다. 두 kind는 각각 모델에 대한
+    trial(`text_replies`, `status_replies`)을 유지하고, 계약 검사는 둘을 지적하며(binding CK-22), 그 지적은 모든
+    target의 `binding generate`를 멈춘다. 어떤 결함 주입점도 그것을 흉내 내지 않는다(SE-9.6).
 
-  | Member | Kind | Trial |
-  |---|---|---|
-  | `redis_sessions.open` | `lock_timeout` | `model::`과 `server::a_request_that_finds_the_lock_taken_fails_and_changes_nothing` |
-  | `redis_sessions.open` | `reply` | `model::a_reply_that_is_not_bytes_fails_and_releases_the_lock` |
-  | `redis_sessions.open` | `redis` | `model::an_error_reply_to_the_read_fails_and_releases_the_lock` |
-  | `redis_session.get` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_the_call`, `a_key_that_cannot_be_decoded_fails_the_call` |
-  | `redis_session.set` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_set`, `a_key_that_cannot_be_decoded_fails_set` |
-  | `redis_session.remove` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_remove`, `a_key_that_cannot_be_decoded_fails_remove` |
-  | `redis_session.renew` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_renew`, `a_key_that_cannot_be_decoded_fails_renew` |
-  | `redis_session.close` | `lock_lost` | `model::`과 `server::a_request_that_lost_its_lock_writes_nothing_and_fails` |
-  | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock` |
-  | `redis_session.close` | `redis` | `model::an_error_reply_to_the_write_fails_and_releases_the_lock` |
-  | `redis_session.close` | `record_write` | `model::`과 `server::a_value_too_deep_for_a_record_fails_the_close` |
+  각 kind와 그것에 닿는 `packages/redis/rust/tests/contract.rs`의 trial(`model::`은 모델에 대해, `server::`는 서버에
+  대해 실행한다), 그리고 서비스의 호출 하나의 case:
 
-  `redis_session.close`의 `record_write`에도 서버가 필요하다. close는 `finish`의 결과를 받기 전에 연결하기 때문이다.
-  group `requests`의 어떤 case도 주입점을 장전하지 않는다.
+  | Member | Kind | Trial | 서비스의 case |
+  |---|---|---|---|
+  | `redis_sessions.open` | `lock_timeout` | `model::`과 `server::a_request_that_finds_the_lock_taken_fails_and_changes_nothing` | `a_lock_that_another_holds_fails_the_opening_with_lock_timeout` |
+  | `redis_sessions.open` | `reply` | `model::a_reply_that_is_not_bytes_fails_and_releases_the_lock` | 없음 |
+  | `redis_sessions.open` | `redis` | `model::an_error_reply_to_the_read_fails_and_releases_the_lock` | `a_session_key_of_another_type_fails_the_opening_with_redis` |
+  | `redis_session.get` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_the_call`, `a_key_that_cannot_be_decoded_fails_the_call` | `a_stored_key_that_holds_no_array_fails_get_with_record_not_array`, `a_stored_key_that_cannot_be_decoded_fails_get_with_record` |
+  | `redis_session.set` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_set`, `a_key_that_cannot_be_decoded_fails_set` | `set`의 같은 case |
+  | `redis_session.remove` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_remove`, `a_key_that_cannot_be_decoded_fails_remove` | `remove`의 같은 case |
+  | `redis_session.renew` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_renew`, `a_key_that_cannot_be_decoded_fails_renew` | `renew`의 같은 case |
+  | `redis_session.close` | `lock_lost` | `model::`과 `server::a_request_that_lost_its_lock_writes_nothing_and_fails` | `a_lock_that_another_took_fails_the_close_with_lock_lost` |
+  | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock` | 없음 |
+  | `redis_session.close` | `redis` | `model::an_error_reply_to_the_write_fails_and_releases_the_lock` | `a_lock_key_of_another_type_fails_the_close_with_redis` |
+  | `redis_session.close` | `record_write` | `model::`과 `server::a_value_too_deep_for_a_record_fails_the_close` | `a_value_too_deep_for_a_record_fails_the_close_with_record_write` |

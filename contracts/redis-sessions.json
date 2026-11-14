@@ -2209,5 +2209,670 @@
    },
    "result": null
   }
+ ],
+ "redis_sessions.open.served": [
+  {
+   "id": "a_lock_that_another_holds_fails_the_opening_with_lock_timeout",
+   "label": "the opening of a stored session whose lock key holds the secret of another holder tries the lock once, fails with lock_timeout and changes nothing (SR-3.3)",
+   "rules": [
+    "SR-3.3",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.new",
+    "args": {
+     "setting": {
+      "kind": "server",
+      "url": {
+       "service": "address"
+      }
+     },
+     "options": {
+      "lock_expire": 30,
+      "prefix": {
+       "service": "scope"
+      },
+      "lock_retries": 0,
+      "lock_wait": 0
+     }
+    }
+   },
+   "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "a:1:{s:1:\"n\";i:0;}",
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK": "another holder"
+    },
+    "check": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "a:1:{s:1:\"n\";i:0;}",
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK": "another holder"
+    }
+   },
+   "raises": {
+    "kind": "lock_timeout",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  },
+  {
+   "id": "a_session_key_of_another_type_fails_the_opening_with_redis",
+   "label": "the opening of a session whose key holds a list takes the lock, gets the error reply WRONGTYPE to GET, releases the lock and fails with redis (SR-5.2, SR-4.5)",
+   "rules": [
+    "SR-5.2",
+    "SR-4.5",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.new",
+    "args": {
+     "setting": {
+      "kind": "server",
+      "url": {
+       "service": "address"
+      }
+     },
+     "options": {
+      "lock_expire": 30,
+      "prefix": {
+       "service": "scope"
+      }
+     }
+    }
+   },
+   "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+      "list": [
+       "a:1:{s:1:\"n\";i:0;}"
+      ]
+     }
+    },
+    "check": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+      "list": [
+       "a:1:{s:1:\"n\";i:0;}"
+      ]
+     }
+    }
+   },
+   "raises": {
+    "kind": "redis",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  }
+ ],
+ "redis_session.get.served": [
+  {
+   "id": "a_stored_key_that_holds_no_array_fails_get_with_record_not_array",
+   "label": "get of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
+   "rules": [
+    "SE-6.4",
+    "SE-7.2",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": {
+        "service": "address"
+       }
+      },
+      "options": {
+       "lock_expire": 30,
+       "prefix": {
+        "service": "scope"
+       }
+      }
+     }
+    },
+    "args": {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+   },
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "i:1;"
+    }
+   },
+   "key": "a",
+   "raises": {
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  },
+  {
+   "id": "a_stored_key_that_cannot_be_decoded_fails_get_with_record",
+   "label": "get of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": {
+        "service": "address"
+       }
+      },
+      "options": {
+       "lock_expire": 30,
+       "prefix": {
+        "service": "scope"
+       }
+      }
+     }
+    },
+    "args": {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+   },
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "s:5:\"token"
+    }
+   },
+   "key": "a",
+   "raises": {
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  }
+ ],
+ "redis_session.set.served": [
+  {
+   "id": "a_stored_key_that_holds_no_array_fails_set_with_record_not_array",
+   "label": "set of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
+   "rules": [
+    "SE-6.4",
+    "SE-7.2",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": {
+        "service": "address"
+       }
+      },
+      "options": {
+       "lock_expire": 30,
+       "prefix": {
+        "service": "scope"
+       }
+      }
+     }
+    },
+    "args": {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+   },
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "i:1;"
+    }
+   },
+   "key": "a",
+   "value": {
+    "kind": "int",
+    "value": 1
+   },
+   "raises": {
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  },
+  {
+   "id": "a_stored_key_that_cannot_be_decoded_fails_set_with_record",
+   "label": "set of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": {
+        "service": "address"
+       }
+      },
+      "options": {
+       "lock_expire": 30,
+       "prefix": {
+        "service": "scope"
+       }
+      }
+     }
+    },
+    "args": {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+   },
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "s:5:\"token"
+    }
+   },
+   "key": "a",
+   "value": {
+    "kind": "int",
+    "value": 1
+   },
+   "raises": {
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  }
+ ],
+ "redis_session.remove.served": [
+  {
+   "id": "a_stored_key_that_holds_no_array_fails_remove_with_record_not_array",
+   "label": "remove of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
+   "rules": [
+    "SE-6.4",
+    "SE-7.2",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": {
+        "service": "address"
+       }
+      },
+      "options": {
+       "lock_expire": 30,
+       "prefix": {
+        "service": "scope"
+       }
+      }
+     }
+    },
+    "args": {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+   },
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "i:1;"
+    }
+   },
+   "key": "a",
+   "raises": {
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  },
+  {
+   "id": "a_stored_key_that_cannot_be_decoded_fails_remove_with_record",
+   "label": "remove of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": {
+        "service": "address"
+       }
+      },
+      "options": {
+       "lock_expire": 30,
+       "prefix": {
+        "service": "scope"
+       }
+      }
+     }
+    },
+    "args": {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+   },
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "s:5:\"token"
+    }
+   },
+   "key": "a",
+   "raises": {
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  }
+ ],
+ "redis_session.renew.served": [
+  {
+   "id": "a_stored_key_that_holds_no_array_fails_renew_with_record_not_array",
+   "label": "renew of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
+   "rules": [
+    "SE-6.4",
+    "SE-7.2",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": {
+        "service": "address"
+       }
+      },
+      "options": {
+       "lock_expire": 30,
+       "prefix": {
+        "service": "scope"
+       }
+      }
+     }
+    },
+    "args": {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+   },
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "i:1;"
+    }
+   },
+   "raises": {
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  },
+  {
+   "id": "a_stored_key_that_cannot_be_decoded_fails_renew_with_record",
+   "label": "renew of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": {
+        "service": "address"
+       }
+      },
+      "options": {
+       "lock_expire": 30,
+       "prefix": {
+        "service": "scope"
+       }
+      }
+     }
+    },
+    "args": {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+   },
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "s:5:\"token"
+    }
+   },
+   "raises": {
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  }
+ ],
+ "redis_session.close.served": [
+  {
+   "id": "a_lock_that_another_took_fails_the_close_with_lock_lost",
+   "label": "the close of a session that set a value, whose lock key another holder took after the set, writes nothing, sends the release and fails with lock_lost (SR-4.3, SR-4.5)",
+   "rules": [
+    "SR-4.3",
+    "SR-4.5",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": {
+        "service": "address"
+       }
+      },
+      "options": {
+       "lock_expire": 30,
+       "prefix": {
+        "service": "scope"
+       }
+      }
+     }
+    },
+    "args": {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "then": [
+     {
+      "call": "redis_session.set",
+      "args": {
+       "key": "n",
+       "value": {
+        "kind": "int",
+        "value": 1
+       }
+      },
+      "service": {
+       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK": "another holder"
+      }
+     }
+    ]
+   },
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "a:1:{s:1:\"n\";i:0;}"
+    },
+    "check": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "a:1:{s:1:\"n\";i:0;}",
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK": "another holder"
+    }
+   },
+   "raises": {
+    "kind": "lock_lost",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  },
+  {
+   "id": "a_lock_key_of_another_type_fails_the_close_with_redis",
+   "label": "the close of a session that set a value, whose lock key holds a list after the set, gets the error reply WRONGTYPE to the GET of the lock, writes nothing and fails with redis (SR-5.2, SR-4.5)",
+   "rules": [
+    "SR-5.2",
+    "SR-4.5",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": {
+        "service": "address"
+       }
+      },
+      "options": {
+       "lock_expire": 30,
+       "prefix": {
+        "service": "scope"
+       }
+      }
+     }
+    },
+    "args": {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "then": [
+     {
+      "call": "redis_session.set",
+      "args": {
+       "key": "n",
+       "value": {
+        "kind": "int",
+        "value": 1
+       }
+      },
+      "service": {
+       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK": {
+        "list": [
+         "another holder"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   "service": {
+    "id": "redis",
+    "setup": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "a:1:{s:1:\"n\";i:0;}"
+    },
+    "check": {
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "a:1:{s:1:\"n\";i:0;}",
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK": {
+      "list": [
+       "another holder"
+      ]
+     }
+    }
+   },
+   "raises": {
+    "kind": "redis",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  },
+  {
+   "id": "a_value_too_deep_for_a_record_fails_the_close_with_record_write",
+   "label": "the close of a new session that set a value of 4096 nested lists, which the record nests one level deeper than php-serialization writes, connects to the server and fails with record_write before it writes a key (SE-6.8)",
+   "rules": [
+    "SE-6.8",
+    "SR-4.1",
+    "SE-10.7"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": {
+        "service": "address"
+       }
+      },
+      "options": {
+       "lock_expire": 30,
+       "prefix": {
+        "service": "scope"
+       }
+      }
+     }
+    },
+    "args": {
+     "cookie": null
+    },
+    "then": [
+     {
+      "call": "redis_session.set",
+      "args": {
+       "key": "a",
+       "value": {
+        "kind": "list",
+        "repeat": 4096,
+        "value": {
+         "kind": "null"
+        }
+       }
+      }
+     }
+    ]
+   },
+   "service": {
+    "id": "redis",
+    "setup": {},
+    "check": {}
+   },
+   "raises": {
+    "kind": "record_write",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  }
  ]
 }

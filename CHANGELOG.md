@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- 15 kinds of the store of Redis had no case that a generated binding test runs, because only a state of a Redis
+  server reaches them and binding had no form of a case against a service of the test run; the contract check reported
+  each (CK-22). The interface contract now declares the service `redis` in `services` (binding GN-13j, CK-95), and
+  `contracts/redis-sessions.json` gives 13 of the kinds a case of one call against it in the groups
+  `redis_sessions.open.served`, `redis_session.<member>.served` and `redis_session.close.served`, whose rows of `cases`
+  leave out WASM, which has no socket (SE-10.7). A case sets up the keys of its scope, the `prefix` of its store, and
+  changes and checks them with `scripts/redis-state.mts`, a program that speaks RESP over `node:net` and needs no
+  package, started by `scripts/redis-state.sh` on the node of the checkout; `make redis-state-test` tests it against a
+  stand-in server (6 tests). `scripts/test-run.mts --service redis` starts the server of the pinned image for the
+  generated tests of `make test-python`, `make test-node`, `make test-php` and `make test-go` and gives them
+  `SESSION_STORE_REDIS_URL` and `SESSION_STORE_REDIS_STATE` (`make servers-test`, 19 tests), and the job `bindings` of
+  `ci` installs bay and the Redis image as the job `test` does. `reply` of `redis_sessions.open` and of
+  `redis_session.close` keeps only its trial against the model, because no state of a Redis server gives a reply of
+  another type, so the contract check still reports those two (CK-22). The form needs binding 0.0.7: the pinned 0.0.6
+  refuses `services` (CK-1), so `make binding-check` and `make workflows-test` fail until 0.0.7 is pinned (T1.30-9).
+
 - binding was pinned at its release 0.0.3, whose Go generator refused the parameter `cancel` of `file_sessions.open`
   although its `only` names python and node. binding is now the release 0.0.6 (B2.253 reads the `only` of a
   parameter): `package.json` names its asset and `package-lock.json` its integrity, and every manifest and

@@ -161,3 +161,13 @@ test('only the recipes that install the node of var/tools start the node of the 
   assert.match(makefile, /^NODE := \$\(VAR_TOOLS\)\/bin\/node$/m, 'NODE of the Makefile is not the node of var/tools');
   assert.deepEqual(machineNode(makefile).filter((line) => !MACHINE_NODE.has(line.slice(0, line.indexOf(':')))), []);
 });
+
+test('only make install-binding installs binding, and the rust job of CI runs it before its checks', () => {
+  const lines = execFileSync('make', ['--dry-run', '--no-print-directory', 'install-binding'], { cwd: root, encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '', MAKELEVEL: '' }, stdio: ['ignore', 'pipe', 'pipe'] }).split('\n');
+  assert.ok(lines.some((line) => line.endsWith('scripts/binding.mts install')), `make install-binding does not install binding:\n${lines.join('\n')}`);
+  const script = read('scripts/binding.mts');
+  assert.match(script, /'--offline'/, 'scripts/binding.mts reads the crates of Cargo.lock with cargo metadata online');
+  const workflow = read('.github/workflows/ci.yml');
+  const install = workflow.indexOf('run: make install-binding');
+  assert.ok(install !== -1 && install < workflow.indexOf('run: make ci-rust'), 'the rust job of ci.yml does not run make install-binding before make ci-rust');
+});

@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 7b404f8d788cb543a13d7ff362680715ba8ce8f8c8ef339eadf398a0fa09d3b8 -->
+<!-- source-sha256: b3c221305283ce752a6f80cb66ff09444d8aefb4a06563bec0fccf345d6fa61e -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -31,3 +31,4 @@
 | T1.25 | CI가 설치하는 bay의 릴리스를 고정하고, run에서는 version을 비교하지 않는다. bay는 장비가 주는 도구다. run은 PATH의 `bay`를 시작하고(Makefile의 `BAY`가 bay를 시작하는 방법을 정하는 값 하나다), `schemaVersion`이 1이 아닌 bay의 문서를 실패시키고, `bay version`의 출력을 첫 줄로 쓴다. `config/toolchain.json`이 CI가 설치하는 릴리스를 플랫폼별 archive의 sha256과 함께 적고, `make install-bay`가 그 archive를 sha256으로 확인하여 `var/tools/bay`에 설치한다. run의 어떤 경로도 그 고정 값을 읽지 않는다 | `config/toolchain.json`, `scripts/install-bay.mts`, `scripts/install-bay.test.mts`, `scripts/servers.sh`, `scripts/servers.test.mts`, `scripts/tool-pins.test.mts`, `Makefile`, `AGENTS.md`, `docs/spec/sessions.md` | `make servers-test`, `make install-bay-test`, `make tool-pins-test`, `make test` | [o] |
 | T1.26 | workflow `ci`의 job `test`에서 make target으로 bay를 설치하여, 그 job이 runner의 Docker로 `make test`를 실행하게 한다. `make install-bay`를 실행한 뒤 `make setup-bay`, `make redis-image`, `make test`를 `BAY_SUDO=1`로 실행하고, 이 값은 bay의 모든 명령을 `sudo -n`으로 root로 실행한다. 기본 branch에 workflow `ci`가 없으므로, 그 workflow가 기본 branch에 올 때까지 어떤 runner도 이 job을 실행하지 않는다. 그 첫 run까지 미확인: runner `ubuntu-26.04-arm`에서 `bay install`이 끝나는 것, root가 실행한 bay의 authority 파일을 시험 process가 읽는 것, run의 신호가 `sudo`가 시작한 bay에 닿는 것 | `.github/workflows/ci.yml`, `Makefile`, `scripts/workflows.test.mts`, `AGENTS.md` | `make workflows-test`, workflow `ci`의 run | [v] |
 | T1.27 | SE-10.4의 알려진 한계, 곧 신호가 `up`을 멈추는 동안 engine이 만드는 container를 없앤다. 별도의 행으로는 철회: SIGINT나 SIGTERM이 멈춘 `up`은 자기가 만든 것을 지우고 128에 신호 번호를 더한 값으로 끝나므로, SE-10.4는 한계를 적지 않고 T1.20이 run의 시험을 갖는다 | `scripts/test-run.sh`, `scripts/servers.test.mts`, `docs/spec/sessions.md` | `make servers-test`, `make test` | [-] |
+| T1.28 | binding은 설치 target `make install-binding`에서만 내려받고, CI는 그것을 `make ci-rust` 앞에서 실행하며, `make binding-check`와 바인딩 target은 offline으로 돈다. `scripts/binding.mts`는 `Cargo.lock`의 crate를 `cargo metadata --offline`으로 읽고 binding이 설치되지 않았으면 실패한다. 내려받는 검사는 네트워크에 의존하기 때문이다 | `scripts/binding.mts`, `Makefile`, `.github/workflows/ci.yml`, `scripts/tool-pins.test.mts` | `make tool-pins-test`, `make binding-check` | [ ] |

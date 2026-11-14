@@ -437,9 +437,14 @@ the statement that it checks. A PHP value and its serialize form are those of ph
     bay keeps its state below the home of the user who runs it, so the install, the check, the pull and every
     command of a test run as one user. `make setup-bay` runs `bay install`, the one target that changes the setup of
     a machine, which the workflow runs on its runner and a developer runs by choice.
-  - `make test` runs the tests through `scripts/test-run.sh`, which owns the directory of the run. A Compose file is
-    written before its `up`, so every project that started has its file. When the run ends, fails or is stopped by
-    SIGINT or SIGTERM, the script waits for the tests, runs `down` for every Compose file that the directory still
+  - `make test` runs the tests through `scripts/test-run.mts`, which the node of the checkout runs and which owns the
+    directory of the run. A Compose file is written before its `up`, so every project that started has its file.
+    The run starts the command of the tests as the leader of a process group of its own, in a session of its own
+    (`spawn` with `detached`, which calls `setsid`), passes SIGINT and SIGTERM that it receives to that group, and
+    waits for the exit of the command, which is the event that ends the wait. A shell script cannot do this: a POSIX
+    shell gives a script no way to make a process group, `set -m` needs a terminal in dash, the `/bin/sh` of Debian
+    and Ubuntu, where the command then stays in the group of the run and ignores SIGINT, and macOS has no `setsid`
+    program. When the run ends, fails or is stopped by SIGINT or SIGTERM, the script waits for the tests, runs `down` for every Compose file that the directory still
     holds and removes the directory. An `up` that the signal stops removes what it created. A project that `down`
     does not remove fails the run, which then keeps the directory and names the file.
 

@@ -912,6 +912,144 @@
  ],
  "open": [
   {
+   "id": "a_missing_directory_fails",
+   "label": "a directory that does not exist fails",
+   "rules": [
+    "SF-1.2"
+   ],
+   "directory": "missing",
+   "raises": {
+    "kind": "invalid_directory",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_file_in_the_place_of_the_directory_fails",
+   "label": "a path of a file fails",
+   "rules": [
+    "SF-1.2"
+   ],
+   "directory": "file",
+   "files": {
+    "file": ""
+   },
+   "raises": {
+    "kind": "invalid_directory",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_lifetime_of_zero_fails",
+   "label": "a lifetime of zero fails",
+   "rules": [
+    "SF-1.3"
+   ],
+   "directory": ".",
+   "lifetime": 0,
+   "raises": {
+    "kind": "invalid_lifetime",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "the_default_lifetime_is_1440_seconds",
+   "label": "without a lifetime the store takes 1440 seconds",
+   "rules": [
+    "SF-1.3"
+   ],
+   "directory": ".",
+   "lifetime": null,
+   "store_lifetime": 1440,
+   "store_directory": "."
+  },
+  {
+   "id": "a_lifetime_is_taken",
+   "label": "a stated lifetime is taken",
+   "rules": [
+    "SF-1.3"
+   ],
+   "directory": ".",
+   "lifetime": 1,
+   "store_lifetime": 1,
+   "store_directory": "."
+  },
+  {
+   "id": "a_lifetime_that_is_negative_fails",
+   "label": "a lifetime of -1 is no uint and the binding refuses it",
+   "rules": [
+    "SF-1.3",
+    "SF-8.2"
+   ],
+   "directory": ".",
+   "lifetime": -1,
+   "binding": true,
+   "raises": {
+    "kind": "invalid_number",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_lifetime_that_is_no_integer_fails",
+   "label": "a lifetime of 1.5 is no uint and the binding refuses it",
+   "rules": [
+    "SF-1.3",
+    "SF-8.2"
+   ],
+   "directory": ".",
+   "lifetime": 1.5,
+   "binding": true,
+   "raises": {
+    "kind": "invalid_number",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_lifetime_that_is_a_text_fails",
+   "label": "a lifetime of \"60\" is no uint and the binding refuses it",
+   "rules": [
+    "SF-1.3",
+    "SF-8.2"
+   ],
+   "directory": ".",
+   "lifetime": "60",
+   "binding": true,
+   "raises": {
+    "kind": "invalid_argument_type",
+    "status": null,
+    "category": "type",
+    "message": null
+   }
+  },
+  {
+   "id": "a_lifetime_that_is_a_boolean_fails",
+   "label": "a lifetime of true is no uint and the binding refuses it",
+   "rules": [
+    "SF-1.3",
+    "SF-8.2"
+   ],
+   "directory": ".",
+   "lifetime": true,
+   "binding": true,
+   "raises": {
+    "kind": "invalid_argument_type",
+    "status": null,
+    "category": "type",
+    "message": null
+   }
+  }
+ ],
+ "openNotAbsolute": [
+  {
    "id": "a_relative_directory_fails",
    "label": "a relative session directory fails",
    "rules": [
@@ -952,139 +1090,6 @@
     "category": "value",
     "message": null
    }
-  },
-  {
-   "id": "a_missing_directory_fails",
-   "label": "a directory that does not exist fails",
-   "rules": [
-    "SF-1.2"
-   ],
-   "directory": "<temporary>/missing",
-   "raises": {
-    "kind": "invalid_directory",
-    "status": null,
-    "category": "value",
-    "message": null
-   }
-  },
-  {
-   "id": "a_file_in_the_place_of_the_directory_fails",
-   "label": "a path of a file fails",
-   "rules": [
-    "SF-1.2"
-   ],
-   "directory": "<temporary>/file",
-   "raises": {
-    "kind": "invalid_directory",
-    "status": null,
-    "category": "value",
-    "message": null
-   }
-  },
-  {
-   "id": "a_lifetime_of_zero_fails",
-   "label": "a lifetime of zero fails",
-   "rules": [
-    "SF-1.3"
-   ],
-   "directory": "<temporary>",
-   "lifetime": 0,
-   "raises": {
-    "kind": "invalid_lifetime",
-    "status": null,
-    "category": "value",
-    "message": null
-   }
-  },
-  {
-   "id": "the_default_lifetime_is_1440_seconds",
-   "label": "without a lifetime the store takes 1440 seconds",
-   "rules": [
-    "SF-1.3"
-   ],
-   "directory": "<temporary>",
-   "lifetime": null,
-   "store_lifetime": 1440,
-   "store_directory": "<temporary>"
-  },
-  {
-   "id": "a_lifetime_is_taken",
-   "label": "a stated lifetime is taken",
-   "rules": [
-    "SF-1.3"
-   ],
-   "directory": "<temporary>",
-   "lifetime": 1,
-   "store_lifetime": 1,
-   "store_directory": "<temporary>"
-  },
-  {
-   "id": "a_lifetime_that_is_negative_fails",
-   "label": "a lifetime of -1 is no uint and the binding refuses it",
-   "rules": [
-    "SF-1.3",
-    "SF-8.2"
-   ],
-   "directory": "<temporary>",
-   "lifetime": -1,
-   "binding": true,
-   "raises": {
-    "kind": "invalid_number",
-    "status": null,
-    "category": "value",
-    "message": null
-   }
-  },
-  {
-   "id": "a_lifetime_that_is_no_integer_fails",
-   "label": "a lifetime of 1.5 is no uint and the binding refuses it",
-   "rules": [
-    "SF-1.3",
-    "SF-8.2"
-   ],
-   "directory": "<temporary>",
-   "lifetime": 1.5,
-   "binding": true,
-   "raises": {
-    "kind": "invalid_number",
-    "status": null,
-    "category": "value",
-    "message": null
-   }
-  },
-  {
-   "id": "a_lifetime_that_is_a_text_fails",
-   "label": "a lifetime of \"60\" is no uint and the binding refuses it",
-   "rules": [
-    "SF-1.3",
-    "SF-8.2"
-   ],
-   "directory": "<temporary>",
-   "lifetime": "60",
-   "binding": true,
-   "raises": {
-    "kind": "invalid_argument_type",
-    "status": null,
-    "category": "type",
-    "message": null
-   }
-  },
-  {
-   "id": "a_lifetime_that_is_a_boolean_fails",
-   "label": "a lifetime of true is no uint and the binding refuses it",
-   "rules": [
-    "SF-1.3",
-    "SF-8.2"
-   ],
-   "directory": "<temporary>",
-   "lifetime": true,
-   "binding": true,
-   "raises": {
-    "kind": "invalid_argument_type",
-    "status": null,
-    "category": "type",
-    "message": null
-   }
   }
  ],
  "openFaults": [
@@ -1096,7 +1101,7 @@
     "SF-9.2",
     "SE-9.6"
    ],
-   "directory": "/",
+   "directory": ".",
    "cookie": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
    "faults": [
     {
@@ -1123,7 +1128,7 @@
     "SF-9.2",
     "SE-9.6"
    ],
-   "directory": "/",
+   "directory": ".",
    "faults": [
     {
      "point": "session_store.read_dir",
@@ -1154,7 +1159,7 @@
     "receiver": {
      "new": "file_sessions.in_directory",
      "args": {
-      "directory": "/",
+      "directory": ".",
       "lifetime": 1440
      }
     },
@@ -1194,7 +1199,7 @@
     "receiver": {
      "new": "file_sessions.in_directory",
      "args": {
-      "directory": "/",
+      "directory": ".",
       "lifetime": 1440
      }
     },
@@ -1238,7 +1243,7 @@
     "receiver": {
      "new": "file_sessions.in_directory",
      "args": {
-      "directory": "/",
+      "directory": ".",
       "lifetime": 1440
      }
     },
@@ -1278,7 +1283,7 @@
     "receiver": {
      "new": "file_sessions.in_directory",
      "args": {
-      "directory": "/",
+      "directory": ".",
       "lifetime": 1440
      }
     },
@@ -1310,7 +1315,7 @@
    "rules": [
     "SF-3.8"
    ],
-   "directory": "/",
+   "directory": ".",
    "lifetime": 1440,
    "cookie": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
    "cancel": {
@@ -1338,7 +1343,7 @@
     "receiver": {
      "new": "file_sessions.in_directory",
      "args": {
-      "directory": "/",
+      "directory": ".",
       "lifetime": 1440
      }
     },
@@ -1388,7 +1393,7 @@
     "receiver": {
      "new": "file_sessions.in_directory",
      "args": {
-      "directory": "/",
+      "directory": ".",
       "lifetime": 1440
      }
     },
@@ -1437,7 +1442,7 @@
     "receiver": {
      "new": "file_sessions.in_directory",
      "args": {
-      "directory": "/",
+      "directory": ".",
       "lifetime": 1440
      }
     },
@@ -1484,7 +1489,7 @@
     "receiver": {
      "new": "file_sessions.in_directory",
      "args": {
-      "directory": "/",
+      "directory": ".",
       "lifetime": 1440
      }
     },
@@ -1496,6 +1501,300 @@
     }
    },
    "result": null
+  }
+ ],
+ "file_session.get.stored": [
+  {
+   "id": "a_stored_record_that_holds_no_array_fails_get_with_record_not_array",
+   "label": "get of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
+   "rules": [
+    "SE-6.4",
+    "SE-7.2",
+    "SF-2.1"
+   ],
+   "files": {
+    "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": "i:1;"
+   },
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.in_directory",
+     "args": {
+      "directory": ".",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "key": "a",
+   "raises": {
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": "the session of eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee holds no array of values"
+   }
+  },
+  {
+   "id": "a_stored_record_that_cannot_be_decoded_fails_get_with_record",
+   "label": "get of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SF-2.1"
+   ],
+   "files": {
+    "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": "s:5:\"token"
+   },
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.in_directory",
+     "args": {
+      "directory": ".",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "key": "a",
+   "raises": {
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  }
+ ],
+ "file_session.set.stored": [
+  {
+   "id": "a_stored_record_that_holds_no_array_fails_set_with_record_not_array",
+   "label": "set of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
+   "rules": [
+    "SE-6.4",
+    "SE-7.2",
+    "SF-2.1"
+   ],
+   "files": {
+    "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": "i:1;"
+   },
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.in_directory",
+     "args": {
+      "directory": ".",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "key": "a",
+   "value": {
+    "kind": "int",
+    "value": 1
+   },
+   "raises": {
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": "the session of eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee holds no array of values"
+   }
+  },
+  {
+   "id": "a_stored_record_that_cannot_be_decoded_fails_set_with_record",
+   "label": "set of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SF-2.1"
+   ],
+   "files": {
+    "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": "s:5:\"token"
+   },
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.in_directory",
+     "args": {
+      "directory": ".",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "key": "a",
+   "value": {
+    "kind": "int",
+    "value": 1
+   },
+   "raises": {
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  }
+ ],
+ "file_session.remove.stored": [
+  {
+   "id": "a_stored_record_that_holds_no_array_fails_remove_with_record_not_array",
+   "label": "remove of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
+   "rules": [
+    "SE-6.4",
+    "SE-7.2",
+    "SF-2.1"
+   ],
+   "files": {
+    "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": "i:1;"
+   },
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.in_directory",
+     "args": {
+      "directory": ".",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "key": "a",
+   "raises": {
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": "the session of eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee holds no array of values"
+   }
+  },
+  {
+   "id": "a_stored_record_that_cannot_be_decoded_fails_remove_with_record",
+   "label": "remove of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SF-2.1"
+   ],
+   "files": {
+    "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": "s:5:\"token"
+   },
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.in_directory",
+     "args": {
+      "directory": ".",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "key": "a",
+   "raises": {
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  }
+ ],
+ "file_session.renew.stored": [
+  {
+   "id": "a_stored_record_that_holds_no_array_fails_renew_with_record_not_array",
+   "label": "renew of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
+   "rules": [
+    "SE-6.4",
+    "SE-7.2",
+    "SF-2.1"
+   ],
+   "files": {
+    "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": "i:1;"
+   },
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.in_directory",
+     "args": {
+      "directory": ".",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "raises": {
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": "the session of eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee holds no array of values"
+   }
+  },
+  {
+   "id": "a_stored_record_that_cannot_be_decoded_fails_renew_with_record",
+   "label": "renew of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SF-2.1"
+   ],
+   "files": {
+    "sess_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": "s:5:\"token"
+   },
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.in_directory",
+     "args": {
+      "directory": ".",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "raises": {
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
   }
  ]
 }

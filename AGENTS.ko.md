@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 3ae2c9bdca86e1642e5bf5eb5d75d1058f6b5f1b62e5d9fb4303fdf4b139e3f6 -->
+<!-- source-sha256: cbf2bf506269b69d9e5ffc08f590f637c4005f6db092e7d05f74118a01ea43de -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -142,10 +142,13 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   `packages/python/tests`, `packages/ts/tests/cases.test.mjs`, `packages/ts/tests/cases.wasm.test.mjs`,
   `packages/php-ext/tests`, `packages/go/tests`이며, `SESSION_STORE_CASES`로 디렉터리 `contracts`를 읽는다. 생성기가
   받지 못하는 target은 원인과 함께 실패하는 target으로 남는다. 어떤 target도 빠지거나 건너뛰지 않는다(binding BD-27).
-- contract case runner는 아직 쓰지 않았다. 계약 검사는 finding을 보고하지 않지만 `make bindings`는 모든 target에서
-  계약을 거부하므로(binding G-4), runner가 호출하고 그것으로 검증될 바인딩 API가 없다. 생성기는 여러 요청을
-  담은 group `requests`의 case를 받지 않고(SE-10.6, T1.30-4), Go는 `file_sessions.open`의 parameter `cancel`을 첫
-  parameter로만 받는다(T1.30-5). 다섯 target은 모두 그 원인으로 `make bindings`에서 실패한다.
+- contract case runner는 아직 쓰지 않았다. `make bindings`는 어떤 target도 생성하지 않으므로, runner가 호출하고
+  그것으로 검증될 바인딩 API가 없다. 생성기는 여러 요청의 case를 거부하므로(binding G-5) 인터페이스 계약은 호출
+  하나의 case만 선언한다. 여러 호출을 담은 group `requests`와 `store`는 Rust 시험만 읽는다(SE-10.6). Redis 저장소의
+  kind 15개에는 Redis 서버가 필요하고, binding B2.269(시험 run의 서비스에 대해 실행하는 case)가 나오기 전에는 어떤
+  binding의 case 형태도 그것을 주지 않는다. 그래서 계약 검사는 그 하나하나를 지적하고(CK-22), 그 지적은 다섯
+  target 모두의 `binding generate`를 멈춘다(T1.30-4). 또 고정한 binding 0.0.3은 Go에서 `file_sessions.open`의
+  parameter `cancel`을 첫 parameter로만 받고, binding 0.0.6은 그것을 그 `only`에서 읽는다(T1.30-5).
 - Go 모듈에서 binding은 파일 `zz_generated_*.go`를 소유한다(binding GN-3). Go 모듈은 소스로 받아지므로 이 파일들은
   추적되고, `make bindings`가 다시 쓴다. `packages/ts/wasm/generated`와 `packages/go/internal/ffi/generated`는 추적하지
   않는다. wasm-bindgen은 모듈과 그 glue를 앞의 디렉터리에 쓴다.

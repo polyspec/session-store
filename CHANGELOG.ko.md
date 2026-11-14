@@ -1,7 +1,19 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 2564e58f206945ecc8899539cbc0bfcfcaf6425b194bb59862e4979810535a60 -->
+<!-- source-sha256: 5343c18b14324b09970513f6f050e9f9e9b9bb946a355d085b01319ffe3e90b2 -->
 
 ## Unreleased
+
+- 인터페이스 계약은 여러 호출을 담은 group `requests`와 `store`를 선언했고, binding의 생성기는 case의 key를 한 호출의
+  인자로 받는다. 그래서 생성기는 `file_sessions.open`과 `redis_sessions.open`의 case 때문에 모든 target을
+  거부했고(G-4), `store`의 각 case에는 실패하는 시험을 썼다. 이제 계약은 호출 하나의 case만 선언한다.
+  `file_session`의 `get`, `set`, `remove`, `renew`의 `record`와 `record_not_array`에는 case가 쓰는(`files`, binding
+  GN-13i) 저장된 파일의 세션을 여는 case가 있다. `memory_store`의 각 member에는 `then`이 만든 저장소에서 `after`로
+  관찰하는 case가 있다. 호출 하나의 case의 모든 경로는 시험 디렉터리 안의 상대 경로이므로(binding GN-6y), 절대
+  경로가 아닌 디렉터리의 case는 Rust 시험만 실행하는 group `openNotAbsolute`에 있다. Redis 저장소의 kind 15개에는
+  아직 Redis 서버가 필요하고, binding의 어떤 case 형태도 그것을 주지 않는다(binding B2.269). 계약 검사는 그 하나하나를
+  지적하고(CK-22), 그 지적은 모든 target의 `binding generate`를 멈춘다. SE-10.6은 각 kind에 닿는 Rust trial을 적는다.
+  Rust 시험은 Redis 저장소의 `set`, `remove`, `renew`의 `record`와 `record_not_array`에 group `requests`의 case를
+  주고, 그 close의 `reply`에 모델이 `EXPIRE`에 status로 응답하는 case(`status_replies`)를 준다(T1.30-7, T1.30-8).
 
 - workflow `ci`에는 생성된 바인딩을 시험하는 job이 없어서, 릴리스는 어떤 run도 시험하지 않은 바인딩 package를
   내보낼 수 있었다. 이제 job `bindings`가 `make ci-bindings`, 곧 workspace의 lint, 생성된 선언, python, node, wasm,

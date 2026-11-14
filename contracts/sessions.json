@@ -492,6 +492,359 @@
    "record": "a:1:{s:1:\"a\";i:1;}"
   }
  ],
+ "memory_store.new.made": [
+  {
+   "id": "a_store_is_made_without_arguments",
+   "label": "the memory store is made without arguments, as a store of one session in the memory of the process (SE-4.1)",
+   "rules": [
+    "SE-4.1"
+   ]
+  }
+ ],
+ "memory_store.get.made": [
+  {
+   "id": "a_key_without_a_value_gives_nothing",
+   "label": "get of a key that holds no value gives nothing (SE-2.1)",
+   "rules": [
+    "SE-2.1"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {}
+   },
+   "key": "a",
+   "result": null
+  },
+  {
+   "id": "a_set_value_is_read",
+   "label": "get of a key that set gave a value gives that value (SE-2.1)",
+   "rules": [
+    "SE-2.1"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {},
+    "then": [
+     {
+      "call": "memory_store.set",
+      "args": {
+       "key": "a",
+       "value": {
+        "kind": "bool",
+        "value": true
+       }
+      }
+     }
+    ]
+   },
+   "key": "a",
+   "result": {
+    "kind": "bool",
+    "value": true
+   }
+  },
+  {
+   "id": "a_renewal_keeps_the_values",
+   "label": "get after renew gives the value that was set before it, because the renewal of the memory store changes no value (SE-4.3)",
+   "rules": [
+    "SE-4.3"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {},
+    "then": [
+     {
+      "call": "memory_store.set",
+      "args": {
+       "key": "a",
+       "value": {
+        "kind": "bool",
+        "value": true
+       }
+      }
+     },
+     {
+      "call": "memory_store.renew",
+      "args": {}
+     }
+    ]
+   },
+   "key": "a",
+   "result": {
+    "kind": "bool",
+    "value": true
+   }
+  }
+ ],
+ "memory_store.set.made": [
+  {
+   "id": "a_set_value_is_read_after_the_set",
+   "label": "set makes the key hold the value, which get gives (SE-2.1)",
+   "rules": [
+    "SE-2.1"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {}
+   },
+   "key": "a",
+   "value": {
+    "kind": "bool",
+    "value": true
+   },
+   "after": [
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "a"
+     },
+     "result": {
+      "kind": "bool",
+      "value": true
+     }
+    }
+   ]
+  },
+  {
+   "id": "a_set_of_a_key_replaces_its_value",
+   "label": "set of a key that holds a value replaces the value (SE-2.2)",
+   "rules": [
+    "SE-2.2"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {},
+    "then": [
+     {
+      "call": "memory_store.set",
+      "args": {
+       "key": "a",
+       "value": {
+        "kind": "bool",
+        "value": true
+       }
+      }
+     }
+    ]
+   },
+   "key": "a",
+   "value": {
+    "kind": "bool",
+    "value": false
+   },
+   "after": [
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "a"
+     },
+     "result": {
+      "kind": "bool",
+      "value": false
+     }
+    }
+   ]
+  },
+  {
+   "id": "a_canonical_integer_text_names_the_integer_key",
+   "label": "the text 5 names the integer key 5, which set of the text 05 does not replace (SE-2.5)",
+   "rules": [
+    "SE-2.5"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {},
+    "then": [
+     {
+      "call": "memory_store.set",
+      "args": {
+       "key": "5",
+       "value": {
+        "kind": "bool",
+        "value": true
+       }
+      }
+     }
+    ]
+   },
+   "key": "05",
+   "value": {
+    "kind": "bool",
+    "value": false
+   },
+   "after": [
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "5"
+     },
+     "result": {
+      "kind": "bool",
+      "value": true
+     }
+    },
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "05"
+     },
+     "result": {
+      "kind": "bool",
+      "value": false
+     }
+    }
+   ]
+  }
+ ],
+ "memory_store.remove.made": [
+  {
+   "id": "a_removed_value_is_absent",
+   "label": "remove makes the key hold no value, so get gives nothing (SE-2.1)",
+   "rules": [
+    "SE-2.1"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {},
+    "then": [
+     {
+      "call": "memory_store.set",
+      "args": {
+       "key": "a",
+       "value": {
+        "kind": "bool",
+        "value": true
+       }
+      }
+     }
+    ]
+   },
+   "key": "a",
+   "after": [
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "a"
+     },
+     "result": null
+    }
+   ]
+  },
+  {
+   "id": "a_remove_of_a_key_without_a_value_changes_nothing",
+   "label": "remove of a key that holds no value succeeds and leaves the other keys (SE-2.3)",
+   "rules": [
+    "SE-2.3"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {},
+    "then": [
+     {
+      "call": "memory_store.set",
+      "args": {
+       "key": "a",
+       "value": {
+        "kind": "bool",
+        "value": true
+       }
+      }
+     }
+    ]
+   },
+   "key": "b",
+   "after": [
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "a"
+     },
+     "result": {
+      "kind": "bool",
+      "value": true
+     }
+    }
+   ]
+  }
+ ],
+ "memory_store.renew.made": [
+  {
+   "id": "a_renewal_is_counted_and_keeps_the_values",
+   "label": "renew of the memory store counts the renewal and changes no value (SE-4.3)",
+   "rules": [
+    "SE-4.3"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {},
+    "then": [
+     {
+      "call": "memory_store.set",
+      "args": {
+       "key": "a",
+       "value": {
+        "kind": "bool",
+        "value": true
+       }
+      }
+     }
+    ]
+   },
+   "after": [
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "a"
+     },
+     "result": {
+      "kind": "bool",
+      "value": true
+     }
+    },
+    {
+     "call": "memory_store.renewals",
+     "args": {},
+     "result": 1
+    }
+   ]
+  }
+ ],
+ "memory_store.renewals.made": [
+  {
+   "id": "a_new_store_has_no_renewal",
+   "label": "a new memory store has counted no renewal (SE-4.3)",
+   "rules": [
+    "SE-4.3"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {}
+   },
+   "result": 0
+  },
+  {
+   "id": "each_renewal_is_counted",
+   "label": "each renewal of the memory store is counted (SE-4.3)",
+   "rules": [
+    "SE-4.3"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {},
+    "then": [
+     {
+      "call": "memory_store.renew",
+      "args": {}
+     },
+     {
+      "call": "memory_store.renew",
+      "args": {}
+     }
+    ]
+   },
+   "result": 2
+  }
+ ],
  "record": [
   {
    "id": "a_session_that_is_not_used_is_unused",

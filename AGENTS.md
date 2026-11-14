@@ -149,11 +149,14 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   `packages/ts/tests/cases.wasm.test.mjs`, `packages/php-ext/tests` and `packages/go/tests`, which read the directory
   `contracts` through `SESSION_STORE_CASES`. A target that the generator cannot take stays a failing target with its
   cause; no target is left out or skipped (binding BD-27).
-- No contract case runner is written yet: the contract check reports no finding, but `make bindings` refuses the
-  contract for every target (binding G-4), so no binding API exists that a runner could call and be checked against.
-  The generator takes no case of the group `requests`, whose cases hold several requests (SE-10.6, T1.30-4), and
-  Go takes the parameter `cancel` of `file_sessions.open` only as the first parameter (T1.30-5). Each of the five
-  targets fails at `make bindings` with that cause.
+- No contract case runner is written yet: `make bindings` generates no target, so no binding API exists that a runner
+  could call and be checked against. The interface contract declares only cases of one call, because the generator
+  refuses a case of several requests (binding G-5): the groups `requests` and `store`, whose cases hold several calls,
+  are read by the Rust tests alone (SE-10.6). 15 kinds of the store of Redis need a Redis server, which no case form of
+  binding gives until binding B2.269 (a case that runs against a service of the test run), so the contract check
+  reports each (CK-22), and that finding stops `binding generate` for each of the five targets (T1.30-4). The pinned
+  binding 0.0.3 also takes the parameter `cancel` of `file_sessions.open` in Go only as the first parameter, which
+  binding 0.0.6 reads from its `only` (T1.30-5).
 - In the Go module binding owns the files `zz_generated_*.go` (binding GN-3); they are tracked, because a Go module is
   fetched as source, and `make bindings` writes them again. `packages/ts/wasm/generated` and
   `packages/go/internal/ffi/generated` are not tracked; wasm-bindgen writes the module and its glue into the first.

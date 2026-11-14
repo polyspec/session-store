@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- The interface contract declared the groups `requests` and `store`, whose cases hold several calls, and the generator
+  of binding takes the keys of a case as the arguments of one call: it refused every target (G-4) for the cases of
+  `file_sessions.open` and `redis_sessions.open`, and wrote a failing test for each case of `store`. The contract now
+  declares cases of one call alone. `record` and `record_not_array` of `get`, `set`, `remove` and `renew` of
+  `file_session` have cases that open the session of a stored file, which the case writes (`files`, binding GN-13i);
+  each member of `memory_store` has cases on a store that `then` made, observed by `after`; and every path of a case of
+  one call is a relative path in the directory of the test (binding GN-6y), so the cases of a directory that is not
+  absolute are the group `openNotAbsolute`, which only the Rust tests run. 15 kinds of the store of Redis still need a
+  Redis server, which no case form of binding gives (binding B2.269): the contract check reports each (CK-22), which
+  stops `binding generate` for every target, and SE-10.6 names the Rust trials that reach each kind. The Rust tests
+  give `record` and `record_not_array` of `set`, `remove` and `renew` of the store of Redis a case of the group
+  `requests`, and `reply` of its close a case whose model answers `EXPIRE` with a status (`status_replies`)
+  (T1.30-7, T1.30-8).
+
 - The workflow `ci` had no job that tests the generated bindings, so a release would carry binding packages that no
   run tested. Its job `bindings` now runs `make ci-bindings`, the lint of the workspace, the generated declarations and
   the tests of python, node, wasm, php and go with their contract cases, and `ci-passed` needs it. The tools of these

@@ -390,6 +390,75 @@ fn record_faults(case: &Value) -> Result<(), Failed> {
     }
 }
 
+/// The serialize form of a value of the alias `php_value` in the form of a generated binding test (binding G-5): `null`,
+/// `bool` and `int`.
+fn php_text(value: &Value) -> Result<String, Failed> {
+    match str_of(value, "kind")? {
+        "null" => Ok("N;".to_owned()),
+        "bool" => {
+            let flag = value.get("value").and_then(Value::as_bool).ok_or("a bool value holds no bool")?;
+            Ok(format!("b:{};", u8::from(flag)))
+        }
+        "int" => {
+            let number = value.get("value").and_then(Value::as_i64).ok_or("an int value holds no integer")?;
+            Ok(format!("i:{number};"))
+        }
+        other => Err(format!("a value of the kind {other} is not read by this runner").into()),
+    }
+}
+
+/// One call of a member of the memory store with the arguments of a case (binding GN-13f), and its result as the case
+/// writes it: the serialize form of the value of `get` or null, the count of `renewals`, and null for the others.
+fn memory_call(store: &mut MemoryStore, member: &str, args: &Value) -> Result<Value, Failed> {
+    let name = member.strip_prefix("memory_store.").ok_or_else(|| format!("{member} is no member of memory_store"))?;
+    if name == "renewals" {
+        return Ok(Value::from(store.renewals()));
+    }
+    let mut arguments = Vec::new();
+    if let Some(key) = args.get("key") {
+        arguments.push(key.as_str().ok_or("a key is no text")?.to_owned());
+    }
+    if let Some(value) = args.get("value") {
+        arguments.push(php_text(value)?);
+    }
+    run(store, name, &arguments)?.map_err(|error| Failed::from(error.to_string()))
+}
+
+/// The result of a member of the memory store as a case gives it: a value of `get` as a value of the alias
+/// `php_value` or null, and any other result as it is.
+fn memory_expected(member: &str, expected: &Value) -> Result<Value, Failed> {
+    match (member, expected) {
+        ("memory_store.get", Value::Object(_)) => Ok(Value::String(php_text(expected)?)),
+        _ => Ok(expected.clone()),
+    }
+}
+
+/// SE-2, SE-4: one call of a member of a memory store that `memory_store.new` and the calls of `then` made (binding
+/// GN-13f), with its result and the calls of `after` that observe the store after it; the group of each member is read
+/// by that member alone.
+fn memory_made(case: &Value, member: &str) -> Result<(), Failed> {
+    let mut store = MemoryStore::new();
+    if member == "memory_store.new" {
+        return expect_eq("renewals of a new store", &store.renewals(), &0);
+    }
+    let receiver = case.get("receiver").ok_or("the case has no receiver")?;
+    expect_eq("new", &str_of(receiver, "new")?, &"memory_store.new")?;
+    for then in receiver.get("then").and_then(Value::as_array).into_iter().flatten() {
+        memory_call(&mut store, str_of(then, "call")?, then.get("args").ok_or("a call of then has no args")?)?;
+    }
+    let result = memory_call(&mut store, member, case)?;
+    if let Some(expected) = case.get("result") {
+        expect_eq("result", &result, &memory_expected(member, expected)?)?;
+    }
+    for after in case.get("after").and_then(Value::as_array).into_iter().flatten() {
+        let called = str_of(after, "call")?;
+        let result = memory_call(&mut store, called, after.get("args").ok_or("a call of after has no args")?)?;
+        let expected = after.get("result").ok_or("a call of after has no result")?;
+        expect_eq(&format!("{called} after the call"), &result, &memory_expected(called, expected)?)?;
+    }
+    Ok(())
+}
+
 /// A runner of the cases of one group.
 type Group = fn(&Value) -> Result<(), Failed>;
 
@@ -400,10 +469,16 @@ fn main() {
         Err(error) => panic!("contracts/sessions.json is no JSON: {error}"),
     };
     let mut trials = Vec::new();
-    let groups: [(&str, Group); 6] = [
+    let groups: [(&str, Group); 12] = [
         ("identifier", identifier),
         ("created", created),
         ("store", store),
+        ("memory_store.new.made", |case| memory_made(case, "memory_store.new")),
+        ("memory_store.get.made", |case| memory_made(case, "memory_store.get")),
+        ("memory_store.set.made", |case| memory_made(case, "memory_store.set")),
+        ("memory_store.remove.made", |case| memory_made(case, "memory_store.remove")),
+        ("memory_store.renew.made", |case| memory_made(case, "memory_store.renew")),
+        ("memory_store.renewals.made", |case| memory_made(case, "memory_store.renewals")),
         ("record", record),
         ("internal", internal),
         ("recordFaults", record_faults),

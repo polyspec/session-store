@@ -581,10 +581,10 @@ fn the_settings_of_the_cases_name_their_case_by_kind() -> Result<(), Failed> {
     Ok(())
 }
 
-/// The cases that a generated binding test runs (binding G-5): every group that the interface contract declares for a
-/// member of `redis_session`, other than the group `requests`, writes each PHP value of a call as a value of the alias
-/// `php_value` (`{"kind": <kind>, ...}`), and `redis_session.found` names such a group. The group `requests` holds
-/// cases of several requests, which only the Rust tests run (SE-10.6).
+/// The cases that a generated binding test runs (binding G-5): the interface contract declares no group `requests`,
+/// whose cases hold several requests that only the Rust tests run, against the model and a Redis server (SE-10.6);
+/// every group that it declares for a member of `redis_session` writes each PHP value of a call as a value of the alias
+/// `php_value` (`{"kind": <kind>, ...}`), and `redis_session.found` names such a group.
 fn the_cases_of_one_call_reach_their_members() -> Result<(), Failed> {
     fn values<'a>(value: &'a Value, found: &mut Vec<&'a Value>) {
         match value {
@@ -606,7 +606,10 @@ fn the_cases_of_one_call_reach_their_members() -> Result<(), Failed> {
     let mut groups: Vec<(&str, &str)> = Vec::new();
     for row in rows {
         let (member, group) = (str_of(row, "member")?, str_of(row, "group")?);
-        if member.starts_with("redis_session.") && group != "requests" {
+        if group == "requests" {
+            return Err(format!("{member} names the group requests, whose cases hold several requests").into());
+        }
+        if member.starts_with("redis_session.") {
             groups.push((member, group));
         }
     }

@@ -1,8 +1,11 @@
 //! Every case of `contracts/file-sessions.json` (SE-10.1), one trial each, on a new temporary directory. A case with
 //! `faults` arms the fault injection points that it names for its one call, as a generated binding test does (SE-10.5).
-//! Two trials read the interface contract for the making of the store (SF-1.5).
+//! A path of a case of one call names a place in that directory, and the case writes its `files` there before it makes
+//! the store, as a generated binding test does (SE-10.6). Two trials read the interface contract for the making of the
+//! store (SF-1.5).
 
-use std::path::Path;
+use std::os::unix::fs::OpenOptionsExt;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
 use binding_core::{Failure, Io, Kinds, ProcessWait};
@@ -267,20 +270,79 @@ fn requests(case: &Value) -> Result<(), Failed> {
     Ok(())
 }
 
+/// The bytes of a file of a case: a text for its UTF-8, or `{"hex": ...}` (binding GN-13i).
+fn file_bytes(content: &Value) -> Result<Vec<u8>, Failed> {
+    match content {
+        Value::String(text) => Ok(text.as_bytes().to_vec()),
+        Value::Object(form) => {
+            let hex = form.get("hex").and_then(Value::as_str).ok_or("a file holds no text and no hex")?;
+            (0..hex.len())
+                .step_by(2)
+                .map(|index| {
+                    let pair = hex.get(index..index + 2).ok_or("the hex of a file has an odd length")?;
+                    u8::from_str_radix(pair, 16).map_err(failed)
+                })
+                .collect()
+        }
+        _ => Err("a file holds no text and no hex".into()),
+    }
+}
+
+/// The place of a path of a case of one call in the directory of the case: `.` is the directory itself, and any other
+/// path is relative to it (binding GN-6y).
+fn place(root: &Path, path: &str) -> PathBuf {
+    if path == "." {
+        root.to_path_buf()
+    } else {
+        root.join(path)
+    }
+}
+
+/// The directory of a case of one call with the `files` of the case written into it, in the order of the case, each
+/// with the mode 0600 after the directories of its path (SE-10.6, binding GN-13i).
+fn case_directory(case: &Value) -> Result<tempfile::TempDir, Failed> {
+    let directory = tempfile::tempdir().map_err(failed)?;
+    if let Some(files) = case.get("files") {
+        let files = files.as_object().ok_or("files is no object")?;
+        for (path, content) in files {
+            let target = place(directory.path(), path);
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent).map_err(failed)?;
+            }
+            let mut file =
+                std::fs::File::options().write(true).create_new(true).mode(0o600).open(&target).map_err(failed)?;
+            std::io::Write::write_all(&mut file, &file_bytes(content)?).map_err(failed)?;
+        }
+    }
+    Ok(directory)
+}
+
+/// SF-1.2, SF-1.3: the making of the store of a case of the group `open`, whose directory is a place in the directory of
+/// the case, as a generated binding test gives it.
 fn open(case: &Value) -> Result<(), Failed> {
-    let temporary = tempfile::tempdir().map_err(failed)?;
-    std::fs::write(temporary.path().join("file"), b"").map_err(failed)?;
-    let directory = str_of(case, "directory")?.replace("<temporary>", &temporary.path().to_string_lossy());
+    let temporary = case_directory(case)?;
+    let directory = place(temporary.path(), str_of(case, "directory")?);
+    made(case, &directory, temporary.path())
+}
+
+/// SF-1.2: the making of the store of a case of the group `openNotAbsolute`, whose directory is given as it is: a path
+/// that is not absolute, which no case value of the type `path` of a generated binding test gives (binding GN-6y).
+fn open_not_absolute(case: &Value) -> Result<(), Failed> {
+    let temporary = case_directory(case)?;
+    made(case, Path::new(str_of(case, "directory")?), temporary.path())
+}
+
+fn made(case: &Value, directory: &Path, root: &Path) -> Result<(), Failed> {
     let lifetime = case.get("lifetime").and_then(Value::as_u64);
-    match (FileSessions::in_directory(Io::for_generated_call(), Path::new(&directory), lifetime), case.get("raises")) {
+    match (FileSessions::in_directory(Io::for_generated_call(), directory, lifetime), case.get("raises")) {
         (Err(error), Some(raises)) => {
             expect_eq("category", &"value", &str_of(raises, "category")?)?;
             expect_raises(error.kind(), error.status(), &error.to_string(), raises)
         }
         (Ok(store), None) => {
             expect_eq("lifetime", &Some(store.lifetime()), &case.get("store_lifetime").and_then(Value::as_u64))?;
-            let expected = str_of(case, "store_directory")?.replace("<temporary>", &temporary.path().to_string_lossy());
-            expect_eq("directory", &store.directory(), &Path::new(&expected))
+            let expected = place(root, str_of(case, "store_directory")?);
+            expect_eq("directory", &store.directory(), &expected.as_path())
         }
         (Ok(_), Some(_)) => Err("the store is made".into()),
         (Err(error), None) => Err(format!("the store is not made: {error}").into()),
@@ -350,15 +412,19 @@ fn expect_failure(error: &polyspec_session_store_core::Error, raises: &Value) ->
     expect_eq("errno", &error.errno(), &errno_of(raises)?)
 }
 
-/// The store of the directory of a case of one call (SE-10.5), which the armed point fails before the directory is read.
-fn store_of(case: &Value) -> Result<FileSessions, Failed> {
-    FileSessions::in_directory(Io::for_generated_call(), Path::new(str_of(case, "directory")?), None).map_err(failed)
+/// The store of the directory of a case of one call (SE-10.5), a place in the directory of the case, which the armed
+/// point fails before the directory is read. The directory of the case is kept with the store.
+fn store_of(case: &Value) -> Result<(tempfile::TempDir, FileSessions), Failed> {
+    let root = case_directory(case)?;
+    let directory = place(root.path(), str_of(case, "directory")?);
+    let store = FileSessions::in_directory(Io::for_generated_call(), &directory, None).map_err(failed)?;
+    Ok((root, store))
 }
 
 /// SE-9.6: `open` whose open of the session file fails; only `file_sessions.open` reads the group.
 fn open_faults(case: &Value) -> Result<(), Failed> {
     let raises = case.get("raises").ok_or("the case has no raises")?;
-    let store = store_of(case)?;
+    let (_root, store) = store_of(case)?;
     let cookie = latin1(str_of(case, "cookie")?)?;
     match armed(case, "file_sessions.open", || store.open(ProcessWait::for_generated_call(), Some(&cookie), None))? {
         Ok(_) => Err("the session is opened".into()),
@@ -369,7 +435,7 @@ fn open_faults(case: &Value) -> Result<(), Failed> {
 /// SE-9.6: `collect` whose read of the directory fails; only `file_sessions.collect` reads the group.
 fn collect_faults(case: &Value) -> Result<(), Failed> {
     let raises = case.get("raises").ok_or("the case has no raises")?;
-    let store = store_of(case)?;
+    let (_root, store) = store_of(case)?;
     match armed(case, "file_sessions.collect", || store.collect(Io::for_generated_call()))? {
         Ok(removed) => Err(format!("collect removes {removed} files").into()),
         Err(error) => expect_failure(&error, raises),
@@ -397,20 +463,20 @@ fn cookie_of(args: &Value) -> Result<Option<Vec<u8>>, Failed> {
     }
 }
 
-/// The store of the arguments of `file_sessions.in_directory`.
-fn store_with(args: &Value) -> Result<FileSessions, Failed> {
-    let directory = Path::new(str_of(args, "directory")?);
-    FileSessions::in_directory(Io::for_generated_call(), directory, args.get("lifetime").and_then(Value::as_u64))
+/// The store of the arguments of `file_sessions.in_directory`, whose directory is a place in the directory of the case.
+fn store_with(args: &Value, root: &Path) -> Result<FileSessions, Failed> {
+    let directory = place(root, str_of(args, "directory")?);
+    FileSessions::in_directory(Io::for_generated_call(), &directory, args.get("lifetime").and_then(Value::as_u64))
         .map_err(failed)
 }
 
 /// A session of a request that earlier calls made (binding GN-13f): `{"new": "file_sessions.open", "receiver":
 /// {"new": "file_sessions.in_directory", "args": {...}}, "args": {"cookie", "cancel"}}`.
-fn made_session(value: &Value) -> Result<FileSession, Failed> {
+fn made_session(value: &Value, root: &Path) -> Result<FileSession, Failed> {
     expect_eq("new", &str_of(value, "new")?, &"file_sessions.open")?;
     let store = value.get("receiver").ok_or("an opening has no receiver")?;
     expect_eq("new", &str_of(store, "new")?, &"file_sessions.in_directory")?;
-    let store = store_with(store.get("args").ok_or("a store has no args")?)?;
+    let store = store_with(store.get("args").ok_or("a store has no args")?, root)?;
     let args = value.get("args").ok_or("an opening has no args")?;
     let (_trigger, cancel) = cancel_of(args.get("cancel").ok_or("an opening has no cancel")?)?;
     let cookie = cookie_of(args)?;
@@ -436,7 +502,8 @@ fn made_session(value: &Value) -> Result<FileSession, Failed> {
 /// names them; only `file_session.close` reads the group.
 fn made_close(case: &Value) -> Result<(), Failed> {
     let raises = case.get("raises").ok_or("the case has no raises")?;
-    let session = made_session(case.get("receiver").ok_or("the case has no receiver")?)?;
+    let root = case_directory(case)?;
+    let session = made_session(case.get("receiver").ok_or("the case has no receiver")?, root.path())?;
     let close = || session.close(Io::for_generated_call());
     let closed = if case.get("faults").is_some() { armed(case, "file_session.close", close)? } else { close() };
     match closed {
@@ -449,15 +516,18 @@ fn made_close(case: &Value) -> Result<(), Failed> {
 /// the group.
 fn made_found(case: &Value) -> Result<(), Failed> {
     let expected = case.get("result").ok_or("the case has no result")?.as_str();
-    let session = made_session(case.get("receiver").ok_or("the case has no receiver")?)?;
+    let root = case_directory(case)?;
+    let session = made_session(case.get("receiver").ok_or("the case has no receiver")?, root.path())?;
     expect_eq("found", &session.found(), &expected)
 }
 
-/// SE-5.4, SE-7.2: one call of a record session of a session that `open` made, with the faults of the case; the group
-/// of each member is read by that member alone.
+/// SE-5.4, SE-6.3, SE-6.4, SE-7.2: one call of a record session of a session that `open` made, with the faults of the
+/// case where it names them, and with the stored file of the case, which the call decodes, where it names one; the
+/// group of each member is read by that member alone.
 fn made_call(case: &Value, name: &str) -> Result<(), Failed> {
     let raises = case.get("raises").ok_or("the case has no raises")?;
-    let mut session = made_session(case.get("receiver").ok_or("the case has no receiver")?)?;
+    let root = case_directory(case)?;
+    let mut session = made_session(case.get("receiver").ok_or("the case has no receiver")?, root.path())?;
     let mut arguments = Vec::new();
     for key in ["key", "value"] {
         if let Some(argument) = case.get(key) {
@@ -465,7 +535,10 @@ fn made_call(case: &Value, name: &str) -> Result<(), Failed> {
         }
     }
     let pair = Value::Array(vec![Value::String(name.to_owned()), Value::Array(arguments)]);
-    match armed(case, &format!("file_session.{name}"), || call(&mut session, &pair))?? {
+    let mut run = || call(&mut session, &pair);
+    let called =
+        if case.get("faults").is_some() { armed(case, &format!("file_session.{name}"), run)?? } else { run()? };
+    match called {
         Ok(result) => Err(format!("the call gives {result}").into()),
         Err(error) => expect_failure(&error, raises),
     }
@@ -474,7 +547,8 @@ fn made_call(case: &Value, name: &str) -> Result<(), Failed> {
 /// SF-3.8: an opening whose cancellation fired before the call; only `file_sessions.open` reads the group.
 fn open_cancel(case: &Value) -> Result<(), Failed> {
     let raises = case.get("raises").ok_or("the case has no raises")?;
-    let store = store_with(case)?;
+    let root = case_directory(case)?;
+    let store = store_with(case, root.path())?;
     let (_trigger, cancel) = cancel_of(case.get("cancel").ok_or("the case has no cancel")?)?;
     let cookie = cookie_of(case)?;
     match store.open(ProcessWait::for_generated_call(), cookie.as_deref(), Some(cancel)) {
@@ -538,11 +612,12 @@ fn the_store_of_files_is_made_by_a_static_member() -> Result<(), Failed> {
     expect_eq("core.path", &str_of(core, "path")?, &"polyspec_session_store::FileSessions::in_directory")
 }
 
-/// The cases that a generated binding test runs (binding G-5): every group that the interface contract declares for a
-/// member of `file_session`, other than the group `requests`, writes each PHP value of a call as a value of the alias
-/// `php_value` (`{"kind": <kind>, ...}`), `file_session.found` names such a group, and a case of one call of
-/// `file_session.close` raises `record_write` (SE-6.8). The group `requests` holds cases of several requests, which only
-/// the Rust tests run (SE-10.6).
+/// The cases that a generated binding test runs (binding G-5): the interface contract declares no group `requests`,
+/// whose cases hold several requests that only the Rust tests run (SE-10.6); every group that it declares for a member
+/// of `file_session` writes each PHP value of a call as a value of the alias `php_value` (`{"kind": <kind>, ...}`),
+/// `file_session.found` names such a group, a case of one call of `file_session.close` raises `record_write` (SE-6.8),
+/// and a case of one call of each of `get`, `set`, `remove` and `renew` raises `record` and `record_not_array` from the
+/// stored file of the case (SE-6.3, SE-6.4).
 fn the_cases_of_one_call_reach_their_members() -> Result<(), Failed> {
     fn values<'a>(value: &'a Value, found: &mut Vec<&'a Value>) {
         match value {
@@ -564,7 +639,10 @@ fn the_cases_of_one_call_reach_their_members() -> Result<(), Failed> {
     let mut groups: Vec<(&str, &str)> = Vec::new();
     for row in rows {
         let (member, group) = (str_of(row, "member")?, str_of(row, "group")?);
-        if member.starts_with("file_session.") && group != "requests" {
+        if group == "requests" {
+            return Err(format!("{member} names the group requests, whose cases hold several requests").into());
+        }
+        if member.starts_with("file_session.") {
             groups.push((member, group));
         }
     }
@@ -572,6 +650,7 @@ fn the_cases_of_one_call_reach_their_members() -> Result<(), Failed> {
         return Err("file_session.found names no group of one call".into());
     }
     let mut closes = false;
+    let mut stored: Vec<(&str, &str)> = Vec::new();
     for (member, group) in &groups {
         let cases = contract.get(*group).and_then(Value::as_array).ok_or_else(|| format!("no group {group}"))?;
         for case in cases {
@@ -585,13 +664,25 @@ fn the_cases_of_one_call_reach_their_members() -> Result<(), Failed> {
             if *member == "file_session.close" && kind == Some("record_write") {
                 closes = true;
             }
+            if let Some(kind @ ("record" | "record_not_array")) = kind {
+                if case.get("files").is_some() {
+                    stored.push((member, kind));
+                }
+            }
         }
     }
-    if closes {
-        Ok(())
-    } else {
-        Err("no case of one call of file_session.close raises record_write".into())
+    if !closes {
+        return Err("no case of one call of file_session.close raises record_write".into());
     }
+    for name in ["get", "set", "remove", "renew"] {
+        for kind in ["record", "record_not_array"] {
+            let member = format!("file_session.{name}");
+            if !stored.contains(&(member.as_str(), kind)) {
+                return Err(format!("no case of one call of {member} raises {kind} from a stored file").into());
+            }
+        }
+    }
+    Ok(())
 }
 
 /// SF-3.8: the cancellation of `file_sessions.open` is an `optional` of `cancel` whose default the core decides, so a
@@ -621,9 +712,10 @@ fn main() {
         Ok(contract) => contract,
         Err(error) => panic!("contracts/file-sessions.json is no JSON: {error}"),
     };
-    let groups: [(&str, Group); 11] = [
+    let groups: [(&str, Group); 16] = [
         ("requests", requests),
         ("open", open),
+        ("openNotAbsolute", open_not_absolute),
         ("openFaults", open_faults),
         ("collectFaults", collect_faults),
         ("file_session.get.made", |case| made_call(case, "get")),
@@ -633,6 +725,10 @@ fn main() {
         ("file_sessions.open.cancel", open_cancel),
         ("file_session.close.made", made_close),
         ("file_session.found.made", made_found),
+        ("file_session.get.stored", |case| made_call(case, "get")),
+        ("file_session.set.stored", |case| made_call(case, "set")),
+        ("file_session.remove.stored", |case| made_call(case, "remove")),
+        ("file_session.renew.stored", |case| made_call(case, "renew")),
     ];
     let mut trials = vec![
         Trial::test("interface::no_constructor_and_no_property_waits", no_constructor_and_no_property_waits),

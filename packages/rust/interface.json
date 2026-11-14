@@ -1547,27 +1547,27 @@
     {
       "member": "memory_store.new",
       "file": "contracts/sessions.json",
-      "group": "store"
+      "group": "memory_store.new.made"
     },
     {
       "member": "memory_store.get",
       "file": "contracts/sessions.json",
-      "group": "store"
+      "group": "memory_store.get.made"
     },
     {
       "member": "memory_store.set",
       "file": "contracts/sessions.json",
-      "group": "store"
+      "group": "memory_store.set.made"
     },
     {
       "member": "memory_store.remove",
       "file": "contracts/sessions.json",
-      "group": "store"
+      "group": "memory_store.remove.made"
     },
     {
       "member": "memory_store.renew",
       "file": "contracts/sessions.json",
-      "group": "store"
+      "group": "memory_store.renew.made"
     },
     {
       "member": "memory_store.renew",
@@ -1577,7 +1577,7 @@
     {
       "member": "memory_store.renewals",
       "file": "contracts/sessions.json",
-      "group": "store"
+      "group": "memory_store.renewals.made"
     },
     {
       "member": "accept",
@@ -1597,17 +1597,7 @@
     {
       "member": "file_sessions.open",
       "file": "contracts/file-sessions.json",
-      "group": "requests"
-    },
-    {
-      "member": "file_sessions.open",
-      "file": "contracts/file-sessions.json",
       "group": "openFaults"
-    },
-    {
-      "member": "file_sessions.collect",
-      "file": "contracts/file-sessions.json",
-      "group": "requests"
     },
     {
       "member": "file_sessions.collect",
@@ -1625,44 +1615,9 @@
       "group": "open"
     },
     {
-      "member": "file_session.get",
-      "file": "contracts/file-sessions.json",
-      "group": "requests"
-    },
-    {
-      "member": "file_session.set",
-      "file": "contracts/file-sessions.json",
-      "group": "requests"
-    },
-    {
-      "member": "file_session.remove",
-      "file": "contracts/file-sessions.json",
-      "group": "requests"
-    },
-    {
-      "member": "file_session.renew",
-      "file": "contracts/file-sessions.json",
-      "group": "requests"
-    },
-    {
-      "member": "file_session.found",
-      "file": "contracts/file-sessions.json",
-      "group": "requests"
-    },
-    {
-      "member": "file_session.close",
-      "file": "contracts/file-sessions.json",
-      "group": "requests"
-    },
-    {
       "member": "redis_sessions.new",
       "file": "contracts/redis-sessions.json",
       "group": "open"
-    },
-    {
-      "member": "redis_sessions.open",
-      "file": "contracts/redis-sessions.json",
-      "group": "requests"
     },
     {
       "member": "redis_sessions.open",
@@ -1673,36 +1628,6 @@
       "member": "redis_sessions.open",
       "file": "contracts/redis-sessions.json",
       "group": "opening"
-    },
-    {
-      "member": "redis_session.get",
-      "file": "contracts/redis-sessions.json",
-      "group": "requests"
-    },
-    {
-      "member": "redis_session.set",
-      "file": "contracts/redis-sessions.json",
-      "group": "requests"
-    },
-    {
-      "member": "redis_session.remove",
-      "file": "contracts/redis-sessions.json",
-      "group": "requests"
-    },
-    {
-      "member": "redis_session.renew",
-      "file": "contracts/redis-sessions.json",
-      "group": "requests"
-    },
-    {
-      "member": "redis_session.found",
-      "file": "contracts/redis-sessions.json",
-      "group": "requests"
-    },
-    {
-      "member": "redis_session.close",
-      "file": "contracts/redis-sessions.json",
-      "group": "requests"
     },
     {
       "member": "file_session.get",
@@ -1775,6 +1700,26 @@
       "member": "file_session.found",
       "file": "contracts/file-sessions.json",
       "group": "file_session.found.made"
+    },
+    {
+      "member": "file_session.get",
+      "file": "contracts/file-sessions.json",
+      "group": "file_session.get.stored"
+    },
+    {
+      "member": "file_session.set",
+      "file": "contracts/file-sessions.json",
+      "group": "file_session.set.stored"
+    },
+    {
+      "member": "file_session.remove",
+      "file": "contracts/file-sessions.json",
+      "group": "file_session.remove.stored"
+    },
+    {
+      "member": "file_session.renew",
+      "file": "contracts/file-sessions.json",
+      "group": "file_session.renew.stored"
     }
   ]
 }

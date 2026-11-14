@@ -473,6 +473,34 @@ fn the_options_name_their_core_type() -> Result<(), Failed> {
     )
 }
 
+/// Every case of a group that the interface contract declares for `redis_sessions.new` gives the arguments of one call
+/// under the names of its parameters, `setting` and `options` with its required field `lock_expire`, because a
+/// generated binding test takes the keys of a case as the arguments of the call (binding G-5).
+fn the_cases_of_new_give_its_parameters() -> Result<(), Failed> {
+    let interface: Value = serde_json::from_str(INTERFACE).map_err(failed)?;
+    let contract: Value = serde_json::from_str(CONTRACT).map_err(failed)?;
+    let rows = interface.get("cases").and_then(Value::as_array).ok_or("the contract has no list cases")?;
+    let mut checked = 0_usize;
+    for row in rows.iter().filter(|row| row.get("member").and_then(Value::as_str) == Some("redis_sessions.new")) {
+        let group = str_of(row, "group")?;
+        let cases = contract.get(group).and_then(Value::as_array).ok_or_else(|| format!("no group {group}"))?;
+        for case in cases {
+            let id = str_of(case, "id")?;
+            if case.get("setting").is_none() {
+                return Err(format!("the case {id} of the group {group} gives no setting").into());
+            }
+            if case.get("options").and_then(|options| options.get("lock_expire")).is_none() {
+                return Err(format!("the case {id} of the group {group} gives no options with lock_expire").into());
+            }
+            checked += 1;
+        }
+    }
+    if checked == 0 {
+        return Err("the interface contract declares no case of redis_sessions.new".into());
+    }
+    Ok(())
+}
+
 /// An opening of one call on a store whose setting names a socket under `/dev/null`, which no server has (SE-10.5):
 /// the group `opening`, whose connection fails (SR-6.4), and the group `openFaults`, whose case arms the fault
 /// injection points that it names (SE-9.6). Only `redis_sessions.open` reads the two groups. The future runs on a
@@ -693,7 +721,10 @@ fn main() {
     else {
         panic!("contracts/redis-sessions.json has no groups requests and open");
     };
-    let mut trials = vec![Trial::test("interface::the_options_name_their_core_type", the_options_name_their_core_type)];
+    let mut trials = vec![
+        Trial::test("interface::the_options_name_their_core_type", the_options_name_their_core_type),
+        Trial::test("interface::the_cases_of_new_give_its_parameters", the_cases_of_new_give_its_parameters),
+    ];
     for (index, case) in requests.iter().enumerate() {
         let Some(id) = case.get("id").and_then(Value::as_str) else {
             panic!("a case has no id");

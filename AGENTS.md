@@ -158,7 +158,9 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   fetched as source, and `make bindings` writes them again. `packages/ts/wasm/generated` and
   `packages/go/internal/ffi/generated` are not tracked; wasm-bindgen writes the module and its glue into the first.
   The variables `PYTHON` (3.14 or later), `PHP`, `PHP_CONFIG`, `PHPUNIT`, `TSC`, `GO`, `GOFMT` and `WASM_BINDGEN` name
-  the runtimes and tools; `WASM_BINDGEN` is the wasm-bindgen CLI of `mise.toml` unless it is given. `make test-go` fails a Go of another release than the go directive of `packages/go/go.mod`
+  the runtimes and tools; unless they are given, `GO`, `GOFMT`, `WASM_BINDGEN`, `MATURIN` and the Python of `PATH`
+  are those of `mise.toml`, `TSC` is the TypeScript of `package.json`, and `PHPUNIT` is the PHPUnit of
+  `composer.lock`, which `make install-php-tools` installs with the Composer of `mise.toml`. `make test-go` fails a Go of another release than the go directive of `packages/go/go.mod`
   and runs it with `GOTOOLCHAIN=local`, so that it fetches no toolchain, and `make test-wasm` fails a wasm-bindgen CLI
   of another release than the `wasm-bindgen` crate of `packages/ts/wasm/Cargo.toml`, because the CLI reads only a
   module of its own release (binding GN-18). `CARGOFLAGS` adds arguments to every cargo build. On macOS a PHP extension
@@ -187,6 +189,12 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   `make tool-pins-test`, `make servers-test`, `make install-bay-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
   (`CI_RUST`: `make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
+- The job `bindings` of the workflow `ci` sets up the PHP of `.php-version` and runs `make install-rust`,
+  `make install-tools`, `make install-php-tools` and `make ci-bindings` (`CI_BINDINGS`: `make lint-bindings`,
+  `make check-declarations`, `make test-python`, `make test-node`, `make test-wasm`, `make test-php` and
+  `make test-go`), so that no binding package of a release is untested; `ci-passed` needs it, and
+  `make workflows-test` fails a workflow `ci` without it or a `CI_BINDINGS` that leaves a target out. The job starts no
+  Redis server, because the cases of a Redis server have no form that a generated binding test runs yet (T1.34).
 - The last job of the workflow `ci` is `ci-passed`. It runs after every other job, also after a failed one, needs each
   of them, and `make ci-passed FAIL_SKIPPED=1` (ci-passed of kit) passes only when each has the result success, so that
   one job states the result of the run. `make workflows-test` fails a workflow `ci` whose last job is another or whose

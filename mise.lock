@@ -2,6 +2,47 @@
 
 lockfile_version = 3
 
+[[tools."github:PyO3/maturin"]]
+version = "1.16.0"
+backend = "github:PyO3/maturin"
+specifiers = ["1.16.0"]
+
+[tools."github:PyO3/maturin"."platforms.linux-arm64"]
+checksum = "sha256:7b7321340805f90d65f138ba8831c789b706086153f1cfb97d915c5ac6ad6c4d"
+url = "https://github.com/PyO3/maturin/releases/download/v1.16.0/maturin-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/PyO3/maturin/releases/assets/688760471"
+provenance = "github-attestations"
+
+[tools."github:PyO3/maturin"."platforms.linux-x64"]
+checksum = "sha256:804add817bf3b8a3760324ace2e2c39c345f7a99b3ace1296aeed1abc3a1d8c4"
+url = "https://github.com/PyO3/maturin/releases/download/v1.16.0/maturin-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/PyO3/maturin/releases/assets/688760466"
+provenance = "github-attestations"
+
+[tools."github:PyO3/maturin"."platforms.macos-arm64"]
+checksum = "sha256:1abe6c9d188b674103a4c3d9bbaa6817cc45c4b7e2ecd5908643624ff5cbf657"
+url = "https://github.com/PyO3/maturin/releases/download/v1.16.0/maturin-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/PyO3/maturin/releases/assets/688760470"
+provenance = "github-attestations"
+
+[tools."github:PyO3/maturin"."platforms.macos-x64"]
+checksum = "sha256:ef7dd01584717c0ebf49b9a2aedf49a6586d17543adb2e8f08577af7d987a525"
+url = "https://github.com/PyO3/maturin/releases/download/v1.16.0/maturin-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/PyO3/maturin/releases/assets/688760473"
+provenance = "github-attestations"
+
+[tools."github:PyO3/maturin"."platforms.windows-arm64"]
+checksum = "sha256:7c1c68ee355abfef3dd59bd9a970c3b2e1781169d6ce16571d9186233535e012"
+url = "https://github.com/PyO3/maturin/releases/download/v1.16.0/maturin-aarch64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/PyO3/maturin/releases/assets/688760475"
+provenance = "github-attestations"
+
+[tools."github:PyO3/maturin"."platforms.windows-x64"]
+checksum = "sha256:ca9fa03d2b37bbfc2851a62a787f1b6948b33ebd9cc6856376244a340377961b"
+url = "https://github.com/PyO3/maturin/releases/download/v1.16.0/maturin-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/PyO3/maturin/releases/assets/688760479"
+provenance = "github-attestations"
+
 [[tools."github:wasm-bindgen/wasm-bindgen"]]
 version = "0.2.130"
 backend = "github:wasm-bindgen/wasm-bindgen"
@@ -29,6 +70,12 @@ provenance = "github-attestations"
 checksum = "sha256:eb209c115b7cb95832423c1aa3f4d06d6c53f63ef74fc4b6fb79ef0b2eea5f10"
 url = "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.130/wasm-bindgen-0.2.130-x86_64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/assets/691140663"
+provenance = "github-attestations"
+
+[tools."github:wasm-bindgen/wasm-bindgen"."platforms.windows-x64"]
+checksum = "sha256:844d23f1b56097549b936dd2e0d561fadebc1e8c9e985d5068b6b919654104ad"
+url = "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.130/wasm-bindgen-0.2.130-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/assets/691140662"
 provenance = "github-attestations"
 
 [[tools.go]]
@@ -59,6 +106,35 @@ url = "https://dl.google.com/go/go1.27.3.windows-arm64.zip"
 [tools.go."platforms.windows-x64"]
 checksum = "sha256:f26081f438319757f8a1b46d7d0b2c5ec7583d4038e485e0aa725cfde7885fff"
 url = "https://dl.google.com/go/go1.27.3.windows-amd64.zip"
+
+[[tools."http:composer"]]
+version = "2.10.3"
+backend = "http:composer"
+specifiers = ["2.10.3"]
+
+[tools."http:composer"."platforms.linux-arm64"]
+checksum = "sha256:7a2d379d5b8ffdaa028580ef26494c36d2feef4b178d3dd1473a4dbc5e17c8d6"
+url = "https://getcomposer.org/download/2.10.3/composer.phar"
+
+[tools."http:composer"."platforms.linux-x64"]
+checksum = "sha256:7a2d379d5b8ffdaa028580ef26494c36d2feef4b178d3dd1473a4dbc5e17c8d6"
+url = "https://getcomposer.org/download/2.10.3/composer.phar"
+
+[tools."http:composer"."platforms.macos-arm64"]
+checksum = "sha256:7a2d379d5b8ffdaa028580ef26494c36d2feef4b178d3dd1473a4dbc5e17c8d6"
+url = "https://getcomposer.org/download/2.10.3/composer.phar"
+
+[tools."http:composer"."platforms.macos-x64"]
+checksum = "sha256:7a2d379d5b8ffdaa028580ef26494c36d2feef4b178d3dd1473a4dbc5e17c8d6"
+url = "https://getcomposer.org/download/2.10.3/composer.phar"
+
+[tools."http:composer"."platforms.windows-arm64"]
+checksum = "sha256:7a2d379d5b8ffdaa028580ef26494c36d2feef4b178d3dd1473a4dbc5e17c8d6"
+url = "https://getcomposer.org/download/2.10.3/composer.phar"
+
+[tools."http:composer"."platforms.windows-x64"]
+checksum = "sha256:7a2d379d5b8ffdaa028580ef26494c36d2feef4b178d3dd1473a4dbc5e17c8d6"
+url = "https://getcomposer.org/download/2.10.3/composer.phar"
 
 [[tools.node]]
 version = "26.12.0"

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- The workflow `ci` had no job that tests the generated bindings, so a release would carry binding packages that no
+  run tested. Its job `bindings` now runs `make ci-bindings`, the lint of the workspace, the generated declarations and
+  the tests of python, node, wasm, php and go with their contract cases, and `ci-passed` needs it. The tools of these
+  tests are pinned in the checkout: TypeScript 7.0.2 in `package.json`, maturin and Composer in `mise.toml`, PHPUnit in
+  `composer.json` and `composer.lock` (`make install-php-tools`), and Go of `mise.toml`; `make test-python` no longer
+  installs maturin from an index. The job fails at `make bindings` for every target until the generator takes the
+  contract (G-4: the cases of `file_sessions.open` and `redis_sessions.open` in the group `requests` give no
+  `cookie`), and it starts no Redis server, because the cases of a Redis server have no form that a generated test runs
+  yet (T1.34).
+
 - The repository built no asset of a binding for a release: `config/release.json` named no package, and the workflow
   `release` only tagged and published notes. binding 0.0.3 writes the release recipes of the contract into the ignored
   file `packages/release.mk` (binding release-recipes, GN-19h), which the Makefile now includes, and

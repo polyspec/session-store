@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 9f407b3139ba750694aa8e0980ae9d94acf66e324cf7d0a5973986fd87c43f70 -->
+<!-- source-sha256: 3ae2c9bdca86e1642e5bf5eb5d75d1058f6b5f1b62e5d9fb4303fdf4b139e3f6 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -150,7 +150,9 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   추적되고, `make bindings`가 다시 쓴다. `packages/ts/wasm/generated`와 `packages/go/internal/ffi/generated`는 추적하지
   않는다. wasm-bindgen은 모듈과 그 glue를 앞의 디렉터리에 쓴다.
   변수 `PYTHON`(3.14 이상), `PHP`, `PHP_CONFIG`, `PHPUNIT`, `TSC`, `GO`, `GOFMT`, `WASM_BINDGEN`이 런타임과 도구를
-  가리킨다. `WASM_BINDGEN`은 주어지지 않으면 `mise.toml`의 wasm-bindgen CLI다. `make test-go`는 `packages/go/go.mod`의 go 지시문과 다른 판의 Go를 실패시키고, toolchain을 받지 않도록
+  가리킨다. 주어지지 않으면 `GO`, `GOFMT`, `WASM_BINDGEN`, `MATURIN`과 `PATH`의 Python은 `mise.toml`의 것이고,
+  `TSC`는 `package.json`의 TypeScript이며, `PHPUNIT`은 `make install-php-tools`가 `mise.toml`의 Composer로 설치하는
+  `composer.lock`의 PHPUnit이다. `make test-go`는 `packages/go/go.mod`의 go 지시문과 다른 판의 Go를 실패시키고, toolchain을 받지 않도록
   `GOTOOLCHAIN=local`로 실행한다. `make test-wasm`은 `packages/ts/wasm/Cargo.toml`의 `wasm-bindgen` crate와 다른 판의
   wasm-bindgen CLI를 실패시킨다. 그 CLI는 자기 판의 모듈만 읽기 때문이다(binding GN-18). `CARGOFLAGS`는 모든 cargo
   build에 인자를 더한다. macOS에서 PHP 확장과 Node addon은 자기 런타임이 그것을 로드할 때 런타임의 기호를 받는다.
@@ -178,6 +180,12 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   `make commit-names-test`, `make release-coverage`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
   보고서 `var/report/ci-targets`를 올린다.
+- workflow `ci`의 job `bindings`는 `.php-version`의 PHP를 설치하고 `make install-rust`, `make install-tools`,
+  `make install-php-tools`, `make ci-bindings`(`CI_BINDINGS`: `make lint-bindings`, `make check-declarations`,
+  `make test-python`, `make test-node`, `make test-wasm`, `make test-php`, `make test-go`)를 실행한다. 그래서
+  릴리스의 바인딩 package는 시험되지 않은 채로 나가지 않는다. `ci-passed`가 이 job을 `needs`에 두고,
+  `make workflows-test`는 이 job이 없는 workflow `ci`와 target 하나를 빠뜨린 `CI_BINDINGS`를 실패시킨다. 이 job은
+  Redis 서버를 시작하지 않는다. Redis 서버의 case에는 생성된 바인딩 시험이 실행하는 형식이 아직 없기 때문이다(T1.34).
 - workflow `ci`의 마지막 job은 `ci-passed`다. 이 job은 다른 모든 job 뒤에, 실패한 job 뒤에도 실행되고, 그 job을 모두
   `needs`에 둔다. `make ci-passed FAIL_SKIPPED=1`(kit의 ci-passed)은 각 job의 결과가 success일 때만 통과한다. 그래서
   job 하나가 run의 결과를 말한다. `make workflows-test`는 마지막 job이 다른 job이거나 `needs`가 job 하나를 빠뜨린

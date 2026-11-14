@@ -13,6 +13,12 @@ python = "3.14.8"
 uv = "0.12.24"
 go = "1.27.3"
 "github:wasm-bindgen/wasm-bindgen" = "0.2.130"
+# The tools of the tests of the bindings (make test-bindings): maturin builds the wheel of make test-python, the binary of
+# its GitHub release, and Composer installs the PHPUnit of composer.lock (make install-php-tools). composer.phar is one
+# file, so its sha256 is declared here, from getcomposer.org/download/<version>/composer.phar.sha256sum, and mise.lock
+# records it.
+"github:PyO3/maturin" = "1.16.0"
+"http:composer" = { version = "2.10.3", url = "https://getcomposer.org/download/{{ version }}/composer.phar", checksum = "sha256:7a2d379d5b8ffdaa028580ef26494c36d2feef4b178d3dd1473a4dbc5e17c8d6", bin = "composer" }
 
 # The settings of mise and uv of this checkout: mise installs and runs only what mise.lock pins and installs nothing on
 # its own, and uv downloads no Python, takes the Python of PATH, where the shims of mise come first, reads no uv.toml of

@@ -1,0 +1,15 @@
+{
+    "name": "polyspec/session-store-development",
+    "description": "The development tools of the repository: PHPUnit, which runs the tests of the PHP extension",
+    "type": "project",
+    "license": "MIT",
+    "require-dev": {
+        "phpunit/phpunit": "^12"
+    },
+    "config": {
+        "allow-plugins": false,
+        "platform": {
+            "php": "8.4.27"
+        }
+    }
+}

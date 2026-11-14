@@ -49,18 +49,24 @@ CASES := $(CURDIR)/contracts
 VAR := $(CURDIR)/var
 export CARGO_TARGET_DIR ?= $(CURDIR)/target
 # The runtimes and tools of the bindings. PHP is also the binary whose headers the extension is built against
-# (PHP_CONFIG) and that loads it; both are paths, because ext-php-rs reads PHP as the path of a file. TSC checks the
-# generated declarations and PHPUNIT runs the PHP tests.
+# (PHP_CONFIG) and that loads it; both are paths, because ext-php-rs reads PHP as the path of a file. TSC, the
+# TypeScript of package.json, checks the generated declarations; PHPUNIT, the PHPUnit of composer.lock that make
+# install-php-tools installs into vendor, runs the PHP tests; MATURIN, the maturin of mise.toml, builds the wheel of the
+# tests. PYTHON is found on PATH, where the shims of mise come first, so it is the Python of mise.toml.
 PYTHON ?= python3.14
 PHP_CONFIG ?= $(shell command -v php-config)
-PHPUNIT ?= phpunit
-TSC ?= tsc
-MATURIN := maturin==1.16.0
+PHPUNIT ?= $(CURDIR)/vendor/bin/phpunit
+TSC ?= $(CURDIR)/node_modules/.bin/tsc
+MATURIN ?= $(VAR_TOOLS)/mise/shims/maturin
+# The Composer of mise.toml, with its home and cache under var/tools, which installs the PHPUnit of composer.lock.
+COMPOSER := $(VAR_TOOLS)/mise/shims/composer
+export COMPOSER_HOME := $(VAR_TOOLS)/composer
+export COMPOSER_CACHE_DIR := $(VAR_TOOLS)/composer/cache
 # The Go of the go directive of packages/go/go.mod and the wasm-bindgen CLI of the release of the wasm-bindgen crate of
 # packages/ts/wasm/Cargo.toml (binding GN-15, GN-18); test-go and node-package compare both releases before they use
-# them. The wasm-bindgen CLI is the one of mise.toml, which make release-npm of the release recipes also starts.
-GO ?= go
-GOFMT ?= gofmt
+# them. Both are the ones of mise.toml; make release-npm of the release recipes starts the same wasm-bindgen CLI.
+GO ?= $(VAR_TOOLS)/mise/shims/go
+GOFMT ?= $(VAR_TOOLS)/mise/shims/gofmt
 WASM_BINDGEN ?= $(VAR_TOOLS)/mise/shims/wasm-bindgen
 # ext-php-rs reads them when it builds the extension.
 export PHP PHP_CONFIG
@@ -68,7 +74,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust install-bay setup-bay install-bay-test ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay setup-bay install-bay-test ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
 	release-recipes
@@ -77,9 +83,12 @@ CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 # job test runs make redis-image and make test, one target each.
 CI_SHARED := docs-check owner-validate workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test release-coverage
 CI_RUST := lint-rust fmt-check binding-check
+# The tests of the bindings of every target of the contract (binding BD-27), which the job bindings runs, so that no
+# binding package is released untested.
+CI_BINDINGS := lint-bindings check-declarations test-python test-node test-wasm test-php test-go
 CI_REPORT ?= var/report/ci-targets
 
-check: lint-rust fmt-check test binding-check docs-check owner-validate workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test release-coverage
+check: lint-rust fmt-check test binding-check test-bindings docs-check owner-validate workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test release-coverage
 
 # The npm that devEngines of package.json names installs the lock, @polyspec/kit included, before the tools of the
 # checkout exist, since install-tools TOOLS=npm runs the bootstrap of the installed kit. It runs on the node of the
@@ -105,6 +114,10 @@ endif
 install-packages:
 	$(NPM) ci
 
+# The PHPUnit of composer.lock into vendor, with the Composer of mise.toml; the one target that installs PHP packages.
+install-php-tools:
+	$(COMPOSER) install --no-interaction --no-progress
+
 # Writes mise.lock with mise lock for each platform that has the archives of the tools.
 TOOLCHAIN_LOCK_PLATFORMS := linux-x64,linux-arm64,macos-arm64,macos-x64,windows-x64,windows-arm64
 toolchain-lock:
@@ -121,6 +134,9 @@ ci-shared:
 
 ci-rust:
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_RUST)
+
+ci-bindings:
+	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_BINDINGS)
 
 # The last job of .github/workflows/ci.yml: fails unless every job of RESULTS, the JSON of toJSON(needs), has the result
 # success; with FAIL_SKIPPED=1 a skipped job fails it too. RESULTS that is not set or names no job fails it with status 2.
@@ -228,13 +244,13 @@ check-declarations: bindings-node bindings-wasm
 	$(TSC) --noEmit --strict packages/ts/generated/index.d.ts
 	$(TSC) --noEmit --strict packages/ts/wasm/generated/index.d.ts
 
-# The wheel, installed into a virtual environment; the generated tests (binding G-5) and the contract cases (SE-10).
+# The wheel that the maturin of mise.toml builds, installed into a virtual environment without an index; the generated
+# tests (binding G-5) and the contract cases (SE-10).
 test-python: bindings-python
 	$(PYTHON) -m venv --clear $(VAR)/venv
-	$(VAR)/venv/bin/pip install -q $(MATURIN)
 	rm -rf $(VAR)/wheels
-	cd packages/python && $(VAR)/venv/bin/maturin build --locked --features panic-test,fault-test --out $(VAR)/wheels $(CARGOFLAGS)
-	$(VAR)/venv/bin/pip install -q --force-reinstall $(VAR)/wheels/*.whl
+	cd packages/python && $(MATURIN) build --locked --interpreter $(VAR)/venv/bin/python --features panic-test,fault-test --out $(VAR)/wheels $(CARGOFLAGS)
+	$(VAR)/venv/bin/pip install -q --no-index --force-reinstall $(VAR)/wheels/*.whl
 	cd $(VAR) && venv/bin/python -m unittest discover -s $(CURDIR)/packages/python/generated/tests -t $(CURDIR)/packages/python/generated/tests
 	cd $(VAR) && SESSION_STORE_CASES=$(CASES) venv/bin/python -m unittest discover -s $(CURDIR)/packages/python/tests -t $(CURDIR)/packages/python/tests
 

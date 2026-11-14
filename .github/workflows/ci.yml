@@ -88,6 +88,39 @@ jobs:
       - name: tests
         run: make test BAY_SUDO=1
 
+  # The tests of the bindings of every target of the contract (binding BD-27): clippy on the workspace, the generated
+  # declarations, and the tests that binding generates with the contract cases of each binding on the runner of its
+  # language (make ci-bindings, CI_BINDINGS of the Makefile), so that no binding package is released untested. The job
+  # installs every tool of mise.toml, the PHP of .php-version and the PHPUnit of composer.lock. It starts no Redis
+  # server: the cases of a Redis server have no form that a generated binding test runs yet (T1.34).
+  bindings:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      # shivammathur/setup-php 2.40.0: the PHP of .php-version with its php-config, which the PHP extension is built
+      # against and which loads it.
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
+        with:
+          php-version-file: .php-version
+          tools: none
+          coverage: none
+      - uses: ./.github/actions/bootstrap
+      - name: install the Rust toolchain and the locked crates
+        run: make install-rust
+      - name: install the tools of mise.toml
+        run: make install-tools
+      - name: install PHPUnit
+        run: make install-php-tools
+      - name: tests of the bindings
+        run: make ci-bindings
+      - name: report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: report-bindings
+          path: var/report/ci-targets/
+          if-no-files-found: ignore
+
   # The assets of each platform of the bindings, built from the commit of the run with the matrix of the release (binding
   # GN-19a, GN-19i).
   assets:
@@ -98,7 +131,7 @@ jobs:
   # workflows-test fails this workflow when ci-passed is not its last job or when needs leaves a job out.
   ci-passed:
     if: ${{ always() }}
-    needs: [shared, rust, test, assets]
+    needs: [shared, rust, test, bindings, assets]
     runs-on: ubuntu-26.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

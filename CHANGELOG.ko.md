@@ -1,7 +1,16 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: e99798af94ea62ab341022187b0a456753da2f7f3ba431da492ccd451989baed -->
+<!-- source-sha256: 2564e58f206945ecc8899539cbc0bfcfcaf6425b194bb59862e4979810535a60 -->
 
 ## Unreleased
+
+- workflow `ci`에는 생성된 바인딩을 시험하는 job이 없어서, 릴리스는 어떤 run도 시험하지 않은 바인딩 package를
+  내보낼 수 있었다. 이제 job `bindings`가 `make ci-bindings`, 곧 workspace의 lint, 생성된 선언, python, node, wasm,
+  php, go의 시험과 그 계약 case를 실행하고, `ci-passed`가 그 job을 `needs`에 둔다. 이 시험의 도구는 checkout에
+  고정한다. TypeScript 7.0.2는 `package.json`에, maturin과 Composer는 `mise.toml`에, PHPUnit은 `composer.json`과
+  `composer.lock`에(`make install-php-tools`), Go는 `mise.toml`에 둔다. `make test-python`은 더 이상 index에서
+  maturin을 설치하지 않는다. 생성기가 계약을 받을 때까지 이 job은 모든 target에서 `make bindings`로 실패한다(G-4:
+  group `requests`에 있는 `file_sessions.open`과 `redis_sessions.open`의 case가 `cookie`를 주지 않는다). Redis 서버의
+  case에는 생성된 시험이 실행하는 형식이 아직 없으므로 이 job은 Redis 서버를 시작하지 않는다(T1.34).
 
 - 저장소는 릴리스를 위한 바인딩 asset을 만들지 않았다. `config/release.json`은 package를 적지 않았고, workflow
   `release`는 tag를 달고 notes를 공개할 뿐이었다. binding 0.0.3은 계약의 릴리스 recipe를 무시되는 파일

@@ -9,3 +9,4 @@ __pycache__/
 # packages that make release-npm-platform writes inside the npm package, since the napi CLI refuses a folder outside it.
 /packages/release.mk
 /packages/ts/npm/
+/vendor/

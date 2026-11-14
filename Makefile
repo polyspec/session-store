@@ -27,8 +27,10 @@ CORE := -p polyspec-session-store -p polyspec-session-store-core -p polyspec-ses
 LIBRARY := polyspec-session-store
 # The five targets of the contract (binding BD-27).
 TARGETS := php python node go wasm
-# binding at the commit of Cargo.lock (scripts/binding.mts).
-BINDING := $(NODE) scripts/binding.mts
+# binding, the npm package @polyspec/binding of the release that package.json pins by the URL of its asset and
+# package-lock.json by its integrity; make install-packages installs it with the other packages. Its release and the tag
+# of polyspec-binding-core in the manifests are one release (binding CK-20).
+BINDING := $(NODE) $(CURDIR)/node_modules/@polyspec/binding/dist/cli.js
 # The real peers of the tests, each required: PHP reads the records back (SE-10.3), and bay runs the Redis servers of the
 # stores of Redis from the image REDIS_IMAGE as Compose projects, on Apple container on Darwin and on Docker on Linux,
 # whose commands scripts/servers.sh holds, and issues their certificates of TLS (SE-10.4). A test whose peer is not
@@ -66,7 +68,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust install-binding install-bay setup-bay install-bay-test ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust install-bay setup-bay install-bay-test ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
 
@@ -112,12 +114,6 @@ toolchain-lock:
 install-rust:
 	rustup toolchain install --no-self-update
 	$(CARGO) fetch --locked
-
-# install-binding installs binding at the commit that Cargo.lock pins into var/binding/<commit> (scripts/binding.mts),
-# after make install-rust fetched the crates; binding-check and the binding targets read it offline and fail while it is
-# missing.
-install-binding:
-	$(BINDING) install
 
 ci-shared:
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_SHARED)
@@ -202,6 +198,10 @@ lint-rust:
 
 fmt-check:
 	$(CARGO) fmt $(CORE) --check
+
+# binding reads the crates with cargo metadata, which Cargo runs offline here, after make install-rust fetched them, so
+# that no check depends on the network.
+binding-check $(addprefix bindings-,$(TARGETS)): export CARGO_NET_OFFLINE := true
 
 # The contract check and the comparison of the tracked binding packages with what binding writes (CK-19).
 binding-check:

@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 7b1044e85d71cb25c587a68e224d74efdda1d9133f8972cc3b9e46226a280b9d -->
+<!-- source-sha256: 76471b2cd61d7872064ce33109f98665e6b2b104cc52aedf960f5ad9e6c179e6 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -20,10 +20,12 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   쓰고 계약 검사가 비교한다(binding CK-19). 이 package들은 workspace의 member다. `make bindings`가 추적하지 않는
   `generated/`를 쓰고, 바인딩 package의 빌드는 그 뒤에 한다. 코어의 target은 코어 crate를 `-p`로 지정하므로
   생성된 소스가 필요 없다.
-- `scripts/binding.mts`: `Cargo.lock`이 고정하는 `polyspec-binding-core`의 commit에서 binding을 실행한다. binding을
-  내려받는 것은 `make install-binding`뿐이다. 그 target은 binding을 그 commit으로 `var/binding/<commit>`에 clone하고 그
-  도구의 패키지를 `var/tools`의 npm으로 설치한다. 다른 모든 명령은 crate를 `cargo metadata --offline`으로 읽고 binding이
-  설치되지 않았으면 실패한다. 내려받는 검사는 네트워크에 의존하기 때문이다(T1.28).
+- binding은 한 릴리스의 npm 패키지 `@polyspec/binding`이다. `package.json`은 그 릴리스 asset의 URL로,
+  `package-lock.json`은 그 integrity로 고정하므로, `make install-packages`가 다른 패키지와 함께 설치한다. 다른
+  polyspec 저장소에 대한 의존은 tag나 릴리스 asset이고 브랜치나 commit이 아니다. 모든 manifest는
+  `polyspec-binding-core`를 같은 릴리스의 tag로 적는다. 생성기와 crate는 한 릴리스이기 때문이다(binding CK-20).
+  Makefile의 `BINDING`은 그 `dist/cli.js`를 시작하고, binding target은 Cargo를 offline으로 실행한다
+  (`CARGO_NET_OFFLINE`). binding은 `cargo metadata`로 crate를 읽고, 내려받는 검사는 네트워크에 의존하기 때문이다.
 - `scripts/test-run.mts`: `make test`의 시험을 자기 서버와 임시 디렉터리를 소유하는 run으로 실행한다(SE-10.4).
 - `scripts/servers.sh`: 시험의 Redis 서버를 위한 bay의 명령이다. 시험, `scripts/test-run.mts`, `make redis-image`가 이
   script를 실행한다(SE-10.4). bay가 서버를 Compose 프로젝트로 시작하고 지우며, 서버의 이름과 certificate와 주소를 주고,

@@ -19,10 +19,13 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   tracked files `binding scaffold` writes and the contract check compares (binding CK-19). They are members of the
   workspace; `make bindings` writes their `generated/`, which is not tracked, and builds of them come after it. The
   targets of the core name the core crates with `-p`, so they need no generated source.
-- `scripts/binding.mts`: runs binding at the commit of `polyspec-binding-core` that `Cargo.lock` pins. Only `make
-  install-binding` downloads binding: it clones binding at that commit into `var/binding/<commit>` and installs the
-  packages of its tool with the npm of `var/tools`. Every other command reads the crates with `cargo metadata --offline`
-  and fails while binding is not installed, because a check that downloads depends on the network (T1.28).
+- binding is the npm package `@polyspec/binding` of a release, which `package.json` pins by the URL of its release
+  asset and `package-lock.json` by its integrity, so `make install-packages` installs it with the other packages; a
+  dependency on another polyspec repository is a tag or a release asset, never a branch or a commit. Every manifest
+  names `polyspec-binding-core` by the tag of the same release, because the generator and the crate are one release
+  (binding CK-20). `BINDING` of the Makefile starts its `dist/cli.js`, and the binding targets run Cargo offline
+  (`CARGO_NET_OFFLINE`), because binding reads the crates with `cargo metadata` and a check that downloads depends on
+  the network.
 - `scripts/test-run.mts`: runs the tests of `make test` as a run that owns its servers and its temporary directory (SE-10.4).
 - `scripts/servers.sh`: the commands of bay for the Redis servers of the tests, which the tests,
   `scripts/test-run.mts` and `make redis-image` run (SE-10.4): bay starts and removes the servers as Compose projects,

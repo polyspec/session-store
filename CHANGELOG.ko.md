@@ -1,7 +1,13 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 5c5f6deeedc93ffcf1bd8f7b07525430468af6931e449279d378ba75aa9653f6 -->
+<!-- source-sha256: d89c9b83a05973848baaab793066d40a52fc27f3bf459d1aad0eba366a0f845b -->
 
 ## Unreleased
+
+- binding은 `Cargo.lock`의 commit으로 `var/binding`에 clone되었고, 모든 manifest가 개발 형태인 브랜치 `v1/rust-core`로
+  적었다. 이제 binding은 릴리스 0.0.1의 npm 패키지이고, asset의 URL과 integrity로 고정되어 다른 패키지와 함께
+  설치된다. 모든 manifest는 `polyspec-binding-core`를 tag `v0.0.1`로 적고, `scripts/binding.mts`와
+  `make install-binding`은 없어졌다. binding target은 Cargo를 offline으로 실행한다(T1.32). php-serialization이
+  binding을 tag로 적고 binding이 릴리스 패키지에 자기 commit을 쓸 때까지 `make binding-check`는 CK-20으로 실패한다.
 
 - `file_session.found`와 `redis_session.found`는 어떤 생성 바인딩 시험도 실행하지 않는 group `requests`에만 case가
   있었고, `file_session.close`의 `record_write`도 그곳에서만 닿았다. 쿠키 없이 만든 세션이 호출 하나로 둘 다 주는데도

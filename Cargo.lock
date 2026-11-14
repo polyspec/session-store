@@ -129,7 +129,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
- "syn 3.0.10",
+ "syn 2.0.119",
 ]
 
 [[package]]
@@ -531,7 +531,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e35d6e78f4cebb90e51d543db8fe41528851d6deeef6ef21ebd4bfdc1e784776"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1364,7 +1364,7 @@ checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 [[package]]
 name = "polyspec-binding-core"
 version = "0.0.1"
-source = "git+https://github.com/polyspec/binding.git?branch=v1%2Frust-core#fa5954b7231b2620d53b2bb95f2b304622411519"
+source = "git+https://github.com/polyspec/binding.git?tag=v0.0.1#7c1215179b28f91de3723ce051047d6bea56c585"
 dependencies = [
  "indexmap",
  "libc",
@@ -1374,11 +1374,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "polyspec-binding-core"
+version = "0.0.1"
+source = "git+https://github.com/polyspec/binding.git?branch=v1%2Frust-core#fa5954b7231b2620d53b2bb95f2b304622411519"
+dependencies = [
+ "indexmap",
+ "libc",
+ "tokio-util",
+]
+
+[[package]]
 name = "polyspec-php-serialization"
 version = "0.0.6"
 source = "git+https://github.com/polyspec/php-serialization.git?branch=v1%2Frust-core#ac73e52e5338b303c3db451a3d118581ae73fe57"
 dependencies = [
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.1 (git+https://github.com/polyspec/binding.git?branch=v1%2Frust-core)",
  "ryu",
 ]
 
@@ -1399,7 +1409,7 @@ version = "0.0.0"
 dependencies = [
  "getrandom 0.3.4",
  "libtest-mimic",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.1 (git+https://github.com/polyspec/binding.git?tag=v0.0.1)",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "serde_json",
@@ -1410,7 +1420,7 @@ name = "polyspec-session-store-file"
 version = "0.0.0"
 dependencies = [
  "libtest-mimic",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.1 (git+https://github.com/polyspec/binding.git?tag=v0.0.1)",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "rustix",
@@ -1422,7 +1432,7 @@ dependencies = [
 name = "polyspec-session-store-go"
 version = "0.0.0"
 dependencies = [
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.1 (git+https://github.com/polyspec/binding.git?tag=v0.0.1)",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
@@ -1434,7 +1444,7 @@ dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.1 (git+https://github.com/polyspec/binding.git?tag=v0.0.1)",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
@@ -1444,7 +1454,7 @@ name = "polyspec-session-store-php-ext"
 version = "0.0.0"
 dependencies = [
  "ext-php-rs",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.1 (git+https://github.com/polyspec/binding.git?tag=v0.0.1)",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
@@ -1453,7 +1463,7 @@ dependencies = [
 name = "polyspec-session-store-python"
 version = "0.0.0"
 dependencies = [
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.1 (git+https://github.com/polyspec/binding.git?tag=v0.0.1)",
  "polyspec-php-serialization",
  "polyspec-session-store",
  "pyo3",
@@ -1464,7 +1474,7 @@ name = "polyspec-session-store-redis"
 version = "0.0.0"
 dependencies = [
  "libtest-mimic",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.1 (git+https://github.com/polyspec/binding.git?tag=v0.0.1)",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "redis",
@@ -1479,7 +1489,7 @@ name = "polyspec-session-store-wasm"
 version = "0.0.0"
 dependencies = [
  "js-sys",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.1 (git+https://github.com/polyspec/binding.git?tag=v0.0.1)",
  "polyspec-php-serialization",
  "polyspec-session-store",
  "wasm-bindgen",
@@ -1726,7 +1736,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2027,7 +2037,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2355,7 +2365,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]

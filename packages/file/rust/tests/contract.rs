@@ -494,6 +494,62 @@ fn the_store_of_files_is_made_by_a_static_member() -> Result<(), Failed> {
     expect_eq("core.path", &str_of(core, "path")?, &"polyspec_session_store::FileSessions::in_directory")
 }
 
+/// The cases that a generated binding test runs (binding G-5): every group that the interface contract declares for a
+/// member of `file_session`, other than the group `requests`, writes each PHP value of a call as a value of the alias
+/// `php_value` (`{"kind": <kind>, ...}`), `file_session.found` names such a group, and a case of one call of
+/// `file_session.close` raises `record_write` (SE-6.8). The group `requests` holds cases of several requests, which only
+/// the Rust tests run (SE-10.6).
+fn the_cases_of_one_call_reach_their_members() -> Result<(), Failed> {
+    fn values<'a>(value: &'a Value, found: &mut Vec<&'a Value>) {
+        match value {
+            Value::Object(entries) => {
+                for (key, entry) in entries {
+                    if key == "value" && entries.contains_key("key") {
+                        found.push(entry);
+                    }
+                    values(entry, found);
+                }
+            }
+            Value::Array(items) => items.iter().for_each(|item| values(item, found)),
+            _ => {}
+        }
+    }
+    let interface: Value = serde_json::from_str(INTERFACE).map_err(failed)?;
+    let contract: Value = serde_json::from_str(CONTRACT).map_err(failed)?;
+    let rows = interface.get("cases").and_then(Value::as_array).ok_or("the contract has no list cases")?;
+    let mut groups: Vec<(&str, &str)> = Vec::new();
+    for row in rows {
+        let (member, group) = (str_of(row, "member")?, str_of(row, "group")?);
+        if member.starts_with("file_session.") && group != "requests" {
+            groups.push((member, group));
+        }
+    }
+    if !groups.iter().any(|(member, _)| *member == "file_session.found") {
+        return Err("file_session.found names no group of one call".into());
+    }
+    let mut closes = false;
+    for (member, group) in &groups {
+        let cases = contract.get(*group).and_then(Value::as_array).ok_or_else(|| format!("no group {group}"))?;
+        for case in cases {
+            let mut found = Vec::new();
+            values(case, &mut found);
+            if let Some(value) = found.iter().find(|value| value.get("kind").and_then(Value::as_str).is_none()) {
+                let id = str_of(case, "id")?;
+                return Err(format!("the case {id} of {group} gives the value {value}, no php_value").into());
+            }
+            let kind = case.get("raises").and_then(|raises| raises.get("kind")).and_then(Value::as_str);
+            if *member == "file_session.close" && kind == Some("record_write") {
+                closes = true;
+            }
+        }
+    }
+    if closes {
+        Ok(())
+    } else {
+        Err("no case of one call of file_session.close raises record_write".into())
+    }
+}
+
 /// SF-3.8: the cancellation of `file_sessions.open` is an `optional` of `cancel` whose default the core decides, so a
 /// call may leave it out, and the core takes it by value (binding GN-6i, GN-6aq).
 fn the_cancellation_of_open_is_an_optional() -> Result<(), Failed> {
@@ -540,6 +596,7 @@ fn main() {
             the_store_of_files_is_made_by_a_static_member,
         ),
         Trial::test("interface::the_cancellation_of_open_is_an_optional", the_cancellation_of_open_is_an_optional),
+        Trial::test("interface::the_cases_of_one_call_reach_their_members", the_cases_of_one_call_reach_their_members),
     ];
     for (group, run) in groups {
         let Some(Value::Array(cases)) = contract.get(group) else {

@@ -534,6 +534,52 @@ fn the_settings_of_the_cases_name_their_case_by_kind() -> Result<(), Failed> {
     Ok(())
 }
 
+/// The cases that a generated binding test runs (binding G-5): every group that the interface contract declares for a
+/// member of `redis_session`, other than the group `requests`, writes each PHP value of a call as a value of the alias
+/// `php_value` (`{"kind": <kind>, ...}`), and `redis_session.found` names such a group. The group `requests` holds
+/// cases of several requests, which only the Rust tests run (SE-10.6).
+fn the_cases_of_one_call_reach_their_members() -> Result<(), Failed> {
+    fn values<'a>(value: &'a Value, found: &mut Vec<&'a Value>) {
+        match value {
+            Value::Object(entries) => {
+                for (key, entry) in entries {
+                    if key == "value" && entries.contains_key("key") {
+                        found.push(entry);
+                    }
+                    values(entry, found);
+                }
+            }
+            Value::Array(items) => items.iter().for_each(|item| values(item, found)),
+            _ => {}
+        }
+    }
+    let interface: Value = serde_json::from_str(INTERFACE).map_err(failed)?;
+    let contract: Value = serde_json::from_str(CONTRACT).map_err(failed)?;
+    let rows = interface.get("cases").and_then(Value::as_array).ok_or("the contract has no list cases")?;
+    let mut groups: Vec<(&str, &str)> = Vec::new();
+    for row in rows {
+        let (member, group) = (str_of(row, "member")?, str_of(row, "group")?);
+        if member.starts_with("redis_session.") && group != "requests" {
+            groups.push((member, group));
+        }
+    }
+    if !groups.iter().any(|(member, _)| *member == "redis_session.found") {
+        return Err("redis_session.found names no group of one call".into());
+    }
+    for (_, group) in &groups {
+        let cases = contract.get(*group).and_then(Value::as_array).ok_or_else(|| format!("no group {group}"))?;
+        for case in cases {
+            let mut found = Vec::new();
+            values(case, &mut found);
+            if let Some(value) = found.iter().find(|value| value.get("kind").and_then(Value::as_str).is_none()) {
+                let id = str_of(case, "id")?;
+                return Err(format!("the case {id} of {group} gives the value {value}, no php_value").into());
+            }
+        }
+    }
+    Ok(())
+}
+
 /// An opening of one call on a store whose setting names a socket under `/dev/null`, which no server has (SE-10.5):
 /// the group `opening`, whose connection fails (SR-6.4), and the group `openFaults`, whose case arms the fault
 /// injection points that it names (SE-9.6). Only `redis_sessions.open` reads the two groups. The future runs on a
@@ -757,6 +803,7 @@ fn main() {
     let mut trials = vec![
         Trial::test("interface::the_options_name_their_core_type", the_options_name_their_core_type),
         Trial::test("interface::the_cases_of_new_give_its_parameters", the_cases_of_new_give_its_parameters),
+        Trial::test("interface::the_cases_of_one_call_reach_their_members", the_cases_of_one_call_reach_their_members),
         Trial::test(
             "interface::the_settings_of_the_cases_name_their_case_by_kind",
             the_settings_of_the_cases_name_their_case_by_kind,

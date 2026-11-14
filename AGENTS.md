@@ -158,7 +158,7 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   fetched as source, and `make bindings` writes them again. `packages/ts/wasm/generated` and
   `packages/go/internal/ffi/generated` are not tracked; wasm-bindgen writes the module and its glue into the first.
   The variables `PYTHON` (3.14 or later), `PHP`, `PHP_CONFIG`, `PHPUNIT`, `TSC`, `GO`, `GOFMT` and `WASM_BINDGEN` name
-  the runtimes and tools. `make test-go` fails a Go of another release than the go directive of `packages/go/go.mod`
+  the runtimes and tools; `WASM_BINDGEN` is the wasm-bindgen CLI of `mise.toml` unless it is given. `make test-go` fails a Go of another release than the go directive of `packages/go/go.mod`
   and runs it with `GOTOOLCHAIN=local`, so that it fetches no toolchain, and `make test-wasm` fails a wasm-bindgen CLI
   of another release than the `wasm-bindgen` crate of `packages/ts/wasm/Cargo.toml`, because the CLI reads only a
   module of its own release (binding GN-18). `CARGOFLAGS` adds arguments to every cargo build. On macOS a PHP extension
@@ -173,10 +173,14 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
 
 ## CI and release
 
-- Every job of a GitHub workflow runs on `ubuntu-26.04-arm`. Every action is a local action of `.github/actions` or is
+- Every job of a GitHub workflow runs on `ubuntu-26.04-arm`, except the job `platform` of
+  `.github/workflows/assets.yml`, which runs on the runner of each platform of the release (`ubuntu-26.04`,
+  `ubuntu-26.04-arm` and `macos-15`), because the asset of a platform is linked and loaded only on that platform and no
+  tool of the release compiles for another platform (binding GN-19a). Every action is a local action of `.github/actions` or is
   pinned by its full commit, and a comment of the file names its release; an action pin is the one Git commit that a
   tracked file names. No job and no step sets `timeout-minutes`. Every `run` step is one make target that the
-  `Makefile` defines, so that the settings of the Makefile apply to every command of CI. `make workflows-test` fails a
+  `Makefile` or the release recipes that it includes (`packages/release.mk`) define, so that the settings of the
+  Makefile apply to every command of CI. `make workflows-test` fails a
   workflow or an action that breaks one of these rules.
 - The workflow `ci` starts on a push of `main` and on `workflow_dispatch` alone. Its job `shared` runs
   `make ci-shared` (`CI_SHARED` of the Makefile: `make docs-check`, `make owner-validate`, `make workflows-test`,
@@ -194,13 +198,33 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   process does not run as root and cannot read the authority file below the home of root, so the test of TLS trusts
   the authority through the certificate store of the system, to which `bay install` adds it. Not confirmed until the
   first run of CI: that a signal of the run reaches a bay that `sudo` started.
-- The workflow `release` starts when a run of `ci` succeeds on `main`, or by a dispatch with the id of such a run. It
-  runs `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`,
-  `make release-publish` and `make release-undraft` in that order.
+- binding release-recipes writes the release recipes of the contract into `packages/release.mk` (binding GN-19h),
+  which is generated and not tracked; `make release-recipes` writes it, and the Makefile includes it after it defines
+  `BINDING_RUN`, `NODE`, `NPM`, `UV` and an empty `BINDING_DEP`. The recipes build the static library of the Go
+  module, the abi3 wheel, the PHP extension and the npm package with its platform packages, carry the Go module and
+  upload the assets. A recipe of the repository for one of their targets is no copy that the repository keeps: binding
+  check reports it, and a Makefile without the include, with CK-94. The repository pins what the recipes start: the
+  napi CLI `@napi-rs/cli` in `package.json`, uv, Python, Go and the wasm-bindgen CLI in `mise.toml`, the major release
+  of LLVM in `llvm.version` of `config/toolchain.json`, and `llvm-tools` with the musl targets in
+  `rust-toolchain.toml`.
+- The workflow `assets` (`.github/workflows/assets.yml`) builds the assets of each platform (binding GN-19i): its job
+  `platform`, on the runner of each platform, runs `make install-rust`, `make install-tools TOOLS="uv python"`,
+  `make release-recipes`, `make release-go-static`, `make release-wheel`, `make install-llvm`, `make release-php-ext
+  PHP=php` for PHP 8.4 and 8.5 and `make release-npm-platform`; its job `npm` runs `make install-rust`,
+  `make release-recipes`, `make install-wasm-bindgen` and `make release-npm`. Each uploads `var/release/assets`. The
+  workflow `ci` calls it in its job `assets`, which `ci-passed` needs, so an asset that does not build stops the
+  release before a tag exists.
+- The workflow `release` starts when a run of `ci` succeeds on `main`, or by a dispatch with the id of such a run. Its
+  job `tag` runs `make release-tag` and `make release-tag-output`; its job `assets` calls the workflow `assets` for the
+  tag with `make release-binding-check` first; its job `release` checks out the tag and runs `make release-tools`,
+  `make release-tools-path`, `make release-assets` and `make release-publish`, downloads the assets of each platform,
+  and runs `make install-rust`, `make release-recipes`, `make release-go-module`, which carries the Go module in a
+  commit with the tag `packages/go/vX.Y.Z` (binding GN-19f), `make release-platform-assets` and
+  `make release-undraft`, in that order.
 - `config/release.json` classifies every manifest of the repository, and `make release-coverage` fails a manifest that
-  it does not classify. It names no package: the binding packages are released once kit 0.0.111 makes the platform
-  assets and the Go module has its tag form, the release commit and `packages/go/vX.Y.Z`. Until then a release is the
-  tag `vX.Y.Z` and the GitHub Release with the notes of the section `## X.Y.Z` of the change log.
+  it does not classify. Its one package is the Composer package of the PHP extension (`packages/php-ext`), whose
+  archive kit builds; the binding manifests are released by their version; `packages/go/go.mod` is not released by kit,
+  because `make release-go-module` makes the commit and the tag of the Go module, so `goModules` names none.
 - A version changes only in the commit `chore(release): Release X.Y.Z`, which is made at the release. It sets the
   version in `[workspace.package]` of `Cargo.toml` and in the binding manifests that `binding scaffold` writes again
   from it, writes `Cargo.lock` again, and renames `## Unreleased` of both change logs to `## X.Y.Z` with a new empty

@@ -5,3 +5,7 @@
 /packages/go/internal/ffi/generated/
 __pycache__/
 /node_modules/
+# The release recipes that make release-recipes writes with binding (binding GN-19h), and the folder of the npm platform
+# packages that make release-npm-platform writes inside the npm package, since the napi CLI refuses a folder outside it.
+/packages/release.mk
+/packages/ts/npm/

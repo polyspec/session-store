@@ -4,8 +4,25 @@
 [tools]
 node = "26.12.0"
 "npm:npm" = "12.2.0"
+# The tools of the release recipes that binding release-recipes writes (binding GN-19b to GN-19f): uv builds the abi3
+# wheel with maturin on the Python of this file (make release-wheel), Go proves the commit of the Go module with a
+# consumer (make release-go-module) and is the release of the go directive of packages/go/go.mod, and the wasm-bindgen
+# CLI writes the glue of the WASM module of the npm package (make release-npm) and is the release of the wasm-bindgen
+# crate of packages/ts/wasm/Cargo.toml (binding GN-18).
+python = "3.14.8"
+uv = "0.12.24"
+go = "1.27.3"
+"github:wasm-bindgen/wasm-bindgen" = "0.2.130"
 
-# mise installs and runs only what mise.lock pins and installs nothing on its own.
+# The settings of mise and uv of this checkout: mise installs and runs only what mise.lock pins and installs nothing on
+# its own, and uv downloads no Python, takes the Python of PATH, where the shims of mise come first, reads no uv.toml of
+# the home and keeps its cache under var/tools.
 [settings]
 locked = true
 auto_install = false
+
+[env]
+UV_PYTHON_DOWNLOADS = "never"
+UV_PYTHON_PREFERENCE = "only-system"
+UV_NO_CONFIG = "1"
+UV_CACHE_DIR = "{{config_root}}/var/tools/mise/cache/uv"

@@ -1,7 +1,8 @@
 # CI of session-store: one workflow whose jobs run the targets of the Makefile, each job the target that names its list
 # (CI_SHARED and CI_RUST of the Makefile), past failures, with the report of ci-targets as an artifact. The last job
 # ci-passed passes only when every other job succeeded. The release workflow releases the commit whose run of this
-# workflow succeeded.
+# workflow succeeded. The job assets calls .github/workflows/assets.yml, which builds the assets of each platform of the
+# bindings as a release does, so that an asset that does not build stops the release before a tag exists.
 #
 # The job test runs make test: bay runs the Redis servers of its tests on Docker from the image that REDIS_IMAGE of the
 # Makefile pins by its digest, the same image that it runs on Apple container on a development machine (SE-10.4). The
@@ -87,12 +88,17 @@ jobs:
       - name: tests
         run: make test BAY_SUDO=1
 
+  # The assets of each platform of the bindings, built from the commit of the run with the matrix of the release (binding
+  # GN-19a, GN-19i).
+  assets:
+    uses: ./.github/workflows/assets.yml
+
   # The result of the run: the job runs after every other job, also after a failed or cancelled one, and make ci-passed
   # passes only when each job of needs has the result success; a skipped job fails it (FAIL_SKIPPED=1). make
   # workflows-test fails this workflow when ci-passed is not its last job or when needs leaves a job out.
   ci-passed:
     if: ${{ always() }}
-    needs: [shared, rust, test]
+    needs: [shared, rust, test, assets]
     runs-on: ubuntu-26.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

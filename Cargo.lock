@@ -1373,8 +1373,8 @@ dependencies = [
 
 [[package]]
 name = "polyspec-binding-core"
-version = "0.0.2"
-source = "git+https://github.com/polyspec/binding.git?tag=v0.0.2#6b988ea741eb8ec6174ea392cff65f598ae12f05"
+version = "0.0.3"
+source = "git+https://github.com/polyspec/binding.git?tag=v0.0.3#6dfbfa7c9516dbc406c5b824c2e8c7ee8fd23831"
 dependencies = [
  "indexmap",
  "libc",
@@ -1409,7 +1409,7 @@ version = "0.0.0"
 dependencies = [
  "getrandom 0.3.4",
  "libtest-mimic",
- "polyspec-binding-core 0.0.2",
+ "polyspec-binding-core 0.0.3",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "serde_json",
@@ -1420,7 +1420,7 @@ name = "polyspec-session-store-file"
 version = "0.0.0"
 dependencies = [
  "libtest-mimic",
- "polyspec-binding-core 0.0.2",
+ "polyspec-binding-core 0.0.3",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "rustix",
@@ -1432,7 +1432,7 @@ dependencies = [
 name = "polyspec-session-store-go"
 version = "0.0.0"
 dependencies = [
- "polyspec-binding-core 0.0.2",
+ "polyspec-binding-core 0.0.3",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
@@ -1444,7 +1444,7 @@ dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
- "polyspec-binding-core 0.0.2",
+ "polyspec-binding-core 0.0.3",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
@@ -1454,7 +1454,7 @@ name = "polyspec-session-store-php-ext"
 version = "0.0.0"
 dependencies = [
  "ext-php-rs",
- "polyspec-binding-core 0.0.2",
+ "polyspec-binding-core 0.0.3",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
@@ -1463,7 +1463,7 @@ dependencies = [
 name = "polyspec-session-store-python"
 version = "0.0.0"
 dependencies = [
- "polyspec-binding-core 0.0.2",
+ "polyspec-binding-core 0.0.3",
  "polyspec-php-serialization",
  "polyspec-session-store",
  "pyo3",
@@ -1474,7 +1474,7 @@ name = "polyspec-session-store-redis"
 version = "0.0.0"
 dependencies = [
  "libtest-mimic",
- "polyspec-binding-core 0.0.2",
+ "polyspec-binding-core 0.0.3",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "redis",
@@ -1489,7 +1489,7 @@ name = "polyspec-session-store-wasm"
 version = "0.0.0"
 dependencies = [
  "js-sys",
- "polyspec-binding-core 0.0.2",
+ "polyspec-binding-core 0.0.3",
  "polyspec-php-serialization",
  "polyspec-session-store",
  "wasm-bindgen",

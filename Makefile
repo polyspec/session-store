@@ -58,10 +58,10 @@ TSC ?= tsc
 MATURIN := maturin==1.16.0
 # The Go of the go directive of packages/go/go.mod and the wasm-bindgen CLI of the release of the wasm-bindgen crate of
 # packages/ts/wasm/Cargo.toml (binding GN-15, GN-18); test-go and node-package compare both releases before they use
-# them.
+# them. The wasm-bindgen CLI is the one of mise.toml, which make release-npm of the release recipes also starts.
 GO ?= go
 GOFMT ?= gofmt
-WASM_BINDGEN ?= wasm-bindgen
+WASM_BINDGEN ?= $(VAR_TOOLS)/mise/shims/wasm-bindgen
 # ext-php-rs reads them when it builds the extension.
 export PHP PHP_CONFIG
 # The file name extension of a library that Cargo builds as a cdylib: dylib on macOS, so on Linux (AGENTS.md,
@@ -70,7 +70,8 @@ CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
 .PHONY: bootstrap install-tools install-packages toolchain-lock install-rust install-bay setup-bay install-bay-test ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
-	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
+	release-coverage release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
+	release-recipes
 
 # The targets of each job of .github/workflows/ci.yml, which ci-targets of kit runs past failures into CI_REPORT. The
 # job test runs make redis-image and make test, one target each.
@@ -290,6 +291,23 @@ test-go: bindings-go
 	cd packages/go && $(GO_ENV) $(GO) vet ./...
 	cd packages/go && $(GO_ENV) SESSION_STORE_CASES=$(CASES) $(GO) test -count=1 -v ./...
 
+# ---- Release recipes of the bindings (binding GN-19h) ----
+# binding release-recipes writes the recipes that build the assets of each platform (the static library of the Go module,
+# the abi3 wheel, the PHP extension, the npm package with its platform packages), carry the Go module and upload the
+# assets into packages/release.mk, which is generated and not tracked; make release-recipes writes it again from the
+# contract, and binding check reports a Makefile that does not include it or that holds a recipe of its own for one of its
+# targets (CK-94). The recipes read BINDING_RUN, the command that starts binding, NODE and NPM, defined above, and UV, the
+# uv of mise.toml. BINDING_DEP is empty: the bootstrap installs binding from package-lock.json before any recipe runs, and
+# a prerequisite that installs it would download in a recipe that builds.
+BINDING_RUN := $(BINDING)
+BINDING_DEP :=
+UV := $(VAR_TOOLS)/mise/shims/uv
+release-recipes:
+	$(BINDING_RUN) release-recipes --root $(CURDIR)
+# The file is missing in a checkout until make release-recipes writes it, so the include is optional, and a run of one of
+# its targets without it fails with no rule of that target.
+-include packages/release.mk
+
 # ---- Release (.github/workflows/release.yml) ----
 # Every manifest of the checkout is classified in config/release.json: released by a tag or not released, with its reason.
 release-coverage:
@@ -301,14 +319,24 @@ release-tag:
 	@test -n "$$RUN" || { echo "release-tag: RUN is required, for example make release-tag RUN=123"; exit 1; }
 	RELEASE_MAIN=origin/main $(NODE) $(KIT)/release-run.mjs tag "$$RUN"$(if $(AUTO), --auto)
 
-# Checks out the tag TAG, so that the release builds the tagged commit with its own kit.
-release-checkout:
-	@test -n "$$TAG" || { echo "release-checkout: TAG is required, for example make release-checkout TAG=v0.0.1"; exit 1; }
-	git checkout --quiet "$$TAG"
+# Gives the later jobs of the release workflow the tag and the version that release-tag wrote into the environment of
+# its job (TAG, VERSION), through the outputs of the step (GITHUB_OUTPUT); both are empty when the run releases nothing.
+release-tag-output:
+	@test -n "$$GITHUB_OUTPUT" || { echo 'release-tag-output: GITHUB_OUTPUT is set only in a step of a workflow' >&2; exit 2; }
+	printf 'tag=%s\nversion=%s\n' "$$TAG" "$$VERSION" >> "$$GITHUB_OUTPUT"
 
-# The tools that the packages of config/release.json need; none while it names no package.
+# The tools that the packages of config/release.json need: the Composer package of the PHP extension needs the tools of
+# mise.toml, which install-tools of kit installs into var/tools.
 release-tools:
 	$(NODE) $(KIT)/release-tools.mjs
+
+# Puts var/tools/bin and the shims of mise on the PATH of the later steps of a workflow, with the folders of mise, so that
+# a step finds the tools that release-tools installed.
+release-tools-path:
+	@test -n "$$GITHUB_PATH" && test -n "$$GITHUB_ENV" || { echo 'release-tools-path: GITHUB_PATH and GITHUB_ENV are set only between the steps of a workflow' >&2; exit 2; }
+	printf '%s\n%s\n' "$(VAR_TOOLS)/bin" "$(VAR_TOOLS)/mise/shims" >> "$$GITHUB_PATH"
+	printf 'MISE_DATA_DIR=%s\nMISE_CACHE_DIR=%s\nMISE_STATE_DIR=%s\nMISE_CONFIG_DIR=%s\nMISE_GLOBAL_CONFIG_FILE=%s\nMISE_GLOBAL_CONFIG_ROOT=%s\n' \
+		"$(MISE_DATA_DIR)" "$(MISE_CACHE_DIR)" "$(MISE_STATE_DIR)" "$(MISE_CONFIG_DIR)" "$(MISE_GLOBAL_CONFIG_FILE)" "$(MISE_GLOBAL_CONFIG_ROOT)" >> "$$GITHUB_ENV"
 
 # The archive of every package of config/release.json at TAG, into var/release/assets.
 release-assets:

@@ -1,7 +1,19 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 5701cb3dfe6282c0bd7a5e4dbf8d665d549137c395ed598b3f3775c2c73bf0bf -->
+<!-- source-sha256: e99798af94ea62ab341022187b0a456753da2f7f3ba431da492ccd451989baed -->
 
 ## Unreleased
+
+- 저장소는 릴리스를 위한 바인딩 asset을 만들지 않았다. `config/release.json`은 package를 적지 않았고, workflow
+  `release`는 tag를 달고 notes를 공개할 뿐이었다. binding 0.0.3은 계약의 릴리스 recipe를 무시되는 파일
+  `packages/release.mk`에 쓰고(binding release-recipes, GN-19h), 이제 Makefile이 그것을 include한다.
+  `.github/workflows/assets.yml`은 각 platform의 runner에서 Go module의 static library, abi3 wheel, PHP 8.4와 8.5의
+  PHP extension, npm platform package를 만들고, npm package 자체도 만든다(GN-19a, GN-19i). workflow `ci`는 job
+  `assets`에서 그것을 부르고 `ci-passed`가 그 job을 `needs`에 둔다. workflow `release`는 tag에 대해 그것을 부르고,
+  PHP extension의 Composer package를 릴리스하고, Go module을 tag `packages/go/vX.Y.Z`와 함께 옮기며(GN-19f), 각
+  platform의 asset을 올린다. binding은 napi CLI 3.10.12와 함께 릴리스 0.0.3이고, `config/toolchain.json`은 LLVM 21을
+  고정하고, `rust-toolchain.toml`은 `llvm-tools`와 WASM과 musl의 target을 더하고, `mise.toml`은 uv, Python, Go,
+  wasm-bindgen CLI를 더한다. Makefile의 `WASM_BINDGEN`은 이제 그 CLI를 가리킨다. 릴리스의 각 job이 tag를
+  checkout하므로 `make release-checkout`은 없어졌다(T1.33).
 
 - binding은 `Cargo.lock`의 commit으로 `var/binding`에 clone되었고, 모든 manifest가 개발 형태인 브랜치 `v1/rust-core`로
   적었다. 이제 binding은 릴리스 0.0.2의 npm 패키지이고, asset의 URL과 integrity로 고정되어 다른 패키지와 함께

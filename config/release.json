@@ -5,25 +5,34 @@
   "changelogTranslations": [
     "CHANGELOG.ko.md"
   ],
-  "packages": [],
-  "manifests": {},
+  "packages": [
+    {
+      "kind": "composer",
+      "directory": "packages/php-ext",
+      "name": "polyspec/session-store",
+      "product": "session-store",
+      "runtime": "php-ext"
+    }
+  ],
+  "manifests": {
+    "packages/go/internal/ffi/Cargo.toml": "version",
+    "packages/php-ext/Cargo.toml": "version",
+    "packages/python/Cargo.toml": "version",
+    "packages/python/pyproject.toml": "version",
+    "packages/ts/Cargo.toml": "version",
+    "packages/ts/package.json": "version",
+    "packages/ts/wasm/Cargo.toml": "version",
+    "packages/php-ext/composer.json": "archive"
+  },
   "notReleased": {
     ".mise/locks/npm-npm/12.2.0/package.json": "the lock project of mise for the npm of mise.toml, which mise lock writes and which carries no version of the repository",
     "Cargo.toml": "the root Cargo workspace of the crates of the library and the binding crates (binding design L-2)",
-    "package.json": "the private package of the development tools of the repository, which installs @polyspec/kit and carries no version",
+    "package.json": "the private package of the development tools of the repository, which installs @polyspec/kit, @polyspec/binding and the napi CLI and carries no version",
     "packages/core/rust/Cargo.toml": "a crate of the library, publish = false: the bindings that packages/rust/interface.json generates build it from the source of the checkout, and no runtime installs it alone",
     "packages/file/rust/Cargo.toml": "a crate of the library, publish = false: the bindings that packages/rust/interface.json generates build it from the source of the checkout, and no runtime installs it alone",
-    "packages/go/go.mod": "a binding package of binding, released once kit 0.0.111 makes the platform assets and the Go module has its tag form, the release commit and packages/go/vX.Y.Z",
-    "packages/go/internal/ffi/Cargo.toml": "a binding package of binding, released once kit 0.0.111 makes the platform assets and the Go module has its tag form, the release commit and packages/go/vX.Y.Z",
-    "packages/php-ext/Cargo.toml": "a binding package of binding, released once kit 0.0.111 makes the platform assets and the Go module has its tag form, the release commit and packages/go/vX.Y.Z",
-    "packages/php-ext/composer.json": "a binding package of binding, released once kit 0.0.111 makes the platform assets and the Go module has its tag form, the release commit and packages/go/vX.Y.Z",
-    "packages/python/Cargo.toml": "a binding package of binding, released once kit 0.0.111 makes the platform assets and the Go module has its tag form, the release commit and packages/go/vX.Y.Z",
-    "packages/python/pyproject.toml": "a binding package of binding, released once kit 0.0.111 makes the platform assets and the Go module has its tag form, the release commit and packages/go/vX.Y.Z",
+    "packages/go/go.mod": "the Go module of the binding: make release-go-module carries it in a commit with the generated files and the static library of each platform and creates the tag packages/go/vX.Y.Z of that commit (binding GN-19f), which kit does not make, so goModules names no module and no tag of kit releases it",
     "packages/redis/rust/Cargo.toml": "a crate of the library, publish = false: the bindings that packages/rust/interface.json generates build it from the source of the checkout, and no runtime installs it alone",
-    "packages/rust/Cargo.toml": "a crate of the library, publish = false: the bindings that packages/rust/interface.json generates build it from the source of the checkout, and no runtime installs it alone",
-    "packages/ts/Cargo.toml": "a binding package of binding, released once kit 0.0.111 makes the platform assets and the Go module has its tag form, the release commit and packages/go/vX.Y.Z",
-    "packages/ts/package.json": "a binding package of binding, released once kit 0.0.111 makes the platform assets and the Go module has its tag form, the release commit and packages/go/vX.Y.Z",
-    "packages/ts/wasm/Cargo.toml": "a binding package of binding, released once kit 0.0.111 makes the platform assets and the Go module has its tag form, the release commit and packages/go/vX.Y.Z"
+    "packages/rust/Cargo.toml": "a crate of the library, publish = false: the bindings that packages/rust/interface.json generates build it from the source of the checkout, and no runtime installs it alone"
   },
   "goModules": {},
   "annotatedTags": true,

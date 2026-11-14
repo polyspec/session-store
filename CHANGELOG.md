@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- The repository built no asset of a binding for a release: `config/release.json` named no package, and the workflow
+  `release` only tagged and published notes. binding 0.0.3 writes the release recipes of the contract into the ignored
+  file `packages/release.mk` (binding release-recipes, GN-19h), which the Makefile now includes, and
+  `.github/workflows/assets.yml` builds the static library of the Go module, the abi3 wheel, the PHP extension for PHP
+  8.4 and 8.5 and the npm platform package on the runner of each platform, and the npm package itself (GN-19a, GN-19i).
+  The workflow `ci` calls it in the job `assets`, which `ci-passed` needs; the workflow `release` calls it for the tag,
+  releases the Composer package of the PHP extension, carries the Go module with its tag `packages/go/vX.Y.Z` (GN-19f)
+  and uploads the assets of each platform. binding is the release 0.0.3 with the napi CLI 3.10.12, LLVM 21 is pinned in
+  `config/toolchain.json`, `rust-toolchain.toml` adds `llvm-tools` and the targets of WASM and musl, and `mise.toml`
+  adds uv, Python, Go and the wasm-bindgen CLI, which `WASM_BINDGEN` of the Makefile now names. `make release-checkout`
+  is removed, because each job of the release checks out the tag (T1.33).
+
 - binding was cloned at the commit of `Cargo.lock` into `var/binding` and named by the branch `v1/rust-core` in every
   manifest, a development form. It is now the npm package of its release 0.0.2, pinned by the URL of its asset and its
   integrity and installed with the other packages, every manifest names `polyspec-binding-core` by the tag `v0.0.2`,

@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 76471b2cd61d7872064ce33109f98665e6b2b104cc52aedf960f5ad9e6c179e6 -->
+<!-- source-sha256: 9f407b3139ba750694aa8e0980ae9d94acf66e324cf7d0a5973986fd87c43f70 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -150,7 +150,7 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   추적되고, `make bindings`가 다시 쓴다. `packages/ts/wasm/generated`와 `packages/go/internal/ffi/generated`는 추적하지
   않는다. wasm-bindgen은 모듈과 그 glue를 앞의 디렉터리에 쓴다.
   변수 `PYTHON`(3.14 이상), `PHP`, `PHP_CONFIG`, `PHPUNIT`, `TSC`, `GO`, `GOFMT`, `WASM_BINDGEN`이 런타임과 도구를
-  가리킨다. `make test-go`는 `packages/go/go.mod`의 go 지시문과 다른 판의 Go를 실패시키고, toolchain을 받지 않도록
+  가리킨다. `WASM_BINDGEN`은 주어지지 않으면 `mise.toml`의 wasm-bindgen CLI다. `make test-go`는 `packages/go/go.mod`의 go 지시문과 다른 판의 Go를 실패시키고, toolchain을 받지 않도록
   `GOTOOLCHAIN=local`로 실행한다. `make test-wasm`은 `packages/ts/wasm/Cargo.toml`의 `wasm-bindgen` crate와 다른 판의
   wasm-bindgen CLI를 실패시킨다. 그 CLI는 자기 판의 모듈만 읽기 때문이다(binding GN-18). `CARGOFLAGS`는 모든 cargo
   build에 인자를 더한다. macOS에서 PHP 확장과 Node addon은 자기 런타임이 그것을 로드할 때 런타임의 기호를 받는다.
@@ -164,10 +164,13 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
 
 ## CI와 릴리스
 
-- GitHub workflow의 모든 job은 `ubuntu-26.04-arm`에서 실행한다. 모든 action은 `.github/actions`의 local action이거나
+- GitHub workflow의 모든 job은 `ubuntu-26.04-arm`에서 실행한다. 예외는 `.github/workflows/assets.yml`의 job
+  `platform`이며, 릴리스의 각 platform의 runner(`ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`)에서 실행한다. 한
+  platform의 asset은 그 platform에서만 link되고 load되며, 릴리스의 어떤 도구도 다른 platform으로 compile하지 않기
+  때문이다(binding GN-19a). 모든 action은 `.github/actions`의 local action이거나
   전체 commit으로 고정하고, 그 파일의 주석이 action의 릴리스를 적는다. action 고정은 추적 파일이 적는 유일한 Git
-  commit이다. 어떤 job과 step도 `timeout-minutes`를 두지 않는다. 모든 `run` step은 `Makefile`이 정의하는 make target
-  하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
+  commit이다. 어떤 job과 step도 `timeout-minutes`를 두지 않는다. 모든 `run` step은 `Makefile`이나 그것이 include하는 릴리스
+  recipe(`packages/release.mk`)가 정의하는 make target 하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
   workflow와 action을 실패시킨다.
 - workflow `ci`는 `main`의 push와 `workflow_dispatch`에서만 시작한다. job `shared`는 `make ci-shared`(Makefile의
   `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make tool-pins-test`, `make servers-test`, `make install-bay-test`,
@@ -185,13 +188,30 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   실행하고(SE-10.4), bay의 모든 명령은 그 상태를 가진 한 사용자인 root로 실행된다. 시험 process는 root로 실행되지
   않아 root의 home 아래에 있는 authority 파일을 읽지 못하므로, TLS의 시험은 `bay install`이 authority를 더한 시스템의
   certificate store로 그 authority를 신뢰한다. CI의 첫 run까지 미확인: run의 신호가 `sudo`가 시작한 bay에 닿는 것.
-- workflow `release`는 `ci`의 run이 `main`에서 성공하면 시작하고, 그런 run의 id를 준 dispatch로도 시작한다.
-  `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`, `make release-publish`,
-  `make release-undraft`를 이 순서로 실행한다.
+- binding release-recipes는 계약의 릴리스 recipe를 `packages/release.mk`에 쓴다(binding GN-19h). 이 파일은 생성되며
+  추적하지 않는다. `make release-recipes`가 쓰고, Makefile은 `BINDING_RUN`, `NODE`, `NPM`, `UV`와 빈 `BINDING_DEP`를
+  정의한 뒤에 그것을 include한다. recipe는 Go module의 static library, abi3 wheel, PHP extension, platform package를
+  가진 npm package를 만들고, Go module을 옮기고, asset을 올린다. 그 target에 대한 저장소의 recipe는 저장소가 두는
+  사본이 아니다. binding check가 그것과 include가 없는 Makefile을 CK-94로 보고한다. 저장소는 recipe가 시작하는 것을
+  고정한다. napi CLI `@napi-rs/cli`는 `package.json`에, uv, Python, Go, wasm-bindgen CLI는 `mise.toml`에, LLVM의 major
+  릴리스는 `config/toolchain.json`의 `llvm.version`에, `llvm-tools`와 musl target은 `rust-toolchain.toml`에 둔다.
+- workflow `assets`(`.github/workflows/assets.yml`)는 각 platform의 asset을 만든다(binding GN-19i). job `platform`은
+  각 platform의 runner에서 `make install-rust`, `make install-tools TOOLS="uv python"`, `make release-recipes`,
+  `make release-go-static`, `make release-wheel`, `make install-llvm`, PHP 8.4와 8.5에 대한
+  `make release-php-ext PHP=php`, `make release-npm-platform`를 실행한다. job `npm`은 `make install-rust`,
+  `make release-recipes`, `make install-wasm-bindgen`, `make release-npm`를 실행한다. 각 job은 `var/release/assets`를
+  올린다. workflow `ci`는 job `assets`에서 그것을 부르고 `ci-passed`가 그 job을 `needs`에 두므로, 만들어지지 않는
+  asset은 tag가 생기기 전에 릴리스를 멈춘다.
+- workflow `release`는 `ci`의 run이 `main`에서 성공하면 시작하고, 그런 run의 id를 준 dispatch로도 시작한다. job
+  `tag`는 `make release-tag`와 `make release-tag-output`을 실행한다. job `assets`는 tag에 대해 workflow `assets`를
+  부르며 먼저 `make release-binding-check`를 실행한다. job `release`는 tag를 checkout하고 `make release-tools`,
+  `make release-tools-path`, `make release-assets`, `make release-publish`를 실행하고, 각 platform의 asset을 내려받은
+  뒤 `make install-rust`, `make release-recipes`, Go module을 tag `packages/go/vX.Y.Z`를 가진 commit으로 옮기는
+  `make release-go-module`(binding GN-19f), `make release-platform-assets`, `make release-undraft`를 이 순서로 실행한다.
 - `config/release.json`은 저장소의 모든 manifest를 분류하고, `make release-coverage`는 분류되지 않은 manifest를
-  실패시킨다. 이 파일은 package를 적지 않는다. 바인딩 package는 kit 0.0.111이 platform asset을 만들고 Go module이
-  tag 형식, 곧 release commit과 `packages/go/vX.Y.Z`를 갖춘 뒤에 릴리스한다. 그때까지 릴리스는 tag `vX.Y.Z`와, 변경
-  기록의 `## X.Y.Z` 절을 notes로 가진 GitHub Release다.
+  실패시킨다. 이 파일의 package는 kit가 archive를 만드는 PHP extension의 Composer package(`packages/php-ext`) 하나다.
+  바인딩 manifest는 그 버전으로 릴리스한다. `packages/go/go.mod`는 kit가 릴리스하지 않는다. `make release-go-module`이
+  Go module의 commit과 tag를 만들기 때문이며, 그래서 `goModules`는 아무것도 적지 않는다.
 - 버전은 릴리스 때 만드는 commit `chore(release): Release X.Y.Z`에서만 바뀐다. 이 commit은 `Cargo.toml`의
   `[workspace.package]`와, `binding scaffold`가 그것에서 다시 쓰는 바인딩 manifest에 버전을 적고, `Cargo.lock`을
   다시 쓰고, 두 변경 기록의 `## Unreleased`를 `## X.Y.Z`로 바꾸고 그 위에 빈 `## Unreleased`를 새로 둔다. tag는

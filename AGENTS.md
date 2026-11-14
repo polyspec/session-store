@@ -155,8 +155,8 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   are read by the Rust tests alone (SE-10.6). 15 kinds of the store of Redis need a Redis server, which no case form of
   binding gives until binding B2.269 (a case that runs against a service of the test run), so the contract check
   reports each (CK-22), and that finding stops `binding generate` for each of the five targets (T1.30-4). The pinned
-  binding 0.0.3 also takes the parameter `cancel` of `file_sessions.open` in Go only as the first parameter, which
-  binding 0.0.6 reads from its `only` (T1.30-5).
+  binding 0.0.6 reads the `only` of the parameter `cancel` of `file_sessions.open`, so Go needs no first parameter
+  `ctx` for it (T1.30-5).
 - In the Go module binding owns the files `zz_generated_*.go` (binding GN-3); they are tracked, because a Go module is
   fetched as source, and `make bindings` writes them again. `packages/ts/wasm/generated` and
   `packages/go/internal/ffi/generated` are not tracked; wasm-bindgen writes the module and its glue into the first.

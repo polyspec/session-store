@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- binding was pinned at its release 0.0.3, whose Go generator refused the parameter `cancel` of `file_sessions.open`
+  although its `only` names python and node. binding is now the release 0.0.6 (B2.253 reads the `only` of a
+  parameter): `package.json` names its asset and `package-lock.json` its integrity, and every manifest and
+  `Cargo.lock` name `polyspec-binding-core` by the tag `v0.0.6`. `make binding-check` reports the 15 findings CK-22 of
+  T1.30-4 and the finding CK-20 of T1.32, and `binding generate` still stops at the CK-22 findings for every target
+  (T1.30-5).
+
 - The interface contract declared the groups `requests` and `store`, whose cases hold several calls, and the generator
   of binding takes the keys of a case as the arguments of one call: it refused every target (G-4) for the cases of
   `file_sessions.open` and `redis_sessions.open`, and wrote a failing test for each case of `store`. The contract now

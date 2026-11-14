@@ -1,7 +1,13 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 5343c18b14324b09970513f6f050e9f9e9b9bb946a355d085b01319ffe3e90b2 -->
+<!-- source-sha256: 47583cd25298da2d1d14ae6ba9f563656feac16a9474a5e9a2dcba181d7bf903 -->
 
 ## Unreleased
+
+- binding은 릴리스 0.0.3으로 고정되어 있었고, 그 Go 생성기는 `only`가 python과 node를 적는데도 `file_sessions.open`의
+  parameter `cancel`을 거부했다. 이제 binding은 릴리스 0.0.6이다(B2.253이 parameter의 `only`를 읽는다).
+  `package.json`이 그 asset을, `package-lock.json`이 그 integrity를 적고, 모든 manifest와 `Cargo.lock`이
+  `polyspec-binding-core`를 tag `v0.0.6`으로 적는다. `make binding-check`는 T1.30-4의 지적 CK-22 15건과 T1.32의 지적
+  CK-20을 보고하고, `binding generate`는 여전히 모든 target에서 CK-22 지적에서 멈춘다(T1.30-5).
 
 - 인터페이스 계약은 여러 호출을 담은 group `requests`와 `store`를 선언했고, binding의 생성기는 case의 key를 한 호출의
   인자로 받는다. 그래서 생성기는 `file_sessions.open`과 `redis_sessions.open`의 case 때문에 모든 target을

@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: cbf2bf506269b69d9e5ffc08f590f637c4005f6db092e7d05f74118a01ea43de -->
+<!-- source-sha256: 9b2cd3d5ef25ced8669ff2acabf4596d637c836d14df4d02ea25babd28443fcb -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -147,8 +147,8 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   하나의 case만 선언한다. 여러 호출을 담은 group `requests`와 `store`는 Rust 시험만 읽는다(SE-10.6). Redis 저장소의
   kind 15개에는 Redis 서버가 필요하고, binding B2.269(시험 run의 서비스에 대해 실행하는 case)가 나오기 전에는 어떤
   binding의 case 형태도 그것을 주지 않는다. 그래서 계약 검사는 그 하나하나를 지적하고(CK-22), 그 지적은 다섯
-  target 모두의 `binding generate`를 멈춘다(T1.30-4). 또 고정한 binding 0.0.3은 Go에서 `file_sessions.open`의
-  parameter `cancel`을 첫 parameter로만 받고, binding 0.0.6은 그것을 그 `only`에서 읽는다(T1.30-5).
+  target 모두의 `binding generate`를 멈춘다(T1.30-4). 고정한 binding 0.0.6은 `file_sessions.open`의 parameter
+  `cancel`의 `only`를 읽으므로, Go는 그것을 위해 첫 parameter `ctx`를 두지 않는다(T1.30-5).
 - Go 모듈에서 binding은 파일 `zz_generated_*.go`를 소유한다(binding GN-3). Go 모듈은 소스로 받아지므로 이 파일들은
   추적되고, `make bindings`가 다시 쓴다. `packages/ts/wasm/generated`와 `packages/go/internal/ffi/generated`는 추적하지
   않는다. wasm-bindgen은 모듈과 그 glue를 앞의 디렉터리에 쓴다.

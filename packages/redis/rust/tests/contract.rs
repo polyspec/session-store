@@ -503,6 +503,39 @@ fn the_cases_of_new_give_its_parameters() -> Result<(), Failed> {
     Ok(())
 }
 
+/// Every `setting` of the cases, at any depth, is a case value of the variant `setting`: an object whose tag `kind`
+/// names its case (`server`, `sentinel` or `cluster`) beside the fields of that case, the form in which a generated
+/// binding test reads a variant (binding G-5, T-9).
+fn the_settings_of_the_cases_name_their_case_by_kind() -> Result<(), Failed> {
+    fn settings<'a>(value: &'a Value, found: &mut Vec<&'a Value>) {
+        match value {
+            Value::Object(entries) => {
+                for (key, entry) in entries {
+                    if key == "setting" {
+                        found.push(entry);
+                    }
+                    settings(entry, found);
+                }
+            }
+            Value::Array(items) => items.iter().for_each(|item| settings(item, found)),
+            _ => {}
+        }
+    }
+    let contract: Value = serde_json::from_str(CONTRACT).map_err(failed)?;
+    let mut found = Vec::new();
+    settings(&contract, &mut found);
+    if found.is_empty() {
+        return Err("no case gives a setting".into());
+    }
+    for setting in found {
+        match setting.get("kind").and_then(Value::as_str) {
+            Some("server" | "sentinel" | "cluster") => {}
+            _ => return Err(format!("the setting {setting} names no case in kind").into()),
+        }
+    }
+    Ok(())
+}
+
 /// An opening of one call on a store whose setting names a socket under `/dev/null`, which no server has (SE-10.5):
 /// the group `opening`, whose connection fails (SR-6.4), and the group `openFaults`, whose case arms the fault
 /// injection points that it names (SE-9.6). Only `redis_sessions.open` reads the two groups. The future runs on a
@@ -726,6 +759,10 @@ fn main() {
     let mut trials = vec![
         Trial::test("interface::the_options_name_their_core_type", the_options_name_their_core_type),
         Trial::test("interface::the_cases_of_new_give_its_parameters", the_cases_of_new_give_its_parameters),
+        Trial::test(
+            "interface::the_settings_of_the_cases_name_their_case_by_kind",
+            the_settings_of_the_cases_name_their_case_by_kind,
+        ),
     ];
     for (index, case) in requests.iter().enumerate() {
         let Some(id) = case.get("id").and_then(Value::as_str) else {

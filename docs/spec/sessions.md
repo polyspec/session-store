@@ -358,7 +358,10 @@ the statement that it checks. A PHP value and its serialize form are those of ph
 - **SE-10** <a id="SE-10.1"></a> `contracts/sessions.json` holds the cases of the core: group `identifier` (SE-5.1,
   SE-5.2), group `created` (SE-5.3: the `length` and the `alphabet` of a new identifier, which is an identifier and
   differs from the one made before it, and SE-5.4), group `store` (SE-2, SE-4, run on the memory store and on a record
-  session), group `record` (SE-6, SE-7), group `internal` (SE-9.6) and group `recordFaults` (SE-9.6). `contracts/file-sessions.json` holds the requests of the store of files (SF-1 to SF-5),
+  session), whose cases hold several calls, so the Rust tests alone read it, the groups `memory_store.<member>.made`
+  (SE-2, SE-4), which the interface contract declares: a call of each member of the memory store on a store that
+  `memory_store.new` and the calls of `then` made, whose result and the calls of `after` show the store after it
+  (binding GN-13f), group `record` (SE-6, SE-7), group `internal` (SE-9.6) and group `recordFaults` (SE-9.6). `contracts/file-sessions.json` holds the requests of the store of files (SF-1 to SF-5),
   and `contracts/redis-sessions.json` the requests of the store of Redis with the commands that each sends (SR-1 to
   SR-5). <a id="SE-10.2"></a> A PHP value of a case is its serialize form, and a byte string of a case is JSON text
   whose characters U+0000 to U+00FF are its bytes. A failure is the key `raises` with `kind`, `status`, `category` and
@@ -372,8 +375,16 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   `php_value` (`{"kind": "int", "value": 1}`, and `{"kind": "list", "repeat": n, "value": <value>}` for n nested
   lists, binding G-5), which the Rust tests read in the same form. A case states in `found`, for
   each step, the identifier that the opening of the step found (SE-7.1), `#n` or null; a case without `found` does not
-  compare it. A case of the group `open` of the store of files states the directory of the made store in
-  `store_directory`, and every case of the group `open` of the store of Redis gives `setting` and `options`, the two
+  compare it. A path of a case of one call (`directory`, `store_directory`) is a relative path in a directory that the
+  test makes for the case, `.` for that directory itself, as a generated binding test resolves a case value of the
+  type `path` (binding GN-6y), and the Rust tests resolve it the same way. A case of one call that needs a stored file
+  gives it in `files`, an object from the relative path of the file to its bytes, a text for its UTF-8 or
+  `{"hex": ...}`, which the test writes with the mode 0600 into that directory before it makes any value of the case
+  (binding GN-13i); the group `requests` gives its files as a list of `identifier` (or `name`), `bytes` and `age`
+  instead, which the Rust tests alone read. A directory that is not absolute (SF-1.2: a relative path and a
+  `session.save_path` with levels) has no case value of the type `path`, so those cases are the group
+  `openNotAbsolute`, which the interface contract does not declare and the Rust tests run. A case of the group `open`
+  of the store of files states the directory of the made store in `store_directory`, and every case of the group `open` of the store of Redis gives `setting` and `options`, the two
   parameters of `redis_sessions.new`, and makes the store of that connection setting, which connects to nothing. A
   setting of a case, at any place, is a value of the variant `setting`: its tag `kind` names `server`, `sentinel` or
   `cluster`, and the fields of that case are beside it (`{"kind": "server", "url": "..."}`, SR-6.1, binding G-5); a case that tests the options alone names the server
@@ -469,9 +480,10 @@ the statement that it checks. A PHP value and its serialize form are those of ph
     holds and removes the directory. An `up` that the signal stops removes what it created. A project that `down`
     does not remove fails the run, which then keeps the directory and names the file.
 
-  A case with `text_replies` (the model gives each record as a status reply, SR-5.1) or with `error_replies` (the
-  model gives the stated error reply to every command of a name, SR-5.2) runs against the model only and has no trial
-  against a server, because a real server gives neither to these commands on these keys.
+  A case with `text_replies` (the model gives each record as a status reply, SR-5.1), with `status_replies` (the model
+  gives the status reply `OK` to every command of a name that it lists, SR-5.1) or with `error_replies` (the model gives
+  the stated error reply to every command of a name, SR-5.2) runs against the model only and has no trial against a
+  server, because a real server gives none of them to these commands on these keys.
   <a id="SE-10.5"></a> A case with `faults` arms the fault injection points of SE-9.6 for its one call, as a generated
   binding test does (binding design G-5): the Rust tests arm the list for the member, run the call with the arming that
   the entry point of the member takes, and fail the case when a fault did not fire. Such a case is a case of one call in
@@ -483,15 +495,15 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   (`file_sessions.open`) and `collectFaults` (`file_sessions.collect`) of `contracts/file-sessions.json`, and the group
   `openFaults` (`redis_sessions.open`) of `contracts/redis-sessions.json`. A case of one call makes its receiver with
   the constructor of its unit, or with `file_sessions.in_directory` for the store of files (SF-1.5), from the keys of
-  the case (binding T-5): the store of files of the directory `/`, which
-  exists on every platform of the library and whose read the armed point fails before the call reads it, and the store
+  the case (binding T-5): the store of files of the directory of the test (`.`), whose read the armed point fails
+  before the call reads it, and the store
   of Redis of a socket under `/dev/null`, which no file can be. The group `opening` of `contracts/redis-sessions.json`
   holds the input case of one call whose connection fails with that setting (SR-6.4); no injection imitates a failure
   that this input reaches. <a id="SE-10.6"></a> A session of a request (`file_session`, `redis_session`) is made by
   `open` of its store, a method of another unit, so a case of one of its calls gives its receiver under the key
   `receiver` as an instance value that earlier calls make (binding GN-13f): `open` without a cookie of a store made by
-  its constructor or by `file_sessions.in_directory` (SF-1.5), the store of files of the directory `/` with a
-  cancellation that does not fire and the store of
+  its constructor or by `file_sessions.in_directory` (SF-1.5), the store of files of the directory of the test (`.`)
+  with a cancellation that does not fire and the store of
   Redis of a socket under `/dev/null`, and the calls of `then`. The groups `file_session.<member>.made` and
   `redis_session.<member>.made` of `get`, `set`, `remove` and `renew` arm `session_store.random`, which the start of the
   new session reaches (SE-5.4, SE-7.2); `redis_session.close.made` closes a session that set a value, whose close
@@ -499,17 +511,37 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   `file_sessions.open` (SF-3.8) by a cancellation that fired before the call (`{"cancel": "fired"}`).
   `file_session.close.made` gives `io` and `identifier_taken` of `file_session.close`: the point
   `session_store.create` fails the creation of the file of a new session with `EIO` and with `EEXIST` (SF-4.4, SF-9.2),
-  because no input reaches either kind on every platform of the library. The contract check counts a case of the group
-  `requests` for every member that reads the group, so it reports no member without a case of a kind. But the
-  generator of binding takes the keys of a case as the arguments of one call and refuses a case of several requests
-  (`steps`) by name (binding G-5), so `make bindings` generates no target while the interface contract declares the
-  group `requests` (T1.30). The cases of one call reach what a session made without a cookie gives:
-  `file_session.close.made` gives `record_write` of `file_session.close` by a set value of 4096 nested lists, which
-  the record nests one level deeper than php-serialization writes (SE-6.8), and the groups `file_session.found.made`
-  and `redis_session.found.made` give `found` of a session that found no identifier (SE-7.1). Without the group
-  `requests` the check reports the 23 kinds that only its cases reach: `record` and `record_not_array` of `get`,
-  `set`, `remove` and `renew` of both sessions, which need a stored record, and `lock_timeout`, `reply` and `redis` of
-  `redis_sessions.open` and `lock_lost`, `reply`, `redis` and `record_write` of `redis_session.close`, which need a
-  Redis server or its model. Those cases wait for a form of a case of binding that declares a stored record or runs
-  several requests against a Redis server (T1.30-4). No case of the group `requests` arms a point, because it would
-  satisfy the check while no binding test runs it.
+  because no input reaches either kind on every platform of the library. The cases of one call also reach what a
+  session made without a cookie gives: `file_session.close.made` gives `record_write` of `file_session.close` by a set
+  value of 4096 nested lists, which the record nests one level deeper than php-serialization writes (SE-6.8), and the
+  groups `file_session.found.made` and `redis_session.found.made` give `found` of a session that found no identifier
+  (SE-7.1). The groups `file_session.<member>.stored` of `get`, `set`, `remove` and `renew` open, with the cookie of
+  64 `e`, the session whose file `sess_<id>` the case writes (`files`): a record that holds no array gives
+  `record_not_array` (SE-6.4), and bytes that unserialize refuses give `record` (SE-6.3).
+  The group `requests` holds cases of several requests (`steps`), which the generator of binding refuses by name
+  (binding G-5), so the interface contract does not declare it, and the Rust tests alone run it: `tests/contract.rs` of
+  the store of files, and that of the store of Redis against the model and a Redis server (SE-10.4). Binding has no
+  form yet of a case that runs against a service of the test run, such as the Redis server of `make test` (binding
+  B2.269, a case that runs against a service of the test run), so 15 kinds of the store of Redis have no case that a
+  generated binding test runs. The contract check reports each of them (binding CK-22), and that finding stops
+  `binding generate` for every target until B2.269 gives the form. No fault injection point imitates these kinds,
+  because a stored record and a reply of a server are inputs (SE-9.6), and no kind leaves `raises`. Each kind and the
+  trials of `packages/redis/rust/tests/contract.rs` that reach it (`model::` against the model, `server::` against
+  the server):
+
+  | Member | Kind | Trials |
+  |---|---|---|
+  | `redis_sessions.open` | `lock_timeout` | `model::` and `server::a_request_that_finds_the_lock_taken_fails_and_changes_nothing` |
+  | `redis_sessions.open` | `reply` | `model::a_reply_that_is_not_bytes_fails_and_releases_the_lock` |
+  | `redis_sessions.open` | `redis` | `model::an_error_reply_to_the_read_fails_and_releases_the_lock` |
+  | `redis_session.get` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_the_call`, `a_key_that_cannot_be_decoded_fails_the_call` |
+  | `redis_session.set` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_set`, `a_key_that_cannot_be_decoded_fails_set` |
+  | `redis_session.remove` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_remove`, `a_key_that_cannot_be_decoded_fails_remove` |
+  | `redis_session.renew` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_renew`, `a_key_that_cannot_be_decoded_fails_renew` |
+  | `redis_session.close` | `lock_lost` | `model::` and `server::a_request_that_lost_its_lock_writes_nothing_and_fails` |
+  | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock` |
+  | `redis_session.close` | `redis` | `model::an_error_reply_to_the_write_fails_and_releases_the_lock` |
+  | `redis_session.close` | `record_write` | `model::` and `server::a_value_too_deep_for_a_record_fails_the_close` |
+
+  `record_write` of `redis_session.close` needs a server too, because the close connects before it takes the outcome
+  of `finish`. No case of the group `requests` arms a point.

@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 0e98b5ded3cef71aae498ca4a845bea1cc0e7c73d0f06d19ed995b74726d7ad9 -->
+<!-- source-sha256: 44591139d9ce7ae2b12498dda61a45cdc398f3cab86d85ca312178828c00d43f -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -354,7 +354,9 @@
 - **SE-10** <a id="SE-10.1"></a> `contracts/sessions.json`은 코어의 case를 담는다: group `identifier`(SE-5.1,
   SE-5.2), group `created`(SE-5.3: 새 식별자의 `length`와 `alphabet`. 새 식별자는 식별자이고
   그 앞에 만든 식별자와 다르다. 그리고 SE-5.4), group `store`(SE-2, SE-4, 메모리 저장소와 레코드 세션에서
-  실행한다), group `record`(SE-6, SE-7), group `internal`(SE-9.6), group `recordFaults`(SE-9.6). `contracts/file-sessions.json`은 파일 저장소의 요청을 담고(SF-1부터 SF-5),
+  실행한다. 그 case는 여러 호출을 담으므로 Rust 시험만 읽는다), 인터페이스 계약이 선언하는 group
+  `memory_store.<member>.made`(SE-2, SE-4: `memory_store.new`와 `then`의 호출이 만든 저장소에서 메모리 저장소의 각
+  member를 한 번 호출하고, 그 결과와 `after`의 호출이 그 뒤의 저장소를 보인다, binding GN-13f), group `record`(SE-6, SE-7), group `internal`(SE-9.6), group `recordFaults`(SE-9.6). `contracts/file-sessions.json`은 파일 저장소의 요청을 담고(SF-1부터 SF-5),
   `contracts/redis-sessions.json`은 Redis 저장소의 요청을 각 요청이 보내는 명령과 함께 담는다(SR-1부터
   SR-5). <a id="SE-10.2"></a> case의 PHP 값은 그 serialize 형식이고, case의 바이트 문자열은 문자 U+0000부터
   U+00FF가 그 바이트인 JSON 텍스트다. 실패는 `kind`, `status`, `category`,
@@ -368,7 +370,15 @@
   "int", "value": 1}`, n겹 list는 `{"kind": "list", "repeat": n, "value": <value>}`, binding G-5). Rust 시험도 같은
   형식으로 읽는다. case는 `found`에
   step마다 그 step의 열기가 찾은 식별자(SE-7.1)를 `#n`이나 null로 적는다. `found`가 없는 case는 그것을
-  비교하지 않는다. 파일 저장소의 group `open`의 case는 만든 저장소의 디렉터리를
+  비교하지 않는다. 호출 하나의 case의 경로(`directory`, `store_directory`)는 시험이 case마다 만드는 디렉터리 안의
+  상대 경로이고, `.`은 그 디렉터리 자체다. 생성한 바인딩 시험이 타입 `path`의 case 값을 그렇게 풀고(binding
+  GN-6y), Rust 시험도 같은 방식으로 푼다. 저장된 파일이 필요한 호출 하나의 case는 그것을 `files`에 준다. 이것은 파일의
+  상대 경로에서 그 바이트로 가는 object이고, 바이트는 UTF-8로 쓰는 텍스트나 `{"hex": ...}`다. 시험은 case의 어떤 값을
+  만들기 전에 그 파일을 mode 0600으로 그 디렉터리에 쓴다(binding GN-13i). group `requests`는 대신 자기 파일을
+  `identifier`(또는 `name`), `bytes`, `age`의 list로 주고, Rust 시험만 그것을 읽는다. 절대 경로가 아닌
+  디렉터리(SF-1.2: 상대 경로와 단계가 있는 `session.save_path`)에는 타입 `path`의 case 값이 없다. 그래서 그 case들은
+  group `openNotAbsolute`에 있고, 인터페이스 계약은 이 group을 선언하지 않으며 Rust 시험이 그것을 실행한다. 파일
+  저장소의 group `open`의 case는 만든 저장소의 디렉터리를
   `store_directory`에 적고, Redis 저장소의 group `open`의 모든 case는 `redis_sessions.new`의 두 parameter인
   `setting`과 `options`를 주며 그 연결 설정의 저장소를 만들고, 그 저장소는 어디에도 연결하지 않는다. case의 설정은
   어느 자리에서나 variant `setting`의 값이다. 그 tag `kind`가 `server`, `sentinel`, `cluster` 중 하나를 적고, 그
@@ -458,9 +468,10 @@
     멈춘 `up`은 자기가 만든 것을 지운다. `down`이 지우지 못한 프로젝트가 있으면 run은 실패하고, 디렉터리를 남기고 그
     파일을 적는다.
 
-  `text_replies`를 가진 case(모델이 각 레코드를 status 응답으로 준다, SR-5.1)나
-  `error_replies`를 가진 case(모델이 한 이름의 모든 명령에 적힌 오류 응답을 준다, SR-5.2)는 모델에 대해서만 실행되고
-  서버에 대한 trial이 없다. 실제 서버는 이 key에 대한 이 명령에 둘 중 어느 것도 주지 않기 때문이다.
+  `text_replies`를 가진 case(모델이 각 레코드를 status 응답으로 준다, SR-5.1), `status_replies`를 가진 case(모델이
+  거기 적힌 이름의 모든 명령에 status 응답 `OK`를 준다, SR-5.1), `error_replies`를 가진 case(모델이 한 이름의 모든
+  명령에 적힌 오류 응답을 준다, SR-5.2)는 모델에 대해서만 실행되고 서버에 대한 trial이 없다. 실제 서버는 이 key에
+  대한 이 명령에 그중 어느 것도 주지 않기 때문이다.
   <a id="SE-10.5"></a> `faults`를 가진 case는 생성된 바인딩 시험처럼 SE-9.6의 실패 주입점을 자기 한 호출에
   장전한다(binding 설계 G-5): Rust 시험은 그 목록을 member에 장전하고, member의 entry point가 받는 장전으로 호출을
   실행하며, 터지지 않은 fault가 있으면 case를 실패시킨다. 그런 case는 자기 member만 읽는 group의 한 호출 case이며,
@@ -470,12 +481,12 @@
   확인한다), `contracts/file-sessions.json`의 group `openFaults`(`file_sessions.open`)와
   `collectFaults`(`file_sessions.collect`), `contracts/redis-sessions.json`의 group
   `openFaults`(`redis_sessions.open`)다. 한 호출 case는 자기 unit의 생성자로, 파일 저장소는 `file_sessions.in_directory`로(SF-1.5) case의 key에서 receiver를
-  만든다(binding T-5): 라이브러리의 모든 플랫폼에 있고 그 읽기를 장전된 주입점이 호출이 읽기 전에 실패시키는
-  디렉터리 `/`의 파일 저장소, 그리고 어떤 파일도 될 수 없는 `/dev/null` 아래 socket의 Redis 저장소다.
+  만든다(binding T-5): 그 읽기를 장전된 주입점이 호출이 읽기 전에 실패시키는 시험의 디렉터리(`.`)의 파일 저장소,
+  그리고 어떤 파일도 될 수 없는 `/dev/null` 아래 socket의 Redis 저장소다.
   `contracts/redis-sessions.json`의 group `opening`은 그 설정으로 연결이 실패하는 한 호출의 입력 case를
   담는다(SR-6.4). 이 입력이 닿는 실패를 흉내 내는 주입은 없다. <a id="SE-10.6"></a> 요청의 세션(`file_session`, `redis_session`)은 다른 unit의 메서드인 그 저장소의
   `open`이 만든다. 그래서 그 호출 하나의 case는 앞선 호출이 만드는 instance 값으로 키 `receiver` 아래에 receiver를
-  준다(binding GN-13f). 그 값은 생성자나 `file_sessions.in_directory`(SF-1.5)로 만든 저장소의 쿠키 없는 `open`과 `then`의 호출이다. 저장소는 디렉터리 `/`의
+  준다(binding GN-13f). 그 값은 생성자나 `file_sessions.in_directory`(SF-1.5)로 만든 저장소의 쿠키 없는 `open`과 `then`의 호출이다. 저장소는 시험의 디렉터리(`.`)의
   파일 저장소(발동하지 않는 취소와 함께)와 `/dev/null` 아래 socket의 Redis 저장소다. `get`, `set`, `remove`,
   `renew`의 group `file_session.<member>.made`와 `redis_session.<member>.made`는 새 세션의 시작이 닿는
   `session_store.random`을 장전한다(SE-5.4, SE-7.2). `redis_session.close.made`는 값을 set한 세션을 닫는다. 그 close는
@@ -483,15 +494,35 @@
   취소(`{"cancel": "fired"}`)로 `file_sessions.open`의 `cancelled`(SF-3.8)를 준다. `file_session.close.made`는
   `file_session.close`의 `io`와 `identifier_taken`을 준다. 주입점 `session_store.create`가 새 세션 파일의 생성을
   `EIO`와 `EEXIST`로 실패시킨다(SF-4.4, SF-9.2). 라이브러리의 모든 플랫폼에서 두 kind에 닿는 입력이 없기 때문이다.
-  계약 검사는 group `requests`의 case를 그 group을 읽는 모든 member에 세므로, 어떤 kind의 case가 없는 member를
-  지적하지 않는다. 그러나 binding의 생성기는 case의 key를 한 호출의 인자로 받고 여러 요청의 case(`steps`)를 이름으로
-  거부하므로(binding G-5), 인터페이스 계약이 group `requests`를 선언하는 동안 `make bindings`는 어떤 target도 생성하지
-  않는다(T1.30). 호출 하나의 case는 쿠키 없이 만든 세션이 주는 것에 닿는다. `file_session.close.made`는 4096겹
-  list를 set한 값으로 `file_session.close`의 `record_write`를 준다. 레코드는 그것을 php-serialization이 쓰는 것보다
-  한 단계 더 깊게 담기 때문이다(SE-6.8). group `file_session.found.made`와 `redis_session.found.made`는 식별자를
-  찾지 않은 세션의 `found`를 준다(SE-7.1). group `requests`가 없으면 검사는 그 case만 닿는 23개 kind를 지적한다.
-  두 세션의 `get`, `set`, `remove`, `renew`의 `record`와 `record_not_array`는 저장된 레코드가 필요하고,
-  `redis_sessions.open`의 `lock_timeout`, `reply`, `redis`와 `redis_session.close`의 `lock_lost`, `reply`, `redis`,
-  `record_write`는 Redis 서버나 그 모델이 필요하다. 그 case들은 저장된 레코드를 선언하거나 Redis 서버를 상대로 여러
-  요청을 실행하는 binding의 case 형태를 기다린다(T1.30-4). group `requests`의 어떤 case도 주입점을 장전하지 않는다. 그런 case는 어떤 바인딩 시험도 실행하지
-  않는데 검사는 통과시키기 때문이다.
+  호출 하나의 case는 쿠키 없이 만든 세션이 주는 것에도 닿는다. `file_session.close.made`는 4096겹 list를 set한 값으로
+  `file_session.close`의 `record_write`를 준다. 레코드는 그것을 php-serialization이 쓰는 것보다 한 단계 더 깊게 담기
+  때문이다(SE-6.8). group `file_session.found.made`와 `redis_session.found.made`는 식별자를 찾지 않은 세션의
+  `found`를 준다(SE-7.1). `get`, `set`, `remove`, `renew`의 group `file_session.<member>.stored`는 `e` 64개의 쿠키로,
+  case가 쓰는(`files`) 파일 `sess_<id>`의 세션을 연다. 배열을 담지 않은 레코드는 `record_not_array`를 주고(SE-6.4),
+  unserialize가 거부하는 바이트는 `record`를 준다(SE-6.3).
+  group `requests`는 여러 요청의 case(`steps`)를 담고, binding의 생성기는 그것을 이름으로 거부한다(binding G-5).
+  그래서 인터페이스 계약은 그 group을 선언하지 않고, Rust 시험만 그것을 실행한다: 파일 저장소의 `tests/contract.rs`,
+  그리고 모델과 Redis 서버에 대해 실행하는 Redis 저장소의 `tests/contract.rs`다(SE-10.4). binding에는 시험 run의
+  서비스, 예를 들어 `make test`의 Redis 서버에 대해 실행하는 case의 형태가 아직 없다(binding B2.269, 시험 run의
+  서비스에 대해 실행하는 case). 그래서 Redis 저장소의 kind 15개에는 생성한 바인딩 시험이 실행하는 case가 없다. 계약
+  검사는 그 하나하나를 지적하고(binding CK-22), 그 지적은 B2.269가 그 형태를 줄 때까지 모든 target의
+  `binding generate`를 멈춘다. 저장된 레코드와 서버의 응답은 입력이므로(SE-9.6) 어떤 실패 주입점도 이 kind들을 흉내
+  내지 않고, 어떤 kind도 `raises`에서 빠지지 않는다. 각 kind와 그것에 닿는 `packages/redis/rust/tests/contract.rs`의
+  trial(`model::`은 모델에 대해, `server::`는 서버에 대해 실행한다):
+
+  | Member | Kind | Trial |
+  |---|---|---|
+  | `redis_sessions.open` | `lock_timeout` | `model::`과 `server::a_request_that_finds_the_lock_taken_fails_and_changes_nothing` |
+  | `redis_sessions.open` | `reply` | `model::a_reply_that_is_not_bytes_fails_and_releases_the_lock` |
+  | `redis_sessions.open` | `redis` | `model::an_error_reply_to_the_read_fails_and_releases_the_lock` |
+  | `redis_session.get` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_the_call`, `a_key_that_cannot_be_decoded_fails_the_call` |
+  | `redis_session.set` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_set`, `a_key_that_cannot_be_decoded_fails_set` |
+  | `redis_session.remove` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_remove`, `a_key_that_cannot_be_decoded_fails_remove` |
+  | `redis_session.renew` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_renew`, `a_key_that_cannot_be_decoded_fails_renew` |
+  | `redis_session.close` | `lock_lost` | `model::`과 `server::a_request_that_lost_its_lock_writes_nothing_and_fails` |
+  | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock` |
+  | `redis_session.close` | `redis` | `model::an_error_reply_to_the_write_fails_and_releases_the_lock` |
+  | `redis_session.close` | `record_write` | `model::`과 `server::a_value_too_deep_for_a_record_fails_the_close` |
+
+  `redis_session.close`의 `record_write`에도 서버가 필요하다. close는 `finish`의 결과를 받기 전에 연결하기 때문이다.
+  group `requests`의 어떤 case도 주입점을 장전하지 않는다.

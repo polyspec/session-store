@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 9c0f2a6d3a87337617595816c0c79b2fbb01e779a600e6a57b3e3e6dbd57bbe0 -->
+<!-- source-sha256: 90e5293673527aa92c6dbab91976abb937eb72a72d099b0dc9219a75db1469a9 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -179,9 +179,9 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
 - workflow `ci`의 job `test`는 `.php-version`의 PHP를 설치하고 `make install-rust`, `make install-bay`,
   `make setup-bay`, `make redis-image`, `make test`를 실행한다. 뒤의 셋은 `BAY_SUDO=1`로 실행한다.
   `config/toolchain.json`이 CI를 위해 고정한 bay가 시험의 Redis 서버를 runner의 Docker에서 `REDIS_IMAGE`의 image로
-  실행하고(SE-10.4), bay의 모든 명령은 그 상태를 가진 한 사용자인 root로 실행된다. CI의 첫 run까지 미확인: runner
-  `ubuntu-26.04-arm`에서 `bay install`이 끝나는 것, root가 실행한 bay의 authority 파일을 시험 process가 읽는 것, run의
-  신호가 `sudo`가 시작한 bay에 닿는 것.
+  실행하고(SE-10.4), bay의 모든 명령은 그 상태를 가진 한 사용자인 root로 실행된다. 시험 process는 root로 실행되지
+  않아 root의 home 아래에 있는 authority 파일을 읽지 못하므로, TLS의 시험은 `bay install`이 authority를 더한 시스템의
+  certificate store로 그 authority를 신뢰한다. CI의 첫 run까지 미확인: run의 신호가 `sudo`가 시작한 bay에 닿는 것.
 - workflow `release`는 `ci`의 run이 `main`에서 성공하면 시작하고, 그런 run의 id를 준 dispatch로도 시작한다.
   `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`, `make release-publish`,
   `make release-undraft`를 이 순서로 실행한다.

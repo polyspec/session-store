@@ -1,7 +1,7 @@
 //! The connection against real Redis servers, each a service of a Compose project of its test that bay runs from the
 //! pinned image (`tests/servers`, SE-10.4): the queue of one process (SR-3.2), an ACL user (SR-6.1, SR-6.4), Sentinel
-//! (SR-6.2) and Cluster (SR-6.3). The trials run in parallel in this process, so none changes its environment; the
-//! test of TLS is `tests/tls.rs`.
+//! (SR-6.2), Cluster (SR-6.3) and TLS (SR-6.1). The trials run in parallel in this process, so none changes its
+//! environment.
 
 mod servers;
 mod store;
@@ -160,6 +160,45 @@ fn a_cluster_keeps_sessions() -> Result<(), Failed> {
     runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes }))
 }
 
+fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
+    // SR-6.1: rediss:// to a server that accepts TLS alone, with the certificate that bay issues for its name, at the
+    // paths in the container that the plan of the project gives. The store verifies the server against the trust
+    // store of its process, which holds the authority of bay because `bay install` adds it to the trust store of the
+    // machine (SE-10.4).
+    let mut project = Project::new(vec![Service::new("server", PORT, &PLAIN)]).map_err(Failed::from)?;
+    let certificate = project.planned("server").map_err(Failed::from)?.certificate.clone();
+    let port = PORT.to_string();
+    project
+        .extend(
+            "server",
+            &[
+                "--port",
+                "0",
+                "--tls-port",
+                &port,
+                "--tls-cert-file",
+                &certificate.server_certificate,
+                "--tls-key-file",
+                &certificate.server_key,
+                "--tls-ca-cert-file",
+                &certificate.server_authority,
+                "--tls-auth-clients",
+                "no",
+            ],
+        )
+        .map_err(Failed::from)?;
+    project.start().map_err(Failed::from)?;
+    let server = project.address("server").map_err(Failed::from)?;
+    // A failure of the client tells nothing of its cause (SR-6.4), so the test adds what the server wrote.
+    runtime()?.block_on(round_trip(Setting::Server { url: format!("rediss://{}/", server.name) })).map_err(|error| {
+        let message = match error.message() {
+            Some(message) => message.to_owned(),
+            None => String::new(),
+        };
+        Failed::from(format!("{message}\nthe server at {} wrote:\n{}", server.name, project.output("server")))
+    })
+}
+
 fn main() {
     let arguments = Arguments::from_args();
     let trials = vec![
@@ -173,6 +212,7 @@ fn main() {
         ),
         Trial::test("sentinel_names_the_primary", sentinel_names_the_primary),
         Trial::test("a_cluster_keeps_sessions", a_cluster_keeps_sessions),
+        Trial::test("a_tls_connection_reads_and_writes", a_tls_connection_reads_and_writes),
     ];
     libtest_mimic::run(&arguments, trials).exit();
 }

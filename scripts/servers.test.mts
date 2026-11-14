@@ -311,22 +311,26 @@ test('a run that SIGINT or SIGTERM stops waits for its command, runs down for it
   }
 });
 
-test('no test binary of the store of Redis changes the environment of a process whose trials run in parallel', () => {
-  // The environment of a process belongs to all its threads (SE-10.4): a file of tests that changes it holds one
-  // trial, and changes it in main before a second thread starts.
-  const directory = join(scripts, '..', 'packages', 'redis', 'rust', 'tests');
-  const files = readdirSync(directory).filter((name) => name.endsWith('.rs'));
-  assert.ok(files.includes('server.rs') && files.includes('contract.rs'), `the tests of the store of Redis are not in ${directory}`);
-  const changing: string[] = [];
+test('the test of TLS trusts bay through the trust store of the machine and changes no environment', () => {
+  // SE-10.4: the plan names the authority file below the home of the user who runs bay, which is root on the runner,
+  // and the test process does not run as root. The test trusts the authority through the trust store of the machine
+  // that `bay install` writes, so no test reads that file, names a file in SSL_CERT_FILE or SSL_CERT_DIR, or changes
+  // the environment that the trials of its process read in parallel.
+  const tests = join(scripts, '..', 'packages', 'redis', 'rust', 'tests');
+  const files = [
+    ...readdirSync(tests).filter((name) => name.endsWith('.rs')),
+    ...['servers', 'store'].flatMap((directory) => readdirSync(join(tests, directory)).map((name) => join(directory, name))),
+  ];
+  assert.ok(files.includes('server.rs') && files.includes('contract.rs'), `the tests of the store of Redis are not in ${tests}`);
+  const found: string[] = [];
   for (const name of files) {
-    const text = readFileSync(join(directory, name), 'utf8');
-    if (!/\bset_var\(|\bremove_var\(/.test(text)) continue;
-    changing.push(name);
-    assert.equal(text.match(/\bTrial::test\(/g)?.length, 1, `${name} changes the environment and holds more than one trial`);
-    const main = text.slice(text.indexOf('fn main()'));
-    assert.match(main, /\bset_var\(/, `${name} changes the environment outside main`);
-    assert.equal(text.match(/\bset_var\(|\bremove_var\(/g)?.length, 1, `${name} changes the environment more than once`);
+    const text = readFileSync(join(tests, name), 'utf8');
+    for (const pattern of [/\bset_var\(/, /\bremove_var\(/, /SSL_CERT_FILE|SSL_CERT_DIR/, /"ca"/]) {
+      if (pattern.test(text)) found.push(`${name}: ${pattern.source}`);
+    }
   }
-  // The test of TLS names the authority file of bay for its process.
-  assert.deepEqual(changing, ['tls.rs']);
+  assert.deepEqual(found, [], 'a test names the authority file of bay or changes the environment of its process');
+  // The trial of TLS is one of the trials of tests/server.rs.
+  assert.match(readFileSync(join(tests, 'server.rs'), 'utf8'), /Trial::test\("a_tls_connection_reads_and_writes"/);
+  assert.equal(files.includes('tls.rs'), false, 'tests/tls.rs is a test binary of its own');
 });

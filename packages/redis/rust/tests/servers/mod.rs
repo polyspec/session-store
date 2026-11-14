@@ -128,9 +128,9 @@ impl Service {
 #[allow(dead_code, reason = "SE-10.4: tests/server.rs starts a server of TLS, tests/contract.rs does not")]
 #[derive(Clone)]
 pub struct Certificate {
-    /// The file of the authority on the host, which a client of the server trusts.
-    pub authority: String,
-    /// The certificate, its key and the authority in the container of the service.
+    /// The certificate, its key and the authority in the container of the service. A client on the host trusts the
+    /// authority through the trust store of the machine, which `bay install` writes: the file of the authority on the
+    /// host is below the home of the user who runs bay, which the test process may not read.
     pub server_certificate: String,
     pub server_key: String,
     pub server_authority: String,
@@ -368,7 +368,6 @@ fn services_of_plan(output: &[u8]) -> Result<Vec<(String, Planned)>, String> {
             Planned {
                 host: field("plan --json", &service, "host")?,
                 certificate: Certificate {
-                    authority: field("plan --json", certificate, "ca")?,
                     server_certificate: field("plan --json", certificate, "containerCert")?,
                     server_key: field("plan --json", certificate, "containerKey")?,
                     server_authority: field("plan --json", certificate, "containerCa")?,

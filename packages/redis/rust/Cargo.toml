@@ -43,12 +43,7 @@ harness = false
 [lints]
 workspace = true
 
-# The connection against real servers: the queue of a process, ACL, Sentinel and Cluster (SR-3.2, SR-6).
+# The connection against real servers: the queue of a process, ACL, Sentinel, Cluster and TLS (SR-3.2, SR-6).
 [[test]]
 name = "server"
-harness = false
-
-# The connection over TLS, in a process of its own, whose environment names the authority of the server (SE-10.4).
-[[test]]
-name = "tls"
 harness = false

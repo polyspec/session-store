@@ -1,5 +1,5 @@
-//! What the tests of the connection share (`tests/server.rs`, `tests/tls.rs`): a store of a connection setting that
-//! writes a session and reads it back.
+//! What the trials of the connection share (`tests/server.rs`): a store of a connection setting that writes a session
+//! and reads it back.
 
 use libtest_mimic::Failed;
 use polyspec_php_serialization::{Node, PhpValue};

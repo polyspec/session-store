@@ -1,7 +1,20 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 2ddfa65436309002f8f551741f03352d997e3f21a15b1555d4a7cb9671fe6e67 -->
+<!-- source-sha256: 97ee1d5361c38f415a4ab6d5cd34d33d9f245a672e0c3cc671a0205f22b1b906 -->
 
 ## Unreleased
+
+- TLS의 시험이 workflow `ci`의 job `test`에서 `the connection to Redis failed: I/O error`로 실패했다. 시험은
+  `bay plan --json`이 주는 authority 파일(`certificate.ca`)을 `SSL_CERT_FILE`에 적었다. `BAY_SUDO=1`이면 bay는
+  root로 실행되어 그 파일을 root의 home 아래에 두고, root로 실행되지 않는 시험 process는 그 파일을 읽지 못한다.
+  rustls-native-certs는 그 읽기를 오류로 알리고, redis-rs는 연결을 열기 전에 그것을 I/O error로 돌려준다. 서버
+  출력의 `unexpected eof while reading` 두 줄은 client가 아니라 bay가 port가 연결을 받는지 확인한 연결이었다. 이제
+  시험은 `bay install`이 authority를 더하고 run의 시작에서 `bay check -scope run`이 그 항목을 확인하는 장비의 trust
+  store로 bay의 authority를 신뢰한다(SE-10.4). 어떤 시험도 authority 파일을 읽거나 `SSL_CERT_FILE`에 적지 않고,
+  harness는 plan의 `certificate.ca`를 더 읽지 않으며, 어떤 시험도 자기 process의 환경을 바꾸지 않으므로 그 trial은
+  다시 `tests/server.rs`의 trial 하나다. `tests/tls.rs`는 지웠다. `make servers-test`의 한 시험이 이를 요구한다.
+  그 시험은 `set_var`나 `remove_var`를 부르거나, `SSL_CERT_FILE`이나 `SSL_CERT_DIR`를 적거나, 필드 `"ca"`를 읽는
+  Redis 저장소의 시험을 실패시키며, 이전의 `tests/tls.rs`와 `tests/servers/mod.rs`가 그렇게 했다. 변경 후
+  `make servers-test`는 17 passed, 0 failed를 준다. TLS의 시험 자체는 CI에서 실행된다.
 
 - CI는 bay v0.0.8을 설치한다(`config/toolchain.json`). v0.0.7에서는 Linux 호스트가 실행의 서비스 이름
   `<project>-<service>.bay.test`를 해석하지 못해, job `test`의 `server::*` 시험 13개가 `failed to lookup address

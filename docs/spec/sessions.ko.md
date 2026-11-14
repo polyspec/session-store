@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 78775c6d9a3032bb8582fd897833f2dd2851e6638199de21976bbedd0266416b -->
+<!-- source-sha256: 95cb478f6fc47e4b076edb16c7dc65326ee297388397a11356bf7e85ad90a173 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -387,13 +387,15 @@
     주소에 연결한다. 이 저장소의 어떤 파일도 이름의 domain이나 certificate의 경로를 적지 않고, 어떤 port도 host에
     공개하지 않는다. harness는 `schemaVersion`이 1이 아닌 plan이나 `up`의 출력을 실패시킨다. 1이 harness가 읽는
     계약의 version이다.
-  - TLS 서버는 bay가 자기 이름에 발급한 certificate를 plan이 주는 container 안의 경로에서 읽고, 시험은 plan이 그
-    파일을 적는 bay의 authority를 신뢰한다. 어떤 시험도 certificate를 만들지 않는다.
-    저장소는 서버를 자기 process의 trust store로 검증한다. 연결 설정이 authority를 적지 않기 때문이고(SR-6.1),
-    rustls는 `SSL_CERT_FILE`이 적는 파일을 읽는다. process의 환경은 그 모든 thread의 것이고, 한 thread가 환경을 읽는
-    동안 다른 thread가 그것을 바꾸는 일은 안전하지 않다. 그래서 어떤 시험도 trial이 병렬로 도는 process의 환경을
-    바꾸지 않는다. TLS의 시험은 trial 하나를 가진 자기 test binary(`tests/tls.rs`)이고, 두 번째 thread를 시작하기
-    전에 authority 파일을 `SSL_CERT_FILE`에 적는다.
+  - TLS 서버는 bay가 자기 이름에 발급한 certificate를 plan이 주는 container 안의 경로에서 읽는다. 어떤 시험도
+    certificate를 만들지 않는다. 저장소는 서버를 자기 process의 trust store로 검증한다. 연결 설정이 authority를
+    적지 않기 때문이다(SR-6.1). TLS의 시험은 장비의 trust store로 bay의 authority를 신뢰한다. `bay install`이
+    authority를 그 store(macOS에서는 keychain, Linux에서는 시스템의 certificate store)에 더하고, run의 시작에서
+    `bay check -scope run`이 그 항목을 확인한다. 어떤 시험도 plan이 적는 authority 파일을 읽지 않는다. bay는 그
+    파일을 bay를 실행하는 사용자의 home 아래에 두고, CI의 runner에서 그 사용자는 root이며 시험 process는 root로
+    실행되지 않으므로, 그 파일을 받은 client는 연결하기 전에 파일을 읽지 못하고 실패한다. 어떤 시험도 자기 process의
+    환경을 바꾸지도 않는다. 환경은 process의 모든 thread의 것이고, 한 thread가 환경을 읽는 동안 다른 thread가
+    그것을 바꾸는 일은 안전하지 않기 때문이다. TLS의 시험은 `tests/server.rs`의 trial 하나다.
   - `up`의 반환이 시작의 event다. bay는 모든 service가 자기 port에서 연결을 받은 뒤 반환한다. harness는 시간 제한도,
     sleep도, 반복해서 묻는 일도 갖지 않는다. cluster의 시험은 image의 `redis-cli --cluster create`로 cluster를
     만든다. `bay exec`가 그 명령을 첫 node의 container에서 세 node의 IPv4 주소와 함께 실행한다. 그 명령이 Redis가

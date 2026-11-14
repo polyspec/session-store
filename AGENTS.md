@@ -185,10 +185,10 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
 - The job `test` of the workflow `ci` sets up the PHP of `.php-version` and runs `make install-rust`,
   `make install-bay`, `make setup-bay`, `make redis-image` and `make test`, the last three with `BAY_SUDO=1`: the bay
   that `config/toolchain.json` pins for CI runs the Redis servers of the tests on Docker of the runner from the image
-  of `REDIS_IMAGE` (SE-10.4), and every command of bay runs as root, the one user that holds its state. Not
-  confirmed until the first run of CI: that `bay install` completes on the runner `ubuntu-26.04-arm`, that the test
-  process reads the authority file of a bay that root runs, and that a signal of the run reaches a bay that `sudo`
-  started.
+  of `REDIS_IMAGE` (SE-10.4), and every command of bay runs as root, the one user that holds its state. The test
+  process does not run as root and cannot read the authority file below the home of root, so the test of TLS trusts
+  the authority through the certificate store of the system, to which `bay install` adds it. Not confirmed until the
+  first run of CI: that a signal of the run reaches a bay that `sudo` started.
 - The workflow `release` starts when a run of `ci` succeeds on `main`, or by a dispatch with the id of such a run. It
   runs `make release-tag`, `make release-checkout`, `make release-tools`, `make release-assets`,
   `make release-publish` and `make release-undraft` in that order.

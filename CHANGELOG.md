@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- The test of TLS failed in the job `test` of the workflow `ci` with `the connection to Redis failed: I/O error`. The
+  test named in `SSL_CERT_FILE` the authority file that `bay plan --json` gives (`certificate.ca`). With `BAY_SUDO=1`
+  bay runs as root and keeps that file below the home of root, which the test process, which does not run as root,
+  cannot read; rustls-native-certs reports the read as an error and redis-rs returns it as an I/O error before it
+  opens a connection. The two lines `unexpected eof while reading` in the output of the server were the connections
+  with which bay checks that the port accepts connections, not the client. The test now trusts the authority of bay
+  through the trust store of the machine, to which `bay install` adds it and whose entry `bay check -scope run`
+  checks at the start of a run (SE-10.4): no test reads the authority file or names it in `SSL_CERT_FILE`, the
+  harness no longer reads `certificate.ca` of the plan, and the trial is again one of `tests/server.rs`, because no
+  test changes the environment of its process; `tests/tls.rs` is removed. A test of `make servers-test` requires
+  this: it fails a test of the store of Redis that calls `set_var` or `remove_var`, names `SSL_CERT_FILE` or
+  `SSL_CERT_DIR` or reads the field `"ca"`, which the previous `tests/tls.rs` and `tests/servers/mod.rs` did, and
+  `make servers-test` gives 17 passed, 0 failed with the change. The test of TLS itself runs in CI.
+
 - CI installs bay v0.0.8 (`config/toolchain.json`). With v0.0.7 a Linux host could not resolve the name
   `<project>-<service>.bay.test` of a service of a run, so the 13 `server::*` tests of the job `test` failed with
   `failed to lookup address information`; v0.0.8 names each running service container in the hosts block of the host.

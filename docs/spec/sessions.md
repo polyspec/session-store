@@ -393,13 +393,15 @@ the statement that it checks. A PHP value and its serialize form are those of ph
     path of a certificate, and no port is published to the host. The harness fails a plan or an output of `up` whose
     `schemaVersion` is not 1, the version of the contract that it reads.
   - The server of TLS takes the certificate that bay issues for its name, at the paths in its container that the
-    plan gives, and the test trusts the authority of bay, whose file the plan names. No test makes a certificate.
-    The store verifies a server against the trust store of its process, because a connection setting names no
-    authority (SR-6.1), and rustls reads the file that `SSL_CERT_FILE` names. The environment of a process belongs to
-    all its threads, and a thread that changes it while another reads it is not safe, so no test changes the
-    environment of a process whose trials run in parallel: the test of TLS is a test binary of its own
-    (`tests/tls.rs`) with one trial, which names the authority file in `SSL_CERT_FILE` before it starts a second
-    thread.
+    plan gives. No test makes a certificate. The store verifies a server against the trust store of its process,
+    because a connection setting names no authority (SR-6.1), and the test of TLS trusts the authority of bay through
+    the trust store of the machine, to which `bay install` adds it (the keychain on macOS, the certificate store of
+    the system on Linux) and whose entry `bay check -scope run` checks at the start of a run. No test reads the file
+    of the authority that the plan names: bay keeps it below the home of the user who runs bay, which is root on the
+    runner of CI, and the test process does not run as root, so a client that is given that file fails to read it
+    before it connects. No test changes the environment of its process either, because the environment belongs to all
+    threads of the process and a thread that changes it while another reads it is not safe; the test of TLS is a
+    trial of `tests/server.rs`.
   - The return of `up` is the event of a start: bay returns after every service accepts connections on its port. The
     harness holds no time limit, no sleep and no repeated question. The test of the cluster creates the cluster with
     `redis-cli --cluster create` of the image, which `bay exec` runs in the container of the first node with the

@@ -1,7 +1,15 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: a40714ca97159414fa643c8e66690295e2050b353cf5079748928a16b1c7456f -->
+<!-- source-sha256: 9a4b024ca431432a6e342669438cbdaffeed6627912e2408648ecd18adf2eaca -->
 
 ## Unreleased
+
+- binding을 내려받는 것은 `make install-binding`뿐이다(T1.28). 그 target은 `scripts/binding.mts install`을 실행하고,
+  이 명령은 binding을 `Cargo.lock`의 commit으로 clone하고 그 도구의 패키지를 `var/tools`의 npm으로 설치한다. workflow
+  `ci`의 job `rust`는 `make install-rust` 다음에 그것을 실행한다. 스크립트의 다른 모든 명령은 `cargo metadata
+  --offline`을 실행하고, binding이 설치되지 않았으면 `run make install-binding`으로 실패한다. 이전에는 `make
+  binding-check`가 `var/binding`에 설치가 없으면 binding을 clone하고 `PATH`의 npm으로 `npm ci`를 실행했으며, `cargo
+  metadata`가 내려받을 수 있었다. `make tool-pins-test`의 새 시험은 `make install-binding`의 dry run, 스크립트, job
+  `rust`를 읽는다. 변경 전에는 9 passed, 1 failed였고 변경 후에는 10 passed, 0 failed다.
 
 - 어떤 파일도 bay의 릴리스를 적지 않았고, workflow `ci`는 bay를 설치하지 않아 job `test`가 `make test`를 시작할 때
   실패했으며, `scripts/servers.sh`는 PATH의 bay만 시작했다. bay는 make처럼 장비가 주는 도구다. run은 PATH의 `bay`를

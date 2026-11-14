@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Only `make install-binding` downloads binding (T1.28). It runs `scripts/binding.mts install`, which clones binding at
+  the commit of `Cargo.lock` and installs the packages of its tool with the npm of `var/tools`, and the job `rust` of the
+  workflow `ci` runs it after `make install-rust`. Every other command of the script runs `cargo metadata --offline`
+  and fails with `run make install-binding` while binding is not installed. Before, `make binding-check` cloned binding
+  and ran `npm ci` with the npm of the `PATH` when `var/binding` held no install, and `cargo metadata` could fetch. A
+  new test of `make tool-pins-test` reads the dry run of `make install-binding`, the script and the job `rust`: before
+  the change it gave 9 passed, 1 failed, and with it 10 passed, 0 failed.
+
 - No file named a release of bay, the workflow `ci` installed no bay, so its job `test` failed at the start of
   `make test`, and `scripts/servers.sh` started the bay of PATH alone. bay is a tool that the machine gives, as make
   is: a run starts `bay` of PATH, compares no version, writes the output of `bay version` as its first line, and the

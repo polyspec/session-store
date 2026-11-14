@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 2aabb074ebe693e0a1e5545a07ba8e77a473c90d7cdb3f38720087a124df7d6d -->
+<!-- source-sha256: 378fb71843846758b95b7d2c6696a4ff4fe49eb02ccb46cca807fb0796f9b32a -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -20,7 +20,10 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   쓰고 계약 검사가 비교한다(binding CK-19). 이 package들은 workspace의 member다. `make bindings`가 추적하지 않는
   `generated/`를 쓰고, 바인딩 package의 빌드는 그 뒤에 한다. 코어의 target은 코어 crate를 `-p`로 지정하므로
   생성된 소스가 필요 없다.
-- `scripts/binding.mts`: `Cargo.lock`이 고정하는 `polyspec-binding-core`의 commit에서 binding을 실행한다.
+- `scripts/binding.mts`: `Cargo.lock`이 고정하는 `polyspec-binding-core`의 commit에서 binding을 실행한다. binding을
+  내려받는 것은 `make install-binding`뿐이다. 그 target은 binding을 그 commit으로 `var/binding/<commit>`에 clone하고 그
+  도구의 패키지를 `var/tools`의 npm으로 설치한다. 다른 모든 명령은 crate를 `cargo metadata --offline`으로 읽고 binding이
+  설치되지 않았으면 실패한다. 내려받는 검사는 네트워크에 의존하기 때문이다(T1.28).
 - `scripts/test-run.sh`: `make test`의 시험을 자기 서버와 임시 디렉터리를 소유하는 run으로 실행한다(SE-10.4).
 - `scripts/servers.sh`: 시험의 Redis 서버를 위한 bay의 명령이다. 시험, `scripts/test-run.sh`, `make redis-image`가 이
   script를 실행한다(SE-10.4). bay가 서버를 Compose 프로젝트로 시작하고 지우며, 서버의 이름과 certificate와 주소를 주고,

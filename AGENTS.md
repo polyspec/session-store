@@ -19,7 +19,10 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   tracked files `binding scaffold` writes and the contract check compares (binding CK-19). They are members of the
   workspace; `make bindings` writes their `generated/`, which is not tracked, and builds of them come after it. The
   targets of the core name the core crates with `-p`, so they need no generated source.
-- `scripts/binding.mts`: runs binding at the commit of `polyspec-binding-core` that `Cargo.lock` pins.
+- `scripts/binding.mts`: runs binding at the commit of `polyspec-binding-core` that `Cargo.lock` pins. Only `make
+  install-binding` downloads binding: it clones binding at that commit into `var/binding/<commit>` and installs the
+  packages of its tool with the npm of `var/tools`. Every other command reads the crates with `cargo metadata --offline`
+  and fails while binding is not installed, because a check that downloads depends on the network (T1.28).
 - `scripts/test-run.sh`: runs the tests of `make test` as a run that owns its servers and its temporary directory (SE-10.4).
 - `scripts/servers.sh`: the commands of bay for the Redis servers of the tests, which the tests,
   `scripts/test-run.sh` and `make redis-image` run (SE-10.4): bay starts and removes the servers as Compose projects,

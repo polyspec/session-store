@@ -51,6 +51,8 @@ jobs:
       - uses: ./.github/actions/bootstrap
       - name: install the Rust toolchain and the locked crates
         run: make install-rust
+      - name: install binding at the commit of Cargo.lock
+        run: make install-binding
       - name: lint and contract check
         run: make ci-rust
       - name: report

@@ -66,7 +66,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust install-bay setup-bay install-bay-test ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-tools install-packages toolchain-lock install-rust install-binding install-bay setup-bay install-bay-test ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-checkout release-tools release-assets release-publish release-undraft
 
@@ -112,6 +112,12 @@ toolchain-lock:
 install-rust:
 	rustup toolchain install --no-self-update
 	$(CARGO) fetch --locked
+
+# install-binding installs binding at the commit that Cargo.lock pins into var/binding/<commit> (scripts/binding.mts),
+# after make install-rust fetched the crates; binding-check and the binding targets read it offline and fail while it is
+# missing.
+install-binding:
+	$(BINDING) install
 
 ci-shared:
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_SHARED)

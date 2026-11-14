@@ -141,13 +141,15 @@ impl FileSessions {
     }
 
     /// Opens the session of a request from the bytes of its session cookie (SF-3). It waits for the earlier requests
-    /// of the session in this process and for the lock of the file, which another process may hold.
+    /// of the session in this process and for the lock of the file, which another process may hold. The cancellation
+    /// is taken by value, as a binding gives it, and `None` waits without one (SF-3.8).
     pub fn open(
         &self,
         _wait: ProcessWait,
         cookie: Option<&[u8]>,
-        cancel: Option<&Cancel>,
+        cancel: Option<Cancel>,
     ) -> Result<FileSession, Error> {
+        let cancel = cancel.as_ref();
         let Some(id) = cookie.and_then(accept) else {
             return Ok(self.without_session());
         };

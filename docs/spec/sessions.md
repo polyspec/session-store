@@ -202,7 +202,10 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   connection closed) fails with the kind `cancelled` and lets the next request of the session go on. A request that
   waits in the queue is woken by the cancellation at once and leaves the queue. A request that waits in `flock` cannot
   be woken, because no thread can interrupt a blocking `flock`: when it gets the lock, it sees the cancellation,
-  releases the lock and its turn at once and fails.
+  releases the lock and its turn at once and fails. The cancellation is an `optional` of the type `cancel` of the
+  interface contract, whose default the core decides (`{"computed": "SF-3.8"}`): a caller that leaves it out waits
+  without one. `FileSessions::open` takes it by value (`Option<Cancel>`), because binding gives the core the
+  cancellation that it makes for the call and binds to the value of the language (binding GN-6i, GN-6aq).
 - **SF-4** <a id="SF-4.1"></a> `close` takes the record session of the request and writes what `finish` gives (SE-7.4).
   <a id="SF-4.2"></a> `unused` writes nothing. `unchanged` keeps the bytes and sets the modification time of the file
   to now, so the session lives a lifetime from its last request. <a id="SF-4.3"></a> `write` of an existing identifier
@@ -269,6 +272,10 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   | `lock_expire` | seconds until a lock expires, `redis.session.lock_expire` | none: the caller states it | 0 and a number of seconds whose milliseconds pass 2^64 − 1, kind `invalid_lock_expire` |
   | `lock_retries` | how many more times a request tries a taken lock, `redis.session.lock_retries` | 100 | none |
   | `lock_wait` | microseconds between two tries, `redis.session.lock_wait_time` | 20000 | none |
+
+  The options are the record `store_options` of the interface contract, whose Rust type is `StoreOptions`
+  (`core_type`), each field `None` for its default; binding names the Rust type of a record that a parameter takes by
+  its `core_type`.
 
   <a id="SR-1.3"></a> Every process of one Redis server gives the options the same values, and `lock_expire` is longer
   than any request. `lock_expire` has no default, because no value is longer than every request of every application

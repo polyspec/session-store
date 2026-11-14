@@ -200,7 +200,10 @@
   연결이 닫힌 요청)는 kind `cancelled`로 실패하고 세션의 다음 요청이 진행하게 한다.
   queue에서 기다리는 요청은 취소로 즉시 깨어나 queue를 떠난다. `flock`에서 기다리는 요청은
   깨울 수 없다. 어떤 thread도 block하는 `flock`을 중단시킬 수 없기 때문이다: 그 요청은 잠금을 얻으면 취소를 보고,
-  잠금과 차례를 즉시 내놓고 실패한다.
+  잠금과 차례를 즉시 내놓고 실패한다. 취소는 interface contract의 타입 `cancel`의 `optional`이고, 그 기본값은 core가
+  정한다(`{"computed": "SF-3.8"}`). 그것을 빼는 호출자는 취소 없이 기다린다. `FileSessions::open`은 그것을 값으로
+  받는다(`Option<Cancel>`). binding이 호출을 위해 만들어 언어의 값에 묶은 취소를 core에 주기 때문이다(binding GN-6i,
+  GN-6aq).
 - **SF-4** <a id="SF-4.1"></a> `close`는 요청의 레코드 세션을 받아 `finish`가 주는 것을 쓴다(SE-7.4).
   <a id="SF-4.2"></a> `unused`는 아무것도 쓰지 않는다. `unchanged`는 바이트를 유지하고 파일의 수정 시각을
   지금으로 설정하므로, 세션은 마지막 요청부터 수명만큼 산다. <a id="SF-4.3"></a> 기존 식별자의 `write`는
@@ -267,6 +270,9 @@
   | `lock_expire` | 잠금이 만료될 때까지의 초 수, `redis.session.lock_expire` | 없음: 호출자가 적는다 | 0과, 밀리초로 바꾼 값이 2^64 − 1을 넘는 초 수, kind `invalid_lock_expire` |
   | `lock_retries` | 요청이 남이 가진 잠금을 몇 번 더 시도하는지, `redis.session.lock_retries` | 100 | 없음 |
   | `lock_wait` | 두 시도 사이의 마이크로초, `redis.session.lock_wait_time` | 20000 | 없음 |
+
+  옵션은 interface contract의 record `store_options`이고, 그 Rust 타입은 `StoreOptions`(`core_type`)이며, 각 field는
+  기본값일 때 `None`이다. binding은 parameter가 받는 record의 Rust 타입을 그 `core_type`으로 적는다.
 
   <a id="SR-1.3"></a> Redis 서버 하나의 모든 프로세스는 옵션에 같은 값을 주고, `lock_expire`는 어떤 요청보다도
   길다. `lock_expire`에는 기본값이 없다. 모든 애플리케이션의 모든 요청보다 긴 값은 없고

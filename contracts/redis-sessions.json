@@ -1527,7 +1527,10 @@
     }
    },
    "key": "a",
-   "value": "i:1;",
+   "value": {
+    "kind": "int",
+    "value": 1
+   },
    "faults": [
     {
      "point": "session_store.random",
@@ -1654,7 +1657,10 @@
       "call": "redis_session.set",
       "args": {
        "key": "a",
-       "value": "i:1;"
+       "value": {
+        "kind": "int",
+        "value": 1
+       }
       }
      }
     ]
@@ -1665,6 +1671,35 @@
     "category": "io",
     "message": null
    }
+  }
+ ],
+ "redis_session.found.made": [
+  {
+   "id": "a_session_opened_without_a_cookie_found_none",
+   "label": "a session that the store of Redis opened without a cookie found no identifier and connected to no server (SE-7.1, SR-3.1)",
+   "rules": [
+    "SE-7.1",
+    "SR-3.1"
+   ],
+   "receiver": {
+    "new": "redis_sessions.open",
+    "receiver": {
+     "new": "redis_sessions.new",
+     "args": {
+      "setting": {
+       "kind": "server",
+       "url": "redis+unix:///dev/null/redis.sock"
+      },
+      "options": {
+       "lock_expire": 30
+      }
+     }
+    },
+    "args": {
+     "cookie": null
+    }
+   },
+   "result": null
   }
  ]
 }

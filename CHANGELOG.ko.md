@@ -1,7 +1,16 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 60429130f1409980002a991af73d853b186a1a5f72d42ed94021654f335c2a2e -->
+<!-- source-sha256: 5c5f6deeedc93ffcf1bd8f7b07525430468af6931e449279d378ba75aa9653f6 -->
 
 ## Unreleased
+
+- `file_session.found`와 `redis_session.found`는 어떤 생성 바인딩 시험도 실행하지 않는 group `requests`에만 case가
+  있었고, `file_session.close`의 `record_write`도 그곳에서만 닿았다. 쿠키 없이 만든 세션이 호출 하나로 둘 다 주는데도
+  그랬다. 호출 하나의 case는 PHP 값을 alias `php_value`의 값이 아닌 serialize 텍스트(`"i:1;"`)로 썼다. 이제 group
+  `file_session.found.made`와 `redis_session.found.made`, 그리고 4096겹 list를 set하는 `file_session.close.made`의
+  case가 그것을 주고, 호출 하나의 case의 모든 PHP 값은 `php_value`(`{"kind": "int", "value": 1}`)이며, Rust 시험은
+  그 형식을 읽는다(SE-10.2, SE-10.6, T1.30-6). group `requests`가 없으면 계약 검사는 이제 23개 kind를 지적하고,
+  그것은 저장된 레코드나 Redis 서버를 가진 binding의 case 형태를 기다린다(T1.30-4). SF-3.8은 parameter `cancel`이
+  Python과 Node에만 있는 이유를 적는다.
 
 - `make bindings`는 모든 target을 거부했다. `file_sessions.open`의 parameter `cancel`이 binding이 생성하지 않는
   computed default를 가진 타입 `cancel`이었고(U-2), record `store_options`가 `core_type`을 적지 않았으며,

@@ -205,7 +205,11 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   releases the lock and its turn at once and fails. The cancellation is an `optional` of the type `cancel` of the
   interface contract, whose default the core decides (`{"computed": "SF-3.8"}`): a caller that leaves it out waits
   without one. `FileSessions::open` takes it by value (`Option<Cancel>`), because binding gives the core the
-  cancellation that it makes for the call and binds to the value of the language (binding GN-6i, GN-6aq).
+  cancellation that it makes for the call and binds to the value of the language (binding GN-6i, GN-6aq). The
+  parameter is for Python and Node (`only`). PHP has none, because a PHP call blocks its thread and the store of files
+  takes no cancellation from another process or from a callback while `open` waits, so nothing could fire it during
+  the call (plan B-5). Go has none, because binding takes a cancellation of Go only as the first parameter `ctx`
+  (GN-6aq) and the parameter follows the required `cookie`.
 - **SF-4** <a id="SF-4.1"></a> `close` takes the record session of the request and writes what `finish` gives (SE-7.4).
   <a id="SF-4.2"></a> `unused` writes nothing. `unchanged` keeps the bytes and sets the modification time of the file
   to now, so the session lives a lifetime from its last request. <a id="SF-4.3"></a> `write` of an existing identifier
@@ -363,7 +367,10 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   `stored` hold what the store keeps after the failure. A created identifier of a case is `#n`, the n-th identifier that
   the case creates, counted from 0. The secret of a lock is `<secret>` and the release script `<release>` in a command
   record. A value of a call is also `{"nested": n}`: n arrays that each hold the next at the key 0, the innermost
-  holding null, which is the serialize form `a:1:{i:0;` n times, `N;` and `}` n times. A case states in `found`, for
+  holding null, which is the serialize form `a:1:{i:0;` n times, `N;` and `}` n times. Those two forms are of the
+  group `requests`; a case of one call, which a generated binding test runs, gives a PHP value as a value of the alias
+  `php_value` (`{"kind": "int", "value": 1}`, and `{"kind": "list", "repeat": n, "value": <value>}` for n nested
+  lists, binding G-5), which the Rust tests read in the same form. A case states in `found`, for
   each step, the identifier that the opening of the step found (SE-7.1), `#n` or null; a case without `found` does not
   compare it. A case of the group `open` of the store of files states the directory of the made store in
   `store_directory`, and every case of the group `open` of the store of Redis gives `setting` and `options`, the two
@@ -496,9 +503,13 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   `requests` for every member that reads the group, so it reports no member without a case of a kind. But the
   generator of binding takes the keys of a case as the arguments of one call and refuses a case of several requests
   (`steps`) by name (binding G-5), so `make bindings` generates no target while the interface contract declares the
-  group `requests` (T1.30). Without that group the check reports the kinds that only its cases reach: `record` and
-  `record_not_array` of `get`, `set`, `remove` and `renew` of both sessions, which need a stored record; `lock_timeout`,
-  `reply` and `redis` of `redis_sessions.open` and `lock_lost`, `reply`, `redis` and `record_write` of
-  `redis_session.close`, which need a Redis server or its model; `record_write` of `file_session.close`; and `found` of
-  both sessions, which no group but `requests` names. No case of the group `requests` arms a point, because it would
+  group `requests` (T1.30). The cases of one call reach what a session made without a cookie gives:
+  `file_session.close.made` gives `record_write` of `file_session.close` by a set value of 4096 nested lists, which
+  the record nests one level deeper than php-serialization writes (SE-6.8), and the groups `file_session.found.made`
+  and `redis_session.found.made` give `found` of a session that found no identifier (SE-7.1). Without the group
+  `requests` the check reports the 23 kinds that only its cases reach: `record` and `record_not_array` of `get`,
+  `set`, `remove` and `renew` of both sessions, which need a stored record, and `lock_timeout`, `reply` and `redis` of
+  `redis_sessions.open` and `lock_lost`, `reply`, `redis` and `record_write` of `redis_session.close`, which need a
+  Redis server or its model. Those cases wait for a form of a case of binding that declares a stored record or runs
+  several requests against a Redis server (T1.30-4). No case of the group `requests` arms a point, because it would
   satisfy the check while no binding test runs it.

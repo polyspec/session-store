@@ -1206,7 +1206,10 @@
     }
    },
    "key": "a",
-   "value": "i:1;",
+   "value": {
+    "kind": "int",
+    "value": 1
+   },
    "faults": [
     {
      "point": "session_store.random",
@@ -1350,7 +1353,10 @@
       "call": "file_session.set",
       "args": {
        "key": "a",
-       "value": "i:1;"
+       "value": {
+        "kind": "int",
+        "value": 1
+       }
       }
      }
     ]
@@ -1397,7 +1403,10 @@
       "call": "file_session.set",
       "args": {
        "key": "a",
-       "value": "i:1;"
+       "value": {
+        "kind": "int",
+        "value": 1
+       }
       }
      }
     ]
@@ -1415,6 +1424,78 @@
     "category": "io",
     "message": null
    }
+  },
+  {
+   "id": "a_value_too_deep_for_a_record_fails_the_close_with_record_write",
+   "label": "the close of a new session that set a value of 4096 nested lists, which the record nests one level deeper than php-serialization writes, fails with record_write before it creates a file (SE-6.8)",
+   "rules": [
+    "SE-6.8",
+    "SF-4.1"
+   ],
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.in_directory",
+     "args": {
+      "directory": "/",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": null,
+     "cancel": {
+      "cancel": "open"
+     }
+    },
+    "then": [
+     {
+      "call": "file_session.set",
+      "args": {
+       "key": "a",
+       "value": {
+        "kind": "list",
+        "repeat": 4096,
+        "value": {
+         "kind": "null"
+        }
+       }
+      }
+     }
+    ]
+   },
+   "raises": {
+    "kind": "record_write",
+    "status": 500,
+    "category": "store",
+    "message": null
+   }
+  }
+ ],
+ "file_session.found.made": [
+  {
+   "id": "a_session_opened_without_a_cookie_found_none",
+   "label": "a session that the store of files opened without a cookie found no identifier (SE-7.1)",
+   "rules": [
+    "SE-7.1",
+    "SF-3.1"
+   ],
+   "receiver": {
+    "new": "file_sessions.open",
+    "receiver": {
+     "new": "file_sessions.in_directory",
+     "args": {
+      "directory": "/",
+      "lifetime": 1440
+     }
+    },
+    "args": {
+     "cookie": null,
+     "cancel": {
+      "cancel": "open"
+     }
+    }
+   },
+   "result": null
   }
  ]
 }

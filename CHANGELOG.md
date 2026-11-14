@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- `file_session.found` and `redis_session.found` had cases only in the group `requests`, which no generated binding
+  test runs, and `record_write` of `file_session.close` was reached only there, although a session made without a
+  cookie gives both in one call; the cases of one call wrote a PHP value as its serialize text (`"i:1;"`), which is
+  no value of the alias `php_value`. The groups `file_session.found.made` and `redis_session.found.made` and a case of
+  `file_session.close.made` that sets 4096 nested lists now give them, every PHP value of a case of one call is a
+  `php_value` (`{"kind": "int", "value": 1}`), and the Rust tests read that form (SE-10.2, SE-10.6, T1.30-6). Without
+  the group `requests` the contract check now reports 23 kinds, which wait for a form of a case of binding with a
+  stored record or a Redis server (T1.30-4). SF-3.8 states why the parameter `cancel` is for Python and Node alone.
+
 - `make bindings` refused every target because the parameter `cancel` of `file_sessions.open` had the type `cancel`
   with a computed default, which binding does not generate (U-2), the record `store_options` named no `core_type`,
   and the cases of `redis_sessions.new` gave no `setting` and wrote a setting as `{"server": {...}}` (G-5). The

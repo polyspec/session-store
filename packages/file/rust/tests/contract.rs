@@ -77,11 +77,45 @@ fn expected_records(value: &Value) -> Result<Vec<(String, String)>, Failed> {
         .collect()
 }
 
+/// The serialize form of a value of the alias `php_value` in the form of a generated binding test (binding G-5): `null`,
+/// `bool`, `int` and `list`, whose `value` is the list of its items or, with `repeat`, the one item of each of n lists.
+fn php_text(value: &Value) -> Result<String, Failed> {
+    match str_of(value, "kind")? {
+        "null" => Ok("N;".to_owned()),
+        "bool" => {
+            let flag = value.get("value").and_then(Value::as_bool).ok_or("a bool value holds no bool")?;
+            Ok(format!("b:{};", u8::from(flag)))
+        }
+        "int" => {
+            let number = value.get("value").and_then(Value::as_i64).ok_or("an int value holds no integer")?;
+            Ok(format!("i:{number};"))
+        }
+        "list" => {
+            let inner = value.get("value").ok_or("a list value has no value")?;
+            if let Some(repeat) = value.get("repeat") {
+                let depth = usize::try_from(repeat.as_u64().ok_or("a repeat is no count")?).map_err(failed)?;
+                return Ok(format!("{}{}{}", "a:1:{i:0;".repeat(depth), php_text(inner)?, "}".repeat(depth)));
+            }
+            let items = inner.as_array().ok_or("a list value holds no list")?;
+            let mut text = format!("a:{}:{{", items.len());
+            for (index, item) in items.iter().enumerate() {
+                text.push_str(&format!("i:{index};"));
+                text.push_str(&php_text(item)?);
+            }
+            text.push('}');
+            Ok(text)
+        }
+        other => Err(format!("a value of the kind {other} is not read by this runner").into()),
+    }
+}
+
 /// The serialize form of a value of a case: a text, or `{"nested": n}`, n arrays that each hold the next at the key 0,
-/// the innermost holding null (SE-10.2).
+/// the innermost holding null, in the group `requests`, and a value of the alias `php_value` in the cases of one call
+/// (SE-10.2).
 fn value_text(argument: Option<&Value>) -> Result<String, Failed> {
     match argument {
         Some(Value::String(text)) => Ok(text.clone()),
+        Some(value @ Value::Object(form)) if form.contains_key("kind") => php_text(value),
         Some(Value::Object(form)) => {
             let depth = form.get("nested").and_then(Value::as_u64).ok_or("a value form has no nested")?;
             let depth = usize::try_from(depth).map_err(failed)?;
@@ -398,15 +432,25 @@ fn made_session(value: &Value) -> Result<FileSession, Failed> {
     Ok(session)
 }
 
-/// SF-4.4: the close of a session that `open` made and `then` gave a value, with the faults of the case; only
-/// `file_session.close` reads the group.
+/// SF-4.4, SE-6.8: the close of a session that `open` made and `then` gave a value, with the faults of the case where it
+/// names them; only `file_session.close` reads the group.
 fn made_close(case: &Value) -> Result<(), Failed> {
     let raises = case.get("raises").ok_or("the case has no raises")?;
     let session = made_session(case.get("receiver").ok_or("the case has no receiver")?)?;
-    match armed(case, "file_session.close", || session.close(Io::for_generated_call()))? {
+    let close = || session.close(Io::for_generated_call());
+    let closed = if case.get("faults").is_some() { armed(case, "file_session.close", close)? } else { close() };
+    match closed {
         Ok(id) => Err(format!("the session is closed as {id:?}").into()),
         Err(error) => expect_failure(&error, raises),
     }
+}
+
+/// SE-7.1: `found` of a session that `open` made, which the case states in `result`; only `file_session.found` reads
+/// the group.
+fn made_found(case: &Value) -> Result<(), Failed> {
+    let expected = case.get("result").ok_or("the case has no result")?.as_str();
+    let session = made_session(case.get("receiver").ok_or("the case has no receiver")?)?;
+    expect_eq("found", &session.found(), &expected)
 }
 
 /// SE-5.4, SE-7.2: one call of a record session of a session that `open` made, with the faults of the case; the group
@@ -577,7 +621,7 @@ fn main() {
         Ok(contract) => contract,
         Err(error) => panic!("contracts/file-sessions.json is no JSON: {error}"),
     };
-    let groups: [(&str, Group); 10] = [
+    let groups: [(&str, Group); 11] = [
         ("requests", requests),
         ("open", open),
         ("openFaults", open_faults),
@@ -588,6 +632,7 @@ fn main() {
         ("file_session.renew.made", |case| made_call(case, "renew")),
         ("file_sessions.open.cancel", open_cancel),
         ("file_session.close.made", made_close),
+        ("file_session.found.made", made_found),
     ];
     let mut trials = vec![
         Trial::test("interface::no_constructor_and_no_property_waits", no_constructor_and_no_property_waits),

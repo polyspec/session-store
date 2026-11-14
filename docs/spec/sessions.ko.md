@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: fdbb0792e88d2700279e7664b89173c7f5a6fea20dbb3428123caec80e79cbdc -->
+<!-- source-sha256: 0e98b5ded3cef71aae498ca4a845bea1cc0e7c73d0f06d19ed995b74726d7ad9 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -203,7 +203,10 @@
   잠금과 차례를 즉시 내놓고 실패한다. 취소는 interface contract의 타입 `cancel`의 `optional`이고, 그 기본값은 core가
   정한다(`{"computed": "SF-3.8"}`). 그것을 빼는 호출자는 취소 없이 기다린다. `FileSessions::open`은 그것을 값으로
   받는다(`Option<Cancel>`). binding이 호출을 위해 만들어 언어의 값에 묶은 취소를 core에 주기 때문이다(binding GN-6i,
-  GN-6aq).
+  GN-6aq). 이 parameter는 Python과 Node에만 있다(`only`). PHP에는 없다. PHP 호출은 그 thread를 막고, 파일 저장소는
+  `open`이 기다리는 동안 다른 프로세스나 역호출에서 오는 취소를 받지 않으므로, 호출 중에 그것을 일으킬 것이 없기
+  때문이다(plan B-5). Go에도 없다. binding은 Go의 취소를 첫 parameter `ctx`로만 받고(GN-6aq), 이 parameter는 필수인
+  `cookie` 뒤에 있기 때문이다.
 - **SF-4** <a id="SF-4.1"></a> `close`는 요청의 레코드 세션을 받아 `finish`가 주는 것을 쓴다(SE-7.4).
   <a id="SF-4.2"></a> `unused`는 아무것도 쓰지 않는다. `unchanged`는 바이트를 유지하고 파일의 수정 시각을
   지금으로 설정하므로, 세션은 마지막 요청부터 수명만큼 산다. <a id="SF-4.3"></a> 기존 식별자의 `write`는
@@ -360,7 +363,10 @@
   `stored`는 실패 뒤에 저장소가 가진 것을 담는다. case가 만든 식별자는 `#n`이고, 이것은 case가 만드는 n번째
   식별자이며 0부터 센다. 명령 기록에서 잠금의 secret은 `<secret>`이고 해제 스크립트는
   `<release>`다. 호출의 값은 `{"nested": n}`이기도 하다: 각각 key 0에 다음 배열을 가진 배열 n개이고, 가장 안쪽 배열은
-  null을 갖는다. 이것은 serialize 형식으로 `a:1:{i:0;` n번, `N;`, `}` n번이다. case는 `found`에
+  null을 갖는다. 이것은 serialize 형식으로 `a:1:{i:0;` n번, `N;`, `}` n번이다. 이 두 형식은 group `requests`의
+  것이다. 생성한 바인딩 시험이 실행하는 호출 하나의 case는 PHP 값을 alias `php_value`의 값으로 준다(`{"kind":
+  "int", "value": 1}`, n겹 list는 `{"kind": "list", "repeat": n, "value": <value>}`, binding G-5). Rust 시험도 같은
+  형식으로 읽는다. case는 `found`에
   step마다 그 step의 열기가 찾은 식별자(SE-7.1)를 `#n`이나 null로 적는다. `found`가 없는 case는 그것을
   비교하지 않는다. 파일 저장소의 group `open`의 case는 만든 저장소의 디렉터리를
   `store_directory`에 적고, Redis 저장소의 group `open`의 모든 case는 `redis_sessions.new`의 두 parameter인
@@ -480,9 +486,12 @@
   계약 검사는 group `requests`의 case를 그 group을 읽는 모든 member에 세므로, 어떤 kind의 case가 없는 member를
   지적하지 않는다. 그러나 binding의 생성기는 case의 key를 한 호출의 인자로 받고 여러 요청의 case(`steps`)를 이름으로
   거부하므로(binding G-5), 인터페이스 계약이 group `requests`를 선언하는 동안 `make bindings`는 어떤 target도 생성하지
-  않는다(T1.30). 그 group이 없으면 검사는 그 case만 닿는 kind를 지적한다. 두 세션의 `get`, `set`, `remove`,
-  `renew`의 `record`와 `record_not_array`는 저장된 레코드가 필요하다. `redis_sessions.open`의 `lock_timeout`,
-  `reply`, `redis`와 `redis_session.close`의 `lock_lost`, `reply`, `redis`, `record_write`는 Redis 서버나 그 모델이
-  필요하다. 그 밖에 `file_session.close`의 `record_write`와, `requests` 말고는 어떤 group도 적지 않는 두 세션의
-  `found`가 있다. group `requests`의 어떤 case도 주입점을 장전하지 않는다. 그런 case는 어떤 바인딩 시험도 실행하지
+  않는다(T1.30). 호출 하나의 case는 쿠키 없이 만든 세션이 주는 것에 닿는다. `file_session.close.made`는 4096겹
+  list를 set한 값으로 `file_session.close`의 `record_write`를 준다. 레코드는 그것을 php-serialization이 쓰는 것보다
+  한 단계 더 깊게 담기 때문이다(SE-6.8). group `file_session.found.made`와 `redis_session.found.made`는 식별자를
+  찾지 않은 세션의 `found`를 준다(SE-7.1). group `requests`가 없으면 검사는 그 case만 닿는 23개 kind를 지적한다.
+  두 세션의 `get`, `set`, `remove`, `renew`의 `record`와 `record_not_array`는 저장된 레코드가 필요하고,
+  `redis_sessions.open`의 `lock_timeout`, `reply`, `redis`와 `redis_session.close`의 `lock_lost`, `reply`, `redis`,
+  `record_write`는 Redis 서버나 그 모델이 필요하다. 그 case들은 저장된 레코드를 선언하거나 Redis 서버를 상대로 여러
+  요청을 실행하는 binding의 case 형태를 기다린다(T1.30-4). group `requests`의 어떤 case도 주입점을 장전하지 않는다. 그런 case는 어떤 바인딩 시험도 실행하지
   않는데 검사는 통과시키기 때문이다.

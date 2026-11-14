@@ -106,11 +106,45 @@ fn options_of(case: &Value) -> Result<Options, Error> {
     )
 }
 
+/// The serialize form of a value of the alias `php_value` in the form of a generated binding test (binding G-5): `null`,
+/// `bool`, `int` and `list`, whose `value` is the list of its items or, with `repeat`, the one item of each of n lists.
+fn php_text(value: &Value) -> Result<String, Failed> {
+    match str_of(value, "kind")? {
+        "null" => Ok("N;".to_owned()),
+        "bool" => {
+            let flag = value.get("value").and_then(Value::as_bool).ok_or("a bool value holds no bool")?;
+            Ok(format!("b:{};", u8::from(flag)))
+        }
+        "int" => {
+            let number = value.get("value").and_then(Value::as_i64).ok_or("an int value holds no integer")?;
+            Ok(format!("i:{number};"))
+        }
+        "list" => {
+            let inner = value.get("value").ok_or("a list value has no value")?;
+            if let Some(repeat) = value.get("repeat") {
+                let depth = usize::try_from(repeat.as_u64().ok_or("a repeat is no count")?).map_err(failed)?;
+                return Ok(format!("{}{}{}", "a:1:{i:0;".repeat(depth), php_text(inner)?, "}".repeat(depth)));
+            }
+            let items = inner.as_array().ok_or("a list value holds no list")?;
+            let mut text = format!("a:{}:{{", items.len());
+            for (index, item) in items.iter().enumerate() {
+                text.push_str(&format!("i:{index};"));
+                text.push_str(&php_text(item)?);
+            }
+            text.push('}');
+            Ok(text)
+        }
+        other => Err(format!("a value of the kind {other} is not read by this runner").into()),
+    }
+}
+
 /// The serialize form of a value of a case: a text, or `{"nested": n}`, n arrays that each hold the next at the key 0,
-/// the innermost holding null (SE-10.2).
+/// the innermost holding null, in the group `requests`, and a value of the alias `php_value` in the cases of one call
+/// (SE-10.2).
 fn value_text(argument: Option<&Value>) -> Result<String, Failed> {
     match argument {
         Some(Value::String(text)) => Ok(text.clone()),
+        Some(value @ Value::Object(form)) if form.contains_key("kind") => php_text(value),
         Some(Value::Object(form)) => {
             let depth = form.get("nested").and_then(Value::as_u64).ok_or("a value form has no nested")?;
             let depth = usize::try_from(depth).map_err(failed)?;
@@ -666,6 +700,15 @@ fn made_call(case: &Value, name: &str) -> Result<(), Failed> {
     }
 }
 
+/// SE-7.1: `found` of a session that `open` made without a cookie, which connects to no server, as the case states in
+/// `result`; only `redis_session.found` reads the group.
+fn made_found(case: &Value) -> Result<(), Failed> {
+    let expected = case.get("result").ok_or("the case has no result")?.as_str();
+    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(failed)?;
+    let session = made_session(case.get("receiver").ok_or("the case has no receiver")?, &runtime)?;
+    expect_eq("found", &session.found(), &expected)
+}
+
 /// SR-6.4: the close of a session that set a value connects to the server of its setting, which no file can be.
 fn made_close(case: &Value) -> Result<(), Failed> {
     let raises = case.get("raises").ok_or("the case has no raises")?;
@@ -851,12 +894,13 @@ fn main() {
             trials.push(Trial::test(format!("{group}::{id}"), move || opening(&case)));
         }
     }
-    let made: [(&str, Group); 5] = [
+    let made: [(&str, Group); 6] = [
         ("redis_session.get.made", |case| made_call(case, "get")),
         ("redis_session.set.made", |case| made_call(case, "set")),
         ("redis_session.remove.made", |case| made_call(case, "remove")),
         ("redis_session.renew.made", |case| made_call(case, "renew")),
         ("redis_session.close.made", made_close),
+        ("redis_session.found.made", made_found),
     ];
     for (group, run) in made {
         let Some(Value::Array(cases)) = contract.get(group) else {

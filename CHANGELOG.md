@@ -3,11 +3,15 @@
 ## Unreleased
 
 - binding was cloned at the commit of `Cargo.lock` into `var/binding` and named by the branch `v1/rust-core` in every
-  manifest, a development form. It is now the npm package of its release 0.0.1, pinned by the URL of its asset and its
-  integrity and installed with the other packages, every manifest names `polyspec-binding-core` by the tag `v0.0.1`,
+  manifest, a development form. It is now the npm package of its release 0.0.2, pinned by the URL of its asset and its
+  integrity and installed with the other packages, every manifest names `polyspec-binding-core` by the tag `v0.0.2`,
   and `scripts/binding.mts` and `make install-binding` are removed; the binding targets run Cargo offline (T1.32).
-  `make binding-check` fails CK-20 until php-serialization depends on binding by a tag and binding writes its commit
-  into the package of its release.
+  `make binding-check` fails CK-20 on the second copy of `polyspec-binding-core`, 0.0.1 of the branch `v1/rust-core`,
+  until php-serialization depends on binding by the tag of a release.
+
+- The row of `cases` that holds the case of `file_sessions.open` whose cancellation fired had no `only`, although its
+  parameter `cancel` exists only in Python and Node (SF-3.8), so binding 0.0.2 reported CK-93 for php and go. The row
+  now has `only` with the targets `python` and `node` (T1.32).
 
 - `file_session.found` and `redis_session.found` had cases only in the group `requests`, which no generated binding
   test runs, and `record_write` of `file_session.close` was reached only there, although a session made without a

@@ -1727,7 +1727,14 @@
     {
       "member": "file_sessions.open",
       "file": "contracts/file-sessions.json",
-      "group": "file_sessions.open.cancel"
+      "group": "file_sessions.open.cancel",
+      "only": {
+        "targets": [
+          "python",
+          "node"
+        ],
+        "reason": "SF-3.8"
+      }
     },
     {
       "member": "redis_session.get",

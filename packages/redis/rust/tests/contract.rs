@@ -220,6 +220,9 @@ struct Model {
     text_replies: bool,
     /// The error reply that the model gives to each command of a name, in place of what the command does (SR-5.2).
     error_replies: BTreeMap<Vec<u8>, String>,
+    /// The names of the commands that the model answers with the status `OK`, in place of what the command does, a
+    /// reply of another type than the command gives (SR-5.1).
+    status_replies: Vec<Vec<u8>>,
     log: Vec<Vec<Vec<u8>>>,
 }
 
@@ -229,6 +232,9 @@ impl Model {
         let words: Vec<&[u8]> = command.words.iter().map(Vec::as_slice).collect();
         if let Some(message) = words.first().and_then(|name| self.error_replies.get(*name)) {
             return Reply::Error(message.clone());
+        }
+        if words.first().is_some_and(|name| self.status_replies.iter().any(|status| status == name)) {
+            return Reply::Status("OK".to_owned());
         }
         match words.as_slice() {
             [b"EXISTS", key] => Reply::Integer(i64::from(self.keys.contains_key(*key))),
@@ -311,6 +317,13 @@ fn model(case: &Value) -> Result<(), Failed> {
                 .map(|(name, message)| Ok((name.as_bytes().to_vec(), message.as_str().ok_or("no text")?.to_owned())))
                 .collect::<Result<_, Failed>>()?,
             _ => BTreeMap::new(),
+        },
+        status_replies: match case.get("status_replies") {
+            Some(Value::Array(names)) => names
+                .iter()
+                .map(|name| Ok(name.as_str().ok_or("a name of status_replies is no text")?.as_bytes().to_vec()))
+                .collect::<Result<_, Failed>>()?,
+            _ => Vec::new(),
         },
         log: Vec::new(),
     };
@@ -858,9 +871,9 @@ fn main() {
         };
         let model_case = case.clone();
         trials.push(Trial::test(format!("model::{id}"), move || model(&model_case)));
-        // A reply that is not bytes and an error reply to a command that the case names come only from a model, so such
-        // a case has no trial against a server (SE-10.4).
-        if case.get("text_replies").is_some() || case.get("error_replies").is_some() {
+        // A reply that is not bytes, an error reply and a status reply to a command that the case names come only from a
+        // model, so such a case has no trial against a server (SE-10.4).
+        if ["text_replies", "error_replies", "status_replies"].iter().any(|key| case.get(*key).is_some()) {
             continue;
         }
         let server_case_value = case.clone();

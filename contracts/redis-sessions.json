@@ -301,6 +301,84 @@
    }
   },
   {
+   "id": "a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock",
+   "label": "the close of a session that changed nothing sends EXPIRE, whose reply is a status in place of an integer, fails with reply and releases the lock",
+   "rules": [
+    "SR-5.1",
+    "SR-4.2",
+    "SR-4.5"
+   ],
+   "keys": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "a:1:{s:1:\"n\";i:0;}"
+    ]
+   ],
+   "status_replies": [
+    "EXPIRE"
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "get",
+       [
+        "n"
+       ]
+      ]
+     ]
+    }
+   ],
+   "raises": {
+    "step": 0,
+    "at": "close",
+    "kind": "reply",
+    "status": 500,
+    "category": "store",
+    "message": null
+   },
+   "commands": [
+    [
+     "EXISTS",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "SET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>",
+     "NX",
+     "PX",
+     "30000"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "EXPIRE",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "1440"
+    ],
+    [
+     "EVAL",
+     "<release>",
+     "1",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>"
+    ]
+   ],
+   "stored": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "a:1:{s:1:\"n\";i:0;}"
+    ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
+  },
+  {
    "id": "a_request_that_writes_compares_the_lock_first",
    "label": "a request that changed a value compares the lock, writes the record and releases the lock",
    "rules": [
@@ -818,6 +896,436 @@
        [
         "token"
        ]
+      ]
+     ]
+    }
+   ],
+   "raises": {
+    "step": 0,
+    "at": "call",
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   },
+   "commands": [
+    [
+     "EXISTS",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "SET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>",
+     "NX",
+     "PX",
+     "30000"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "EVAL",
+     "<release>",
+     "1",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>"
+    ]
+   ],
+   "stored": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "s:5:\"token"
+    ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
+  },
+  {
+   "id": "a_key_that_holds_no_array_fails_set",
+   "label": "a key whose record holds no array fails set; the close writes nothing and releases the lock",
+   "rules": [
+    "SE-6.4",
+    "SE-7.1",
+    "SE-7.2",
+    "SR-4.1"
+   ],
+   "keys": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "i:1;"
+    ]
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "set",
+       [
+        "a",
+        "i:1;"
+       ]
+      ]
+     ]
+    }
+   ],
+   "found": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   ],
+   "raises": {
+    "step": 0,
+    "at": "call",
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": "the session of aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa holds no array of values"
+   },
+   "commands": [
+    [
+     "EXISTS",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "SET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>",
+     "NX",
+     "PX",
+     "30000"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "EVAL",
+     "<release>",
+     "1",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>"
+    ]
+   ],
+   "stored": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "i:1;"
+    ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
+  },
+  {
+   "id": "a_key_that_cannot_be_decoded_fails_set",
+   "label": "a key whose record unserialize refuses fails set; the close writes nothing and releases the lock",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SR-4.1"
+   ],
+   "keys": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "s:5:\"token"
+    ]
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "set",
+       [
+        "a",
+        "i:1;"
+       ]
+      ]
+     ]
+    }
+   ],
+   "raises": {
+    "step": 0,
+    "at": "call",
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   },
+   "commands": [
+    [
+     "EXISTS",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "SET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>",
+     "NX",
+     "PX",
+     "30000"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "EVAL",
+     "<release>",
+     "1",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>"
+    ]
+   ],
+   "stored": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "s:5:\"token"
+    ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
+  },
+  {
+   "id": "a_key_that_holds_no_array_fails_remove",
+   "label": "a key whose record holds no array fails remove; the close writes nothing and releases the lock",
+   "rules": [
+    "SE-6.4",
+    "SE-7.1",
+    "SE-7.2",
+    "SR-4.1"
+   ],
+   "keys": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "i:1;"
+    ]
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "remove",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "found": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   ],
+   "raises": {
+    "step": 0,
+    "at": "call",
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": "the session of aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa holds no array of values"
+   },
+   "commands": [
+    [
+     "EXISTS",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "SET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>",
+     "NX",
+     "PX",
+     "30000"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "EVAL",
+     "<release>",
+     "1",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>"
+    ]
+   ],
+   "stored": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "i:1;"
+    ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
+  },
+  {
+   "id": "a_key_that_cannot_be_decoded_fails_remove",
+   "label": "a key whose record unserialize refuses fails remove; the close writes nothing and releases the lock",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SR-4.1"
+   ],
+   "keys": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "s:5:\"token"
+    ]
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "remove",
+       [
+        "a"
+       ]
+      ]
+     ]
+    }
+   ],
+   "raises": {
+    "step": 0,
+    "at": "call",
+    "kind": "record",
+    "status": 500,
+    "category": "store",
+    "message": null
+   },
+   "commands": [
+    [
+     "EXISTS",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "SET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>",
+     "NX",
+     "PX",
+     "30000"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "EVAL",
+     "<release>",
+     "1",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>"
+    ]
+   ],
+   "stored": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "s:5:\"token"
+    ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
+  },
+  {
+   "id": "a_key_that_holds_no_array_fails_renew",
+   "label": "a key whose record holds no array fails renew; the close writes nothing and releases the lock",
+   "rules": [
+    "SE-6.4",
+    "SE-7.1",
+    "SE-7.2",
+    "SR-4.1"
+   ],
+   "keys": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "i:1;"
+    ]
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "renew",
+       []
+      ]
+     ]
+    }
+   ],
+   "found": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   ],
+   "raises": {
+    "step": 0,
+    "at": "call",
+    "kind": "record_not_array",
+    "status": 500,
+    "category": "store",
+    "message": "the session of aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa holds no array of values"
+   },
+   "commands": [
+    [
+     "EXISTS",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "SET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>",
+     "NX",
+     "PX",
+     "30000"
+    ],
+    [
+     "GET",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    [
+     "EVAL",
+     "<release>",
+     "1",
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_LOCK",
+     "<secret>"
+    ]
+   ],
+   "stored": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "i:1;"
+    ]
+   ],
+   "options": {
+    "lock_expire": 30
+   }
+  },
+  {
+   "id": "a_key_that_cannot_be_decoded_fails_renew",
+   "label": "a key whose record unserialize refuses fails renew; the close writes nothing and releases the lock",
+   "rules": [
+    "SE-6.3",
+    "SE-7.2",
+    "SR-4.1"
+   ],
+   "keys": [
+    [
+     "PHPREDIS_SESSION:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "s:5:\"token"
+    ]
+   ],
+   "steps": [
+    {
+     "cookie": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "calls": [
+      [
+       "renew",
+       []
       ]
      ]
     }

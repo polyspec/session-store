@@ -346,26 +346,24 @@ fn model(case: &Value) -> Result<(), Failed> {
     expect_eq("stored", &stored(model.keys, &created), &pairs(array_of(case, "stored")?)?)
 }
 
-/// The connection setting of a case: one of `server`, `sentinel` and `cluster` with its fields (SR-6.1).
+/// The connection setting of a case, a value of the variant `setting`: its tag `kind` names `server`, `sentinel` or
+/// `cluster`, whose fields are beside it (SR-6.1, binding G-5).
 fn setting_of(setting: &Value) -> Result<Setting, Failed> {
     let urls = |form: &Value| -> Result<Vec<String>, Failed> {
         Ok(array_of(form, "urls")?.iter().filter_map(Value::as_str).map(str::to_owned).collect())
     };
     let text = |form: &Value, key: &str| form.get(key).and_then(Value::as_str).map(str::to_owned);
-    if let Some(form) = setting.get("server") {
-        Ok(Setting::Server { url: str_of(form, "url")?.to_owned() })
-    } else if let Some(form) = setting.get("sentinel") {
-        Ok(Setting::Sentinel {
-            urls: urls(form)?,
-            service: str_of(form, "service")?.to_owned(),
-            tls: form.get("tls").and_then(Value::as_bool).ok_or("a Sentinel setting has no tls")?,
-            user: text(form, "user"),
-            password: text(form, "password"),
-        })
-    } else if let Some(form) = setting.get("cluster") {
-        Ok(Setting::Cluster { urls: urls(form)? })
-    } else {
-        Err("a setting is none of server, sentinel and cluster".into())
+    match str_of(setting, "kind")? {
+        "server" => Ok(Setting::Server { url: str_of(setting, "url")?.to_owned() }),
+        "sentinel" => Ok(Setting::Sentinel {
+            urls: urls(setting)?,
+            service: str_of(setting, "service")?.to_owned(),
+            tls: setting.get("tls").and_then(Value::as_bool).ok_or("a Sentinel setting has no tls")?,
+            user: text(setting, "user"),
+            password: text(setting, "password"),
+        }),
+        "cluster" => Ok(Setting::Cluster { urls: urls(setting)? }),
+        other => Err(format!("a setting of the kind {other} is none of server, sentinel and cluster").into()),
     }
 }
 

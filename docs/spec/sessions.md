@@ -367,8 +367,9 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   each step, the identifier that the opening of the step found (SE-7.1), `#n` or null; a case without `found` does not
   compare it. A case of the group `open` of the store of files states the directory of the made store in
   `store_directory`, and every case of the group `open` of the store of Redis gives `setting` and `options`, the two
-  parameters of `redis_sessions.new`, and makes the store of that connection setting (one of `server`, `sentinel` and
-  `cluster` with its fields, SR-6.1), which connects to nothing; a case that tests the options alone names the server
+  parameters of `redis_sessions.new`, and makes the store of that connection setting, which connects to nothing. A
+  setting of a case, at any place, is a value of the variant `setting`: its tag `kind` names `server`, `sentinel` or
+  `cluster`, and the fields of that case are beside it (`{"kind": "server", "url": "..."}`, SR-6.1, binding G-5); a case that tests the options alone names the server
   of a socket under `/dev/null`. A generated binding test takes the keys of a case as the arguments of one call and
   takes no case that leaves out a required field (binding G-5), so the case whose options give no `lock_expire` is the
   group `openMissing`, which the interface contract does not declare and the case runners of the bindings run. <a id="SE-10.3"></a> Every

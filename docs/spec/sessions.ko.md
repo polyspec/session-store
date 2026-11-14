@@ -364,8 +364,9 @@
   step마다 그 step의 열기가 찾은 식별자(SE-7.1)를 `#n`이나 null로 적는다. `found`가 없는 case는 그것을
   비교하지 않는다. 파일 저장소의 group `open`의 case는 만든 저장소의 디렉터리를
   `store_directory`에 적고, Redis 저장소의 group `open`의 모든 case는 `redis_sessions.new`의 두 parameter인
-  `setting`과 `options`를 주며 그 연결 설정(`server`, `sentinel`, `cluster` 중 하나와 그 필드, SR-6.1)의 저장소를
-  만들고, 그 저장소는 어디에도 연결하지 않는다. 옵션만 시험하는 case는 `/dev/null` 아래 socket의 서버를 적는다.
+  `setting`과 `options`를 주며 그 연결 설정의 저장소를 만들고, 그 저장소는 어디에도 연결하지 않는다. case의 설정은
+  어느 자리에서나 variant `setting`의 값이다. 그 tag `kind`가 `server`, `sentinel`, `cluster` 중 하나를 적고, 그
+  case의 field가 그 옆에 있다(`{"kind": "server", "url": "..."}`, SR-6.1, binding G-5). 옵션만 시험하는 case는 `/dev/null` 아래 socket의 서버를 적는다.
   생성한 바인딩 시험은 case의 key를 한 호출의 인자로 받고 필수 field를 뺀 case는 받지 않으므로(binding G-5),
   options가 `lock_expire`를 주지 않는 case는 group `openMissing`에 있다. 인터페이스 계약은 이 group을 선언하지 않고,
   바인딩의 case runner가 그것을 실행한다. <a id="SE-10.3"></a> case가 쓰는

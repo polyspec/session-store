@@ -1062,9 +1062,8 @@
     "SR-1.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lifetime": 0,
@@ -1084,9 +1083,8 @@
     "SR-1.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lock_expire": 0
@@ -1105,9 +1103,8 @@
     "SR-1.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lock_expire": 45
@@ -1128,9 +1125,8 @@
     "SR-8.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lifetime": -1,
@@ -1152,9 +1148,8 @@
     "SR-8.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lifetime": 1.5,
@@ -1176,9 +1171,8 @@
     "SR-8.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lifetime": "60",
@@ -1200,9 +1194,8 @@
     "SR-8.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lifetime": true,
@@ -1224,9 +1217,8 @@
     "SR-8.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lock_expire": -1
@@ -1247,9 +1239,8 @@
     "SR-8.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lock_expire": 1.5
@@ -1270,9 +1261,8 @@
     "SR-8.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lock_expire": "60"
@@ -1293,9 +1283,8 @@
     "SR-8.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lock_expire": true
@@ -1315,9 +1304,8 @@
     "SR-6.1"
    ],
    "setting": {
-    "server": {
-     "url": "not a url"
-    }
+    "kind": "server",
+    "url": "not a url"
    },
    "options": {
     "lock_expire": 30
@@ -1336,9 +1324,8 @@
     "SR-6.1"
    ],
    "setting": {
-    "server": {
-     "url": "http://127.0.0.1:6379/"
-    }
+    "kind": "server",
+    "url": "http://127.0.0.1:6379/"
    },
    "options": {
     "lock_expire": 30
@@ -1357,13 +1344,12 @@
     "SR-6.1"
    ],
    "setting": {
-    "sentinel": {
-     "urls": [],
-     "service": "primary",
-     "tls": false,
-     "user": null,
-     "password": null
-    }
+    "kind": "sentinel",
+    "urls": [],
+    "service": "primary",
+    "tls": false,
+    "user": null,
+    "password": null
    },
    "options": {
     "lock_expire": 30
@@ -1382,9 +1368,8 @@
     "SR-6.1"
    ],
    "setting": {
-    "cluster": {
-     "urls": []
-    }
+    "kind": "cluster",
+    "urls": []
    },
    "options": {
     "lock_expire": 30
@@ -1405,9 +1390,8 @@
     "SR-1.2"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {},
    "binding": true,
@@ -1429,9 +1413,8 @@
     "SE-9.6"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lock_expire": 30
@@ -1459,9 +1442,8 @@
     "SR-6.4"
    ],
    "setting": {
-    "server": {
-     "url": "redis+unix:///dev/null/redis.sock"
-    }
+    "kind": "server",
+    "url": "redis+unix:///dev/null/redis.sock"
    },
    "options": {
     "lock_expire": 30
@@ -1490,9 +1472,8 @@
      "new": "redis_sessions.new",
      "args": {
       "setting": {
-       "server": {
-        "url": "redis+unix:///dev/null/redis.sock"
-       }
+       "kind": "server",
+       "url": "redis+unix:///dev/null/redis.sock"
       },
       "options": {
        "lock_expire": 30
@@ -1533,9 +1514,8 @@
      "new": "redis_sessions.new",
      "args": {
       "setting": {
-       "server": {
-        "url": "redis+unix:///dev/null/redis.sock"
-       }
+       "kind": "server",
+       "url": "redis+unix:///dev/null/redis.sock"
       },
       "options": {
        "lock_expire": 30
@@ -1577,9 +1557,8 @@
      "new": "redis_sessions.new",
      "args": {
       "setting": {
-       "server": {
-        "url": "redis+unix:///dev/null/redis.sock"
-       }
+       "kind": "server",
+       "url": "redis+unix:///dev/null/redis.sock"
       },
       "options": {
        "lock_expire": 30
@@ -1620,9 +1599,8 @@
      "new": "redis_sessions.new",
      "args": {
       "setting": {
-       "server": {
-        "url": "redis+unix:///dev/null/redis.sock"
-       }
+       "kind": "server",
+       "url": "redis+unix:///dev/null/redis.sock"
       },
       "options": {
        "lock_expire": 30
@@ -1660,9 +1638,8 @@
      "new": "redis_sessions.new",
      "args": {
       "setting": {
-       "server": {
-        "url": "redis+unix:///dev/null/redis.sock"
-       }
+       "kind": "server",
+       "url": "redis+unix:///dev/null/redis.sock"
       },
       "options": {
        "lock_expire": 30

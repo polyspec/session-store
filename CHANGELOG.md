@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- CI installs bay v0.0.8 (`config/toolchain.json`). With v0.0.7 a Linux host could not resolve the name
+  `<project>-<service>.bay.test` of a service of a run, so the 13 `server::*` tests of the job `test` failed with
+  `failed to lookup address information`; v0.0.8 names each running service container in the hosts block of the host.
+
 - Only `make install-binding` downloads binding (T1.28). It runs `scripts/binding.mts install`, which clones binding at
   the commit of `Cargo.lock` and installs the packages of its tool with the npm of `var/tools`, and the job `rust` of the
   workflow `ci` runs it after `make install-rust`. Every other command of the script runs `cargo metadata --offline`

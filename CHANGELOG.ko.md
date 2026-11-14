@@ -3,6 +3,10 @@
 
 ## Unreleased
 
+- CI는 bay v0.0.8을 설치한다(`config/toolchain.json`). v0.0.7에서는 Linux 호스트가 실행의 서비스 이름
+  `<project>-<service>.bay.test`를 해석하지 못해, job `test`의 `server::*` 시험 13개가 `failed to lookup address
+  information`으로 실패했다. v0.0.8은 실행 중인 서비스 container를 호스트의 hosts 블록에 적는다.
+
 - binding을 내려받는 것은 `make install-binding`뿐이다(T1.28). 그 target은 `scripts/binding.mts install`을 실행하고,
   이 명령은 binding을 `Cargo.lock`의 commit으로 clone하고 그 도구의 패키지를 `var/tools`의 npm으로 설치한다. workflow
   `ci`의 job `rust`는 `make install-rust` 다음에 그것을 실행한다. 스크립트의 다른 모든 명령은 `cargo metadata

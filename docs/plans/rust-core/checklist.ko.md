@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 5f8e62c3816a0ef72879c0b49af781fcadd7b07bd9c0abcb605455e776fb80c2 -->
+<!-- source-sha256: 5d8afa7adf116fbe442e86a461d67001c75228f1430d8d78320eee57d37d8d8a -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -39,3 +39,4 @@
 | T1.30-3 | `redis_sessions.new`의 group `open`의 모든 case에 `setting`과 `options`를 주고, `lock_expire`가 없는 case는 인터페이스 계약이 선언하지 않는 group `openMissing`으로 옮기며, case의 모든 설정을 tag `kind`를 가진 variant `setting`의 값으로 쓴다(binding G-5, T-9) | `contracts/redis-sessions.json`, `packages/redis/rust/tests/contract.rs`, `docs/spec/sessions.md` | `make test`, `make binding-check` | [v] |
 | T1.30-4 | group `requests`의 case만 닿는 모든 member와 kind에 생성한 바인딩 시험이 실행하는 case를 주고, 인터페이스 계약의 `cases`에서 group `requests`를 뺀다 | `contracts/`, `packages/rust/interface.json`, `docs/spec/sessions.md` | `make binding-check`, `make bindings` | [!] 원인: 생성기는 여러 요청의 case를 거부하고(binding G-5), 그 group이 없으면 검사는 26건, 곧 24개 kind와 case가 없는 두 member `found`를 지적한다(SE-10.6). `record`와 `record_not_array`는 저장된 레코드가, Redis의 kind는 서버나 그 모델이 필요하며 호출 하나의 case는 그것을 주지 않는다. SE-9.6은 결함 주입점이 어떤 입력도 닿지 않는 실패만 흉내 내게 한다; 재시도: binding이 저장된 레코드나 서버가 필요한 case의 형태를 주거나, SE-9.6의 규칙이 바뀐다 |
 | T1.30-5 | parameter `cancel`이 python과 node에만 있는 `file_sessions.open`의 Go를 생성한다 | `packages/rust/interface.json` | `make bindings-go` | [!] 원인: Go 생성기는 parameter `cancel`의 `only`가 python과 node를 적는데도, 그것이 첫 parameter `ctx`가 아니라서 거부한다(GN-6aq); 재시도: binding이 `only`가 go를 적지 않는 parameter를 Go 생성기가 빼는지 답한다 |
+| T1.31 | 플랫폼 kind가 없는 kit 0.0.112에서 저장소의 recipe로 바인딩을 릴리스한다. fsm의 릴리스 행 S-470의 형태로 `make release-go-static`, `make release-wheel`, `make release-php-ext`, `make release-npm-platform`, `make release-npm`, `make release-test`를 두고, `config/release.json`에 패키지와 릴리스 형태의 계약 검사를 적으며, 릴리스 workflow의 runner는 fsm의 S-470-8과 S-470-9가 적는 대로 따른다. 그 전에는 어떤 target도 생성되지 않으므로 T1.30이 끝나면 시작한다 | `Makefile`, `config/release.json`, `.github/workflows/release.yml`, `package.json`, `package-lock.json`, `rust-toolchain.toml` | `make release-test`, `make release-coverage` | [ ] |

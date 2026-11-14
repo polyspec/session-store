@@ -25,3 +25,31 @@ The checklist follows the order in which each step needs the one before it:
 6. The structure of a release: the GitHub workflows `ci` and `release` and the script test of their rules (T1.10), the
    classification of every manifest for the release (T1.11), the owners of every tracked path (T1.12), the text of the
    license (T1.13) and the release 0.0.1 (T1.14), which waits for the branch `main` of origin.
+
+## Binding runtime prerequisites
+
+The generated APIs unblock runner development; a passing full binding job is its result, not its prerequisite.
+T1.7 and T1.9 therefore resume when the tagged dependency graph of T1.32 resolves and their APIs generate, without
+waiting for T1.30 to finish. T1.30-9 retains its full binding-job verification, which can finish only after the runners
+and their native installation inputs exist. This avoids a cycle in which missing runners prevent the job that would
+permit their development.
+
+1. Resolve one released provider graph in T1.32. The direct dependency is php-serialization, whose tagged crate must
+   use the same released binding-core as session-store. A json release alone does not replace that prerequisite.
+   Pin the generator asset and the crate tags, scaffold the binding manifests and update the native locks before
+   generation and runtime verification. Do not commit an intermediate graph with two binding-core identities.
+2. Generate each target API and complete the applicable generation checks of T1.30-4 and T1.30-5. The pinning and
+   service preparation of T1.30-9 can proceed before its full-job result exists. Generation proves neither native
+   runtime installation nor execution of a case.
+3. Write the missing contract runners of T1.7 and T1.9. Prepare their independent installation inputs in T1.34-1
+   (Python provider wheels), T1.34-2 (Node provider archives) and T1.34-3 (the tagged Go provider module and sums).
+   A fresh Python environment must receive its provider wheel before an installation without an index, and a fresh
+   Node installation must name its provider archives; neither may rely on packages left in a developer environment.
+   Go must record the resolved module checksums before its offline test.
+4. Prove the applicable service fault cases in T1.34-4. Static inspection shows that the current Go build and test
+   flags omit fault-test even though its manifest declares it; this is not an observed runtime failure. Align each
+   target with its declared test features and prove that its applicable case identities actually run without skips.
+   Keep the contract's exclusion of socket service cases from WASM and run its applicable cases too.
+5. Run the native targets with their real peers, including bay and the pinned Redis image for service cases, then
+   obtain the full binding-job evidence for T1.34 and T1.30-9. T1.26 retains its separate bay runtime verification.
+   Only after the runtime and asset requirements of T1.33 pass does T1.14 prepare the version and branch for release.

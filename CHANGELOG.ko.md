@@ -1,7 +1,12 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 538a4c2805f633690f0b3c896e9775b003583e2efd3b776e34d433b4194b598f -->
+<!-- source-sha256: 7b1b0620a4e99d31b386d9bab1ca152f2b0f41302d822b63179f9090a60b771c -->
 
 ## Unreleased
+
+- Binding plan은 API 생성, 없는 runner 개발, native provider 설치 입력, 전체 job 검증을 분리한다(T1.6-1).
+  이전에는 T1.7과 T1.9가 T1.30 완료를 기다리지만 그 service 검증에는 해당 runner가 필요했다. 재시도 조건은
+  이제 tag로 고정한 graph의 해석과 API 생성을 요구한다. T1.34-1부터 T1.34-4까지 남은 provider wheel과 npm
+  archive 입력, Go sum, 실제 service fault case 실행을 기록한다. 이 계획 변경으로 완료한 runtime task는 없다.
 
 - `redis_sessions.open`과 `redis_session.close`의 `reply`에는 생성한 바인딩 시험이 실행하는 case가 없었다. 어떤
   Redis 서버 상태도 명령이 주는 것과 다른 형의 응답을 주지 않기 때문이다. 계약 검사는 둘을 지적했고(CK-22), 그

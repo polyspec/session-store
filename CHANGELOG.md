@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The binding plan separates API generation, missing runner development, native provider installation inputs and
+  full-job verification (T1.6-1). Before, T1.7 and T1.9 waited for T1.30 to finish while its service verification
+  needed those runners. Their retry conditions now require the resolved tagged graph and generated APIs instead.
+  T1.34-1 to T1.34-4 record the pending provider wheel and npm archive inputs, Go sums and actual service fault-case
+  execution. No runtime task is completed by this planning change.
+
 - `reply` of `redis_sessions.open` and of `redis_session.close` had no case that a generated binding test runs,
   because no state of a Redis server gives a reply of another type than the command gives, and the contract check
   reported both (CK-22), which stopped `binding generate` for every target. A failure that no input reaches is what a

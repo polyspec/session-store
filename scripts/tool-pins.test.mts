@@ -6,7 +6,9 @@
 //   - config/toolchain.json names the release of mise with the sha256 of its archive of each of those platforms;
 //   - the bootstrap action sets up the Node.js that mise.toml names, and no .node-version is tracked beside it;
 //   - a recipe of the Makefile starts node by its path in var/tools: only the recipes that install that node, bootstrap
-//     and install-tools, start the node of the machine.
+//     and install-tools, start the node of the machine;
+//   - binding is the npm package of its release, pinned by the URL of its asset and its integrity, whose tag the
+//     manifests name for polyspec-binding-core, and the binding targets run Cargo offline.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -162,12 +164,22 @@ test('only the recipes that install the node of var/tools start the node of the 
   assert.deepEqual(machineNode(makefile).filter((line) => !MACHINE_NODE.has(line.slice(0, line.indexOf(':')))), []);
 });
 
-test('only make install-binding installs binding, and the rust job of CI runs it before its checks', () => {
-  const lines = execFileSync('make', ['--dry-run', '--no-print-directory', 'install-binding'], { cwd: root, encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '', MAKELEVEL: '' }, stdio: ['ignore', 'pipe', 'pipe'] }).split('\n');
-  assert.ok(lines.some((line) => line.endsWith('scripts/binding.mts install')), `make install-binding does not install binding:\n${lines.join('\n')}`);
-  const script = read('scripts/binding.mts');
-  assert.match(script, /'--offline'/, 'scripts/binding.mts reads the crates of Cargo.lock with cargo metadata online');
-  const workflow = read('.github/workflows/ci.yml');
-  const install = workflow.indexOf('run: make install-binding');
-  assert.ok(install !== -1 && install < workflow.indexOf('run: make ci-rust'), 'the rust job of ci.yml does not run make install-binding before make ci-rust');
+test('binding is the release that package.json pins by its asset and the manifests by its tag, run offline', () => {
+  const pkg = JSON.parse(read('package.json')) as { devDependencies: Record<string, string> };
+  const url = pkg.devDependencies['@polyspec/binding'];
+  const asset = /^https:\/\/github\.com\/polyspec\/binding\/releases\/download\/v([0-9]+\.[0-9]+\.[0-9]+)\/polyspec-binding-\1\.tgz$/.exec(url ?? '');
+  assert.ok(asset !== null, `package.json pins @polyspec/binding by ${url}, not by the URL of a release asset`);
+  const version = asset[1];
+  const lock = JSON.parse(read('package-lock.json')) as { packages: Record<string, { version?: string; resolved?: string; integrity?: string }> };
+  const entry = lock.packages['node_modules/@polyspec/binding'];
+  assert.equal(entry?.version, version);
+  assert.equal(entry?.resolved, url);
+  assert.match(entry?.integrity ?? '', /^sha512-/, 'package-lock.json pins @polyspec/binding without its integrity');
+  const lines = execFileSync('git', ['-C', root, 'grep', '-h', '^polyspec-binding-core', '--', '*Cargo.toml'], { encoding: 'utf8' }).trim().split('\n');
+  assert.ok(lines.length > 0, 'no manifest names polyspec-binding-core');
+  for (const line of lines) assert.match(line, new RegExp(`git = "https://github.com/polyspec/binding.git", tag = "v${version.replaceAll('.', '\\.')}"`), `${line} names no tag v${version}`);
+  const makefile = read('Makefile');
+  assert.match(makefile, /^BINDING := \$\(NODE\) \$\(CURDIR\)\/node_modules\/@polyspec\/binding\/dist\/cli\.js$/m, 'BINDING of the Makefile is not the installed package');
+  assert.match(makefile, /^binding-check \$\(addprefix bindings-,\$\(TARGETS\)\): export CARGO_NET_OFFLINE := true$/m, 'the binding targets do not run Cargo offline');
+  assert.doesNotMatch(makefile + read('.github/workflows/ci.yml'), /install-binding/, 'a recipe or a job still installs binding apart from the packages');
 });

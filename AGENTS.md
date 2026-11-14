@@ -146,9 +146,12 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   `packages/ts/tests/cases.wasm.test.mjs`, `packages/php-ext/tests` and `packages/go/tests`, which read the directory
   `contracts` through `SESSION_STORE_CASES`. A target that the generator cannot take stays a failing target with its
   cause; no target is left out or skipped (binding BD-27).
-- No contract case runner is written yet: `make bindings` refuses the contract while the contract check reports the
-  kinds of SE-10.6, so no binding API exists that a runner could call and be checked against. Each of the five targets
-  fails at `make bindings` with that cause.
+- No contract case runner is written yet: the contract check reports no finding, but `make bindings` refuses the
+  contract for every target (binding G-4), so no binding API exists that a runner could call and be checked against.
+  The generator takes no computed default of a parameter of the type `cancel` (`file_sessions.open`), no record
+  without `core_type` (`store_options`), no case of the group `requests` of several requests (SE-10.6), and for Go a
+  parameter of the type `cancel` only as the first parameter (T1.30). Each of the five targets fails at
+  `make bindings` with that cause.
 - In the Go module binding owns the files `zz_generated_*.go` (binding GN-3); they are tracked, because a Go module is
   fetched as source, and `make bindings` writes them again. `packages/ts/wasm/generated` and
   `packages/go/internal/ffi/generated` are not tracked; wasm-bindgen writes the module and its glue into the first.

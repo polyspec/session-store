@@ -4,6 +4,7 @@ name = "polyspec-session-store-go"
 version = "0.0.0"
 edition = "2021"
 rust-version = "1.99.0"
+license = "MIT"
 publish = false
 
 [lib]
@@ -18,7 +19,7 @@ codec-test = []
 
 [dependencies]
 polyspec-session-store = { path = "../../../rust" }
-polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", branch = "v1/rust-core", features = ["construct", "lock"] }
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", branch = "v1/rust-core", features = ["construct", "lock", "driver"] }
 polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", branch = "v1/rust-core" }
 
 [lints]

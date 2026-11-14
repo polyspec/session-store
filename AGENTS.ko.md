@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 90e5293673527aa92c6dbab91976abb937eb72a72d099b0dc9219a75db1469a9 -->
+<!-- source-sha256: 4588c372bc85ddf9227f22b393a05e58edea9a51a944fdfb9ab4f4c3044107a8 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -140,9 +140,11 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   `packages/python/tests`, `packages/ts/tests/cases.test.mjs`, `packages/ts/tests/cases.wasm.test.mjs`,
   `packages/php-ext/tests`, `packages/go/tests`이며, `SESSION_STORE_CASES`로 디렉터리 `contracts`를 읽는다. 생성기가
   받지 못하는 target은 원인과 함께 실패하는 target으로 남는다. 어떤 target도 빠지거나 건너뛰지 않는다(binding BD-27).
-- contract case runner는 아직 쓰지 않았다. 계약 검사가 SE-10.6의 kind를 보고하는 동안 `make bindings`는 계약을
-  거부하므로, runner가 호출하고 그것으로 검증될 바인딩 API가 없다. 다섯 target은 모두 그 원인으로 `make bindings`에서
-  실패한다.
+- contract case runner는 아직 쓰지 않았다. 계약 검사는 finding을 보고하지 않지만 `make bindings`는 모든 target에서
+  계약을 거부하므로(binding G-4), runner가 호출하고 그것으로 검증될 바인딩 API가 없다. 생성기는 타입 `cancel`인
+  parameter의 computed default(`file_sessions.open`), `core_type`이 없는 record(`store_options`), 여러 요청으로 된
+  group `requests`의 case(SE-10.6)를 받지 않고, Go에서는 타입 `cancel`인 parameter를 첫 parameter로만 받는다
+  (T1.30). 다섯 target은 모두 그 원인으로 `make bindings`에서 실패한다.
 - Go 모듈에서 binding은 파일 `zz_generated_*.go`를 소유한다(binding GN-3). Go 모듈은 소스로 받아지므로 이 파일들은
   추적되고, `make bindings`가 다시 쓴다. `packages/ts/wasm/generated`와 `packages/go/internal/ffi/generated`는 추적하지
   않는다. wasm-bindgen은 모듈과 그 glue를 앞의 디렉터리에 쓴다.

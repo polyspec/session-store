@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- `make binding-check` failed with CK-20, because `Cargo.lock` pinned `polyspec-binding-core` at an older commit than
+  the binding that the check ran, and with CK-19 for ten files: the manifests of the five binding packages differed
+  from what `binding scaffold` of the head of binding writes, and `packages/python/build.rs` was missing. `Cargo.lock`
+  now pins the head of binding whose CI passed, and the manifests and `packages/python/build.rs` are the output of its
+  `binding scaffold` (T1.29): the binding crates take the feature `driver` of `polyspec-binding-core` and name the
+  license, the Node crate takes `tokio_rt` of napi, the WASM crate takes `wasm-bindgen-futures`, `packages/ts/package.json`
+  is a module with the targets of napi and the dependency `@polyspec/php-serialization`, the PHP package names its
+  prebuilt binary, and the Go module requires the Go module of php-serialization. `make binding-check` reports no
+  finding. `make bindings` still refuses every target (G-4); T1.7 and T1.9 name the refusals and T1.30 the changes of
+  the contract that end them.
+
 - The test of TLS failed in the job `test` of the workflow `ci` with `the connection to Redis failed: I/O error`. The
   test named in `SSL_CERT_FILE` the authority file that `bay plan --json` gives (`certificate.ca`). With `BAY_SUDO=1`
   bay runs as root and keeps that file below the home of root, which the test process, which does not run as root,

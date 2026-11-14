@@ -1,7 +1,17 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 97ee1d5361c38f415a4ab6d5cd34d33d9f245a672e0c3cc671a0205f22b1b906 -->
+<!-- source-sha256: 2ac3be7630ebc76b74319c7a2c73c39032cf35469ec1a38f6b381e4708228926 -->
 
 ## Unreleased
+
+- `make binding-check`가 CK-20으로 실패했다. `Cargo.lock`이 `polyspec-binding-core`를 검사가 실행한 binding보다 오래된
+  commit에 고정했기 때문이다. 또 열 파일에 대해 CK-19로 실패했다. 다섯 바인딩 패키지의 manifest가 binding head의
+  `binding scaffold`가 쓰는 것과 달랐고, `packages/python/build.rs`가 없었다. 이제 `Cargo.lock`은 CI가 통과한
+  binding head를 고정하고, manifest와 `packages/python/build.rs`는 그 `binding scaffold`의 출력이다(T1.29). 바인딩
+  crate는 `polyspec-binding-core`의 feature `driver`를 받고 license를 적으며, Node crate는 napi의 `tokio_rt`를, WASM
+  crate는 `wasm-bindgen-futures`를 받는다. `packages/ts/package.json`은 napi의 target과 의존성
+  `@polyspec/php-serialization`을 가진 module이고, PHP 패키지는 미리 빌드한 binary를 적으며, Go 모듈은
+  php-serialization의 Go 모듈을 요구한다. `make binding-check`는 finding을 보고하지 않는다. `make bindings`는 여전히
+  모든 target을 거부한다(G-4). T1.7과 T1.9가 그 거부를, T1.30이 그것을 끝낼 계약의 변경을 적는다.
 
 - TLS의 시험이 workflow `ci`의 job `test`에서 `the connection to Redis failed: I/O error`로 실패했다. 시험은
   `bay plan --json`이 주는 authority 파일(`certificate.ca`)을 `SSL_CERT_FILE`에 적었다. `BAY_SUDO=1`이면 bay는

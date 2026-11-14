@@ -16,9 +16,10 @@
   `SSL_CERT_DIR` or reads the field `"ca"`, which the previous `tests/tls.rs` and `tests/servers/mod.rs` did, and
   `make servers-test` gives 17 passed, 0 failed with the change. The test of TLS itself runs in CI.
 
-- CI installs bay v0.0.8 (`config/toolchain.json`). With v0.0.7 a Linux host could not resolve the name
+- CI installs bay v0.0.9 (`config/toolchain.json`). With v0.0.7 a Linux host could not resolve the name
   `<project>-<service>.bay.test` of a service of a run, so the 13 `server::*` tests of the job `test` failed with
-  `failed to lookup address information`; v0.0.8 names each running service container in the hosts block of the host.
+  `failed to lookup address information`; v0.0.8 names each running service container in the hosts block of the host,
+  and v0.0.9 rewrites that block on each start, stop and removal of a container, which Docker reports as an event.
 
 - Only `make install-binding` downloads binding (T1.28). It runs `scripts/binding.mts install`, which clones binding at
   the commit of `Cargo.lock` and installs the packages of its tool with the npm of `var/tools`, and the job `rust` of the

@@ -21,7 +21,7 @@
 #                                                     prints the output of the service so far and ends
 #   scripts/servers.sh down <compose file>            removes the services of the project
 #
-# bay names a project after the directory of its Compose file. The tests, scripts/test-run.sh and make redis-image
+# bay names a project after the directory of its Compose file. The tests, scripts/test-run.mts and make redis-image
 # start this script alone, and it alone starts bay, by the words of BAY: bay of PATH when BAY is not set, and for
 # example `sudo -n <path>/bay` where every command of bay runs as root. A program of BAY that PATH does not hold fails
 # every verb, with its name and what installs bay. No verb gives bay a terminal to ask a person on: its standard input

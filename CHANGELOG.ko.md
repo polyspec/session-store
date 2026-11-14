@@ -1,7 +1,20 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 5e66206101a52c1574e103a348126a80bb90d0b8da670f1c8612603b1a170d1e -->
+<!-- source-sha256: 685d5c1a9edd810dd6748ca16941602ee0782b875eee324ca26bf625d7639738 -->
 
 ## Unreleased
+
+- `/bin/sh`가 dash인 workflow `ci`의 runner에서 `make servers-test`의 run 시험 세 개가 표준 오류에 `scripts/test-run.sh:
+  41: set: can't access tty; job control turned off`를 적고 실패했고, SIGINT나 SIGTERM이 멈추는 run의 시험은 끝나지
+  않았다. dash는 terminal 없이 job control을 켜지 않으므로, run의 명령은 run의 process group에 남았고, shell의 비동기
+  명령이 그렇듯 SIGINT를 무시했으며, 명령의 group에 보내는 kill은 실패했다. 그래서 run은 어떤 신호도 닿지 않은 명령을
+  기다렸다. POSIX shell은 script에게 process group을 만드는 방법을 주지 않고 macOS에는 `setsid` 프로그램이 없으므로,
+  run은 이제 checkout의 node가 실행하는 `scripts/test-run.mts`다. 이 script는 명령을 자기 session의 process group
+  leader로 시작하고(`detached`를 준 `spawn`), SIGINT와 SIGTERM을 그 group에 전하며, 명령의 종료를 기다린다(SE-10.4).
+  `scripts/test-run.sh`는 지웠고, `make test`는 `$(NODE) scripts/test-run.mts`를 시작한다. run의 시험은 자기 명령을
+  `/bin/sh`로, 그리고 있으면 `/bin/dash`로 실행하며, 새 시험은 명령이 자기 process group을 이끌 것을 요구한다. 이
+  Mac의 `/bin/dash`로 그 commit에서 시험이 실패했다. 신호 시험을 뺀 15개 중 12개가 통과하고 3개가 그 줄로 실패했고,
+  손으로 SIGTERM을 보낸 run은 명령이 FIFO에서 읽은 뒤에야 끝났으며 `ps`는 명령이 run의 group에 있음을 보였다. 변경
+  뒤에 `make servers-test`는 17개가 통과한다. 미실행: 변경 뒤의 Linux 시험과 workflow.
 
 - `config/toolchain.json`은 CI가 설치하는 릴리스로 bay v0.0.7을, 그 릴리스의 `SHA256SUMS`에서 받은 archive별 sha256과
   함께 고정한다. 이 Mac의 bay가 v0.0.7이고, CI는 여기의 run이 시작하는 릴리스를 실행하기 때문이다. runner는 매 run의

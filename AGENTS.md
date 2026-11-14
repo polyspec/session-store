@@ -20,9 +20,9 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   workspace; `make bindings` writes their `generated/`, which is not tracked, and builds of them come after it. The
   targets of the core name the core crates with `-p`, so they need no generated source.
 - `scripts/binding.mts`: runs binding at the commit of `polyspec-binding-core` that `Cargo.lock` pins.
-- `scripts/test-run.sh`: runs the tests of `make test` as a run that owns its servers and its temporary directory (SE-10.4).
+- `scripts/test-run.mts`: runs the tests of `make test` as a run that owns its servers and its temporary directory (SE-10.4).
 - `scripts/servers.sh`: the commands of bay for the Redis servers of the tests, which the tests,
-  `scripts/test-run.sh` and `make redis-image` run (SE-10.4): bay starts and removes the servers as Compose projects,
+  `scripts/test-run.mts` and `make redis-image` run (SE-10.4): bay starts and removes the servers as Compose projects,
   gives their names, certificates and addresses, and pulls and finds the image. `scripts/servers.test.mts` is the
   test of both scripts, which `make servers-test` runs against a stand-in of bay.
 - `scripts/install-bay.mts`: installs the release of bay that `config/toolchain.json` pins for CI into `var/tools/bay`
@@ -126,7 +126,7 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   no file states the domain of the names or a path of a certificate, and no port is published. The server of TLS
   reads the certificate that bay issues, and no test makes one. The return of `up` is the event of a start; a
   command of Redis that a test needs in a container, such as `redis-cli --cluster create`, runs with `bay exec`, and
-  a test waits for a later report of a server by its line in `bay logs -f`, never for a time. `scripts/test-run.sh`
+  a test waits for a later report of a server by its line in `bay logs -f`, never for a time. `scripts/test-run.mts`
   runs `down` for every Compose file that the directory of the run still holds and removes the directory when the
   run ends, fails or is stopped by SIGINT or SIGTERM.
 

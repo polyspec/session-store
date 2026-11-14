@@ -1,4 +1,4 @@
-// The commands of scripts/servers.sh and the run of scripts/test-run.sh (SE-10.4): bay starts and removes the servers
+// The commands of scripts/servers.sh and the run of scripts/test-run.mts (SE-10.4): bay starts and removes the servers
 // of the tests, gives their names and addresses, and pulls and finds the image. The test runs the scripts with a
 // stand-in of bay that it writes into a directory of its own, the only program of PATH besides /usr/bin and /bin, which
 // records its arguments, so it needs neither bay nor a container runtime.
@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 const scripts = dirname(fileURLToPath(import.meta.url));
 const servers = join(scripts, 'servers.sh');
-const testRun = join(scripts, 'test-run.sh');
+const testRun = join(scripts, 'test-run.mts');
 const IMAGE = 'docker.io/library/redis:1.2.3@sha256:00';
 const FILE = '/run/p/compose.yaml';
 
@@ -194,19 +194,20 @@ test('a verb that the script does not know and a verb with other arguments fail'
 });
 
 /**
- * The shells that start a run: /bin/sh of the machine and dash, which is /bin/sh of Debian and Ubuntu and which has no
- * job control without a terminal.
+ * The shells of the commands of a run: /bin/sh of the machine and dash, which is /bin/sh of Debian and Ubuntu and
+ * which has no job control without a terminal. The node of the test starts the run, as the node of the checkout does
+ * in make test.
  */
 const SHELLS = ['/bin/sh', '/bin/dash'].filter((shell) => existsSync(shell));
 
 /**
- * Runs scripts/test-run.sh with `shell` on `machine` with a command of sh. The command reads PROJECTS_SEEN, the file into which it
+ * Runs scripts/test-run.mts on `machine` with a command of `shell`. The command reads PROJECTS_SEEN, the file into which it
  * writes the directory of the projects of its run.
  */
 function runTests(t: TestContext, machine: Machine, command: string, shell = '/bin/sh'): Run & { projects: string } {
   const made = stand(t, machine);
   const seen = join(made.directory, 'seen');
-  const result = spawnSync(shell, [testRun, 'sh', '-c', command], { encoding: 'utf8', env: { ...made.env, PROJECTS_SEEN: seen } });
+  const result = spawnSync(process.execPath, [testRun, shell, '-c', command], { encoding: 'utf8', env: { ...made.env, PROJECTS_SEEN: seen } });
   return { status: result.status, stdout: result.stdout, stderr: result.stderr, calls: made.calls(), projects: existsSync(seen) ? readFileSync(seen, 'utf8').trim() : '' };
 }
 
@@ -255,7 +256,7 @@ test('a project that down does not remove fails the run, which keeps its directo
     t.after(() => { if (kept.projects !== '') rmSync(dirname(kept.projects), { recursive: true, force: true }); });
     const file = join(kept.projects, 'p-1-0', 'compose.yaml');
     assert.equal(kept.status, 1, shell);
-    assert.equal(kept.stderr, `scripts/test-run.sh: the servers of ${file} are not removed; the directory of the run is kept:\nbay: down fails\n`, shell);
+    assert.equal(kept.stderr, `scripts/test-run.mts: the servers of ${file} are not removed; the directory of the run is kept:\nbay: down fails\n`, shell);
     assert.equal(existsSync(file), true);
   }
 });
@@ -269,7 +270,7 @@ function stopped(t: TestContext, signal: 'SIGINT' | 'SIGTERM', shell: string): P
   const seen = join(made.directory, 'seen');
   const fifo = join(made.directory, 'fifo');
   assert.equal(spawnSync('/usr/bin/mkfifo', [fifo]).status, 0);
-  const child = spawn(shell, [testRun, 'sh', '-c', `${leave(['p-1-0'])} && echo started && read line < "$FIFO"`], {
+  const child = spawn(process.execPath, [testRun, shell, '-c', `${leave(['p-1-0'])} && echo started && read line < "$FIFO"`], {
     env: { ...made.env, PROJECTS_SEEN: seen, FIFO: fifo },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -292,11 +293,19 @@ function stopped(t: TestContext, signal: 'SIGINT' | 'SIGTERM', shell: string): P
   });
 }
 
+test('the command of a run leads a process group of its own, so that a signal of the run reaches all its processes', (t) => {
+  for (const shell of SHELLS) {
+    const ended = runTests(t, present, `${leave([])} && test "$(ps -o pgid= -p $$ | tr -d ' ')" = "$$"`, shell);
+    assert.deepEqual([ended.status, ended.stderr], [0, ''], shell);
+  }
+});
+
 test('a run that SIGINT or SIGTERM stops waits for its command, runs down for its Compose files and removes its directory', async (t) => {
   for (const [shell, signal, status] of SHELLS.flatMap((shell) => [[shell, 'SIGINT', 130], [shell, 'SIGTERM', 143]] as const)) {
     const run = await stopped(t, signal, shell);
-    // The shell of the script reports the stopped job on standard error, in words of its own.
+    // The shell of the command may report its interrupted read in words of its own; the run writes nothing.
     assert.equal(run.status, status, `${shell} ${signal}`);
+    assert.doesNotMatch(run.stderr, /test-run|job control/, `${shell} ${signal}`);
     assert.deepEqual(run.calls, [...CHECKED, ['bay', '-f', join(run.projects, 'p-1-0', 'compose.yaml'), 'down']]);
     assert.equal(existsSync(dirname(run.projects)), false);
   }

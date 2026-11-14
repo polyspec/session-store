@@ -151,7 +151,7 @@ workflows-test:
 tool-pins-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/tool-pins.test.mts
 
-# The commands of scripts/servers.sh and the run of scripts/test-run.sh (SE-10.4), against a stand-in of bay that the
+# The commands of scripts/servers.sh and the run of scripts/test-run.mts (SE-10.4), against a stand-in of bay that the
 # test writes, so it needs neither bay nor a container runtime.
 servers-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/servers.test.mts
@@ -168,11 +168,11 @@ commit-names-check:
 commit-names-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/commit-names.test.mts
 
-# scripts/test-run.sh owns the servers and the temporary directory of the run and removes them when the run ends,
+# scripts/test-run.mts owns the servers and the temporary directory of the run and removes them when the run ends,
 # fails or is stopped by SIGINT or SIGTERM; it writes the version of bay as its first line and fails before the tests
 # when bay is missing or lacks a part of its machine setup. PHP that is not found is passed empty, and the test that needs it fails.
 test:
-	BAY='$(BAY)' scripts/test-run.sh env PHP='$(PHP)' REDIS_IMAGE='$(REDIS_IMAGE)' \
+	BAY='$(BAY)' $(NODE) scripts/test-run.mts env PHP='$(PHP)' REDIS_IMAGE='$(REDIS_IMAGE)' \
 		$(CARGO) test $(CARGOFLAGS) $(CORE) --locked
 
 # Pulls the pinned Redis image of the tests with bay (SE-10.4), the only step that pulls, after the check of the run:

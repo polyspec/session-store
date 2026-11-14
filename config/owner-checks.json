@@ -22,7 +22,7 @@
         "packages/redis/rust/**",
         "packages/rust/**",
         "contracts/*.json",
-        "scripts/test-run.sh",
+        "scripts/test-run.mts",
         "scripts/servers.sh",
         "Cargo.toml",
         "Cargo.lock",
@@ -78,7 +78,7 @@
       "paths": [
         "scripts/servers.test.mts",
         "scripts/servers.sh",
-        "scripts/test-run.sh",
+        "scripts/test-run.mts",
         "packages/redis/rust/tests/*.rs"
       ],
       "targets": [

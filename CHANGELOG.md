@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- On the runner of the workflow `ci`, whose `/bin/sh` is dash, three tests of the run in `make servers-test` failed
+  with `scripts/test-run.sh: 41: set: can't access tty; job control turned off` on standard error, and the test of a
+  run that SIGINT or SIGTERM stops never ended. dash turns no job control on without a terminal, so the command of
+  the run stayed in the process group of the run, ignored SIGINT as an asynchronous command of a shell does, and the
+  kill of the group of the command failed; the run then waited for a command that no signal had reached. A POSIX
+  shell gives a script no way to make a process group, and macOS has no `setsid` program, so the run is now
+  `scripts/test-run.mts`, which the node of the checkout runs: it starts the command as the leader of a process group
+  in a session of its own (`spawn` with `detached`), passes SIGINT and SIGTERM to that group and waits for the exit of
+  the command (SE-10.4). `scripts/test-run.sh` is removed, and `make test` starts `$(NODE) scripts/test-run.mts`. The
+  tests of the run run their commands with `/bin/sh` and with `/bin/dash` where it exists, and a new test requires
+  that the command leads its own process group. With `/bin/dash` of this Mac the tests failed on their commit: 15
+  tests without the signal test, 12 passed and 3 failed with that line, and by hand a run that received SIGTERM ended
+  only after its command read from its FIFO, with `ps` showing the command in the group of the run. After the change
+  `make servers-test` gives 17 passed. Not run: the tests on Linux and the workflow after the change.
+
 - `config/toolchain.json` pins bay v0.0.7 as the release that CI installs, with the sha256 of each archive from the
   `SHA256SUMS` of that release, because the bay of this Mac is v0.0.7 and CI runs the release that a run here starts.
   A runner applies the setup of that release, whose agent unit differs from the one of v0.0.6, with `make setup-bay`

@@ -5,6 +5,9 @@
 //     of the release, ubuntu-26.04, ubuntu-26.04-arm or macos-15, because the asset of a platform is linked and loaded only
 //     on that platform: no tool of the release compiles for another platform (binding GN-19a);
 //   - the workflows ci and release call assets.yml, which builds the assets of each platform (binding GN-19i);
+//   - the workflow ci has the job bindings, which runs `make ci-bindings`, and CI_BINDINGS of the Makefile names the
+//     tests of every target of the contract (binding BD-27): lint-bindings, check-declarations, test-python, test-node,
+//     test-wasm, test-php and test-go, so that no binding package is released untested;
 //   - every action is a local action of .github/actions or is pinned by its full commit, and a comment of the file names
 //     its release, `# <owner>/<repository> <release>`;
 //   - no job and no step sets timeout-minutes;
@@ -200,6 +203,24 @@ function callFindings(file: string, text: string): string[] {
   return calls ? [] : [`${file}: no job calls ./${ASSETS}`];
 }
 
+// The targets that test the bindings of every target of the contract (binding BD-27), which the job bindings runs.
+const BINDING_TESTS = ['lint-bindings', 'check-declarations', 'test-python', 'test-node', 'test-wasm', 'test-php', 'test-go'];
+
+/**
+ * The findings of the job bindings of the workflow ci: it runs `make ci-bindings`, and CI_BINDINGS of the Makefile names
+ * each target of BINDING_TESTS.
+ */
+function bindingsJobFindings(file: string, text: string, makefile: string): string[] {
+  const found: string[] = [];
+  const lines = jobsOf(text).get('bindings');
+  if (lines === undefined) found.push(`${file}: has no job bindings`);
+  else if (!lines.some((line) => valueOf(line, 'run') === 'make ci-bindings')) found.push(`${file}: the job bindings does not run make ci-bindings`);
+  const named = /^CI_BINDINGS := (.*)$/m.exec(makefile)?.[1]?.trim().split(/ +/) ?? [];
+  const missing = BINDING_TESTS.filter((target) => !named.includes(target));
+  if (missing.length > 0) found.push(`Makefile: CI_BINDINGS names no ${missing.join(', ')}`);
+  return found;
+}
+
 const TARGETS = new Set(['docs-check', 'release-tag', 'ci-passed']);
 const ACTIONS = new Set(['./.github/actions/bootstrap']);
 const GOOD = `# actions/checkout v7.0.1: the checkout.
@@ -344,6 +365,16 @@ test('a workflow that calls assets.yml has no finding of the call, and one that 
   assert.deepEqual(callFindings(CI, GOOD), [`${CI}: no job calls ./${ASSETS}`]);
 });
 
+test('the job bindings runs make ci-bindings, whose list names the tests of every target', () => {
+  const job = `${GOOD}  bindings:\n    runs-on: ubuntu-26.04-arm\n    steps:\n      - run: make ci-bindings\n`;
+  const makefile = `CI_BINDINGS := ${BINDING_TESTS.join(' ')}\n`;
+  assert.deepEqual(bindingsJobFindings(CI, job, makefile), []);
+  assert.deepEqual(bindingsJobFindings(CI, GOOD, makefile), [`${CI}: has no job bindings`]);
+  assert.deepEqual(bindingsJobFindings(CI, job.replace('make ci-bindings', 'make docs-check'), makefile), [`${CI}: the job bindings does not run make ci-bindings`]);
+  assert.deepEqual(bindingsJobFindings(CI, job, makefile.replace(' test-php', '')), ['Makefile: CI_BINDINGS names no test-php']);
+  assert.deepEqual(bindingsJobFindings(CI, job, ''), [`Makefile: CI_BINDINGS names no ${BINDING_TESTS.join(', ')}`]);
+});
+
 /**
  * The targets of the release recipes that binding release-recipes writes for the contract, which the Makefile includes
  * (binding GN-19h). The file is generated and not tracked, so the test writes it into a folder of its own with the binding
@@ -371,5 +402,6 @@ test('the workflows and the actions of the repository keep the rules', (t) => {
   found.push(...lastJobFindings(CI, readFileSync(join(root, CI), 'utf8')));
   found.push(...platformFindings(ASSETS, readFileSync(join(root, ASSETS), 'utf8')));
   for (const file of [CI, RELEASE]) found.push(...callFindings(file, readFileSync(join(root, file), 'utf8')));
+  found.push(...bindingsJobFindings(CI, readFileSync(join(root, CI), 'utf8'), readFileSync(join(root, 'Makefile'), 'utf8')));
   assert.deepEqual(found, []);
 });

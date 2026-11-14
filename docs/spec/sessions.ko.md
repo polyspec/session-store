@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: c33a0c44d6873408a56913f447b6320377b5eece880d6ba8742b6d64f86a2da4 -->
+<!-- source-sha256: f42e529e7422965169b9d4804df648c00a223b449a1fc7212eefa67c350f5897 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -126,7 +126,8 @@
   실패하거나(`random`, SE-5.4), 다른 프로세스가 새 식별자의 파일을 만든 경우다
   (`identifier_taken`, SF-4.4). 그러면 오류의 클래스로 결함과 환경의 실패를 구분하는 호출자는
   두 경우 모두에서 옳다.
-  <a id="SE-9.6"></a> 환경의 실패 몇 가지와 kind `internal`에는 어떤 입력도 닿지 않으므로, 실패 주입점이 그것을
+  <a id="SE-9.6"></a> 환경의 실패 몇 가지, kind `internal`, Redis 서버가 주지 않는 다른 형의 응답(SE-10.7)에는 어떤
+  입력도 닿지 않으므로, 실패 주입점이 그것을
   흉내 낸다(binding 설계 G-5, X-1). `polyspec-session-store`가 다시 내보내는 `polyspec-session-store-core`의
   모듈 `fault`가 주입점을 `session_store.<id>`로 이름하고, 저장소의 crate는 자기 자리의 주입점을 그 모듈로
   부르며, 인터페이스 계약은 같은 주입점을 `faults`에 적는다. 주입점은 `polyspec-session-store-core`의 feature
@@ -135,8 +136,12 @@
   그것을 켜고, 어떤 release 빌드에도 그것은 없다. `open`, `create`, `read_dir`의 `io` 주입은 그 시스템 호출이 fault의
   `errno`로 실패하는 것이고 그 kind는 SF-9.2를 따르며, fault가 `errno`를 적지 않으면 `errno` 없는 kind `io`의
   실패다. `errors.kinds`의 variant `Io` 행이 `kinds`를 적지 않고 주입점은 그 표의 kind만 채우므로, 계약의
-  `fills`는 SF-9.2의 kind 중 `io`만 적는다. `create`는 그 호출의 `EEXIST`가 가리키는 kind `identifier_taken`도 채운다(SF-4.4). `random`의 `io` 주입은 난수원의 실패이며 `errno`가 없다. 코어는 task도
-  thread도 시작하지 않으므로, 각 주입점은 그 점에 닿는 호출의 장전을 받는다. record session의 `get`, `set`,
+  `fills`는 SF-9.2의 kind 중 `io`만 적는다. `create`는 그 호출의 `EEXIST`가 가리키는 kind `identifier_taken`도 채운다(SF-4.4). `random`의 `io` 주입은 난수원의 실패이며 `errno`가 없다. `open_reply`나
+  `close_reply`의 `broken` 주입은 열기의 `GET` 응답이나 아무것도 바꾸지 않은 세션의 close의 `EXPIRE` 응답을 다른 형의
+  응답(`Reply::Other`)으로 받는다. 그래서 SR-5.1의 분기가 뒤따르는 해제와 함께 실행된다. 어떤 Redis 서버 상태도 그런
+  응답을 주지 않지만(SE-10.7), 그 앞의 명령과 해제는 서버로 가므로 각 주입점의 case는 시험 run의 서비스에 대해
+  실행한다. 코어는 task도 thread도 시작하지 않으므로, 각 주입점은 그 점에 닿는 호출의 장전을 받는다. 바인딩은
+  Redis 저장소의 `open`이나 `close`의 장전을 그 future의 각 poll 둘레에 설치한다(binding GN-6n). record session의 `get`, `set`,
   `remove`(`file_session`과 `redis_session`의 호출)가 닿는 kind `internal`의 모든 불변식 분기는 바로 앞에 주입점을
   가지며, 그 주입점은 실패한 불변식을 `broken`으로 흉내 낸다. 복사의 주입점은 같은 복사로 레코드를 쓰는 `close`도
   닿는다. `MemoryStore`의 `get`, `set`, `remove`와 `random_hex`에는 kind `internal`의 분기가 없다. 그 member `memory_store.get`, `memory_store.set`,
@@ -161,6 +166,8 @@
   | `open` | `FileSessions::open`에서 세션 파일의 open | `io` | `io` | SF-3.1, SF-9.2 | 예 |
   | `create` | `file_session`의 `close`에서 새 세션 파일의 배타적 생성 | `io` | `io`, `identifier_taken` | SF-4.4, SF-9.2 | 예 |
   | `read_dir` | `FileSessions::collect`에서 디렉터리의 읽기 | `io` | `io` | SF-5.1, SF-9.2 | 예 |
+  | `open_reply` | Redis 저장소가 찾은 식별자를 여는 열기의 `GET` 응답(`Opening::next`): 응답을 다른 형의 응답으로 다룬다 | `broken` | `reply` | SR-5.1, SE-10.7 | 예 |
+  | `close_reply` | 아무것도 바꾸지 않은 Redis 저장소 세션의 close의 `EXPIRE` 응답(`Closing::next`): 응답을 다른 형의 응답으로 다룬다 | `broken` | `reply` | SR-5.1, SE-10.7 | 예 |
 
 ## 파일 저장소
 
@@ -506,6 +513,7 @@
   case도 주입점을 장전하지 않는다. <a id="SE-10.7"></a> Redis 서버의 상태, 곧 저장된 레코드, 다른 보유자가 잡은 잠금,
   다른 형의 키만 닿는 Redis 저장소의 kind에는 시험 run의 서비스 `redis`에 대해 실행하는 호출 하나의 case가 있다(binding
   GN-13j, CK-95). 저장된 레코드와 서버의 응답은 입력이고, 어떤 결함 주입점도 입력을 흉내 내지 않기 때문이다(SE-9.6).
+  어떤 상태도 닿지 않는 다른 형의 응답은 주입점이 흉내 내고, 그 case는 같은 서비스에 대해 실행한다.
   인터페이스 계약은 그 서비스를 `services`에 선언한다. 그 `address`는 서버의 URL `redis://<name>:<port>`를 담는 변수
   `SESSION_STORE_REDIS_URL`이고, 그 `state`는 `scripts/redis-state.sh`의 절대 경로를 담는 변수
   `SESSION_STORE_REDIS_STATE`다. 그 스크립트는 checkout의 node로 `scripts/redis-state.mts`를 실행한다.
@@ -543,13 +551,17 @@
     `redis`: `change`가 잠금 키를 목록으로 만들므로 잠금의 `GET`이 오류 응답 `WRONGTYPE`을 받는다. 그 뒤 해제
     스크립트도 같은 키에서 실패하지만 그 오류는 첫 오류를 대신하지 않는다(SR-4.5). `redis_session.close`의
     `record_write`: 새 세션이 4096겹의 중첩 목록 값을 설정하고, 그 close는 서버에 연결한 뒤 키를 쓰기 전에 실패한다.
-    Rust 시험은 run의 프로그램이 필요한 이 group을 실행하지 않고, 아래 표의 trial이 같은 kind에 닿는다.
-  - `redis_sessions.open`과 `redis_session.close`의 `reply`에는 호출 하나의 case가 없다. 어떤 Redis 서버 상태도 그것에
-    닿지 않기 때문이다. Redis 서버는 키가 무엇을 담든 `GET`에 bulk string, nil, 오류 응답으로, `EXISTS`, `EXPIRE`,
-    `DEL`과 해제 스크립트에 정수나 오류 응답으로, `SET ... NX PX`에 `OK`, nil, 오류 응답으로, `SETEX`에 `OK`나 오류
-    응답으로 답한다. 다른 형의 응답은 Redis의 프로토콜을 따르지 않는 서버만 준다. 두 kind는 각각 모델에 대한
-    trial(`text_replies`, `status_replies`)을 유지하고, 계약 검사는 둘을 지적하며(binding CK-22), 그 지적은 모든
-    target의 `binding generate`를 멈춘다. 어떤 결함 주입점도 그것을 흉내 내지 않는다(SE-9.6).
+    Rust 시험은 이 group 가운데 주입점을 장전하는 case(아래)만 실행하며, 그것에는 서버가 필요 없다. 다른 case에는 run의
+    프로그램이 필요하고, 아래 표의 trial이 같은 kind에 닿는다.
+  - 어떤 Redis 서버 상태도 `redis_sessions.open`과 `redis_session.close`의 `reply`에 닿지 않는다. Redis 서버는 키가
+    무엇을 담든 `GET`에 bulk string, nil, 오류 응답으로, `EXISTS`, `EXPIRE`, `DEL`과 해제 스크립트에 정수나 오류
+    응답으로, `SET ... NX PX`에 `OK`, nil, 오류 응답으로, `SETEX`에 `OK`나 오류 응답으로 답한다. 다른 형의 응답은
+    Redis의 프로토콜을 따르지 않는 서버만 준다. 그래서 각각은 어떤 입력도 닿지 않는 실패이고, 결함 주입점이 그것을
+    흉내 낸다(SE-9.6): `open_reply`와 `close_reply`. 각각의 case는 서비스에 대해 실행하고 그 호출 하나에 주입점을
+    장전한다. `GET`이 장전된 저장된 세션의 열기(`a_reply_of_another_type_to_the_read_fails_the_opening_with_reply`)와,
+    값을 읽기만 한 저장된 세션의 `EXPIRE`가 장전된 close(`a_reply_of_another_type_to_the_expiry_fails_the_close_with_reply`)다.
+    각각은 잠금을 해제하고, 그 check는 세션이 바뀌지 않았고 잠금 키가 없음을 확인한다. Rust 시험은 이 두 case를
+    scope `rust:<member id>:<case id>:`와 setup의 키로 모델에 대해 실행하고 같은 주입점을 장전한다(`model_served::`).
 
   각 kind와 그것에 닿는 `packages/redis/rust/tests/contract.rs`의 trial(`model::`은 모델에 대해, `server::`는 서버에
   대해 실행한다), 그리고 서비스의 호출 하나의 case:
@@ -557,13 +569,13 @@
   | Member | Kind | Trial | 서비스의 case |
   |---|---|---|---|
   | `redis_sessions.open` | `lock_timeout` | `model::`과 `server::a_request_that_finds_the_lock_taken_fails_and_changes_nothing` | `a_lock_that_another_holds_fails_the_opening_with_lock_timeout` |
-  | `redis_sessions.open` | `reply` | `model::a_reply_that_is_not_bytes_fails_and_releases_the_lock` | 없음 |
+  | `redis_sessions.open` | `reply` | `model::a_reply_that_is_not_bytes_fails_and_releases_the_lock`, `model_served::a_reply_of_another_type_to_the_read_fails_the_opening_with_reply` | `open_reply`를 장전하는 `a_reply_of_another_type_to_the_read_fails_the_opening_with_reply` |
   | `redis_sessions.open` | `redis` | `model::an_error_reply_to_the_read_fails_and_releases_the_lock` | `a_session_key_of_another_type_fails_the_opening_with_redis` |
   | `redis_session.get` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_the_call`, `a_key_that_cannot_be_decoded_fails_the_call` | `a_stored_key_that_holds_no_array_fails_get_with_record_not_array`, `a_stored_key_that_cannot_be_decoded_fails_get_with_record` |
   | `redis_session.set` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_set`, `a_key_that_cannot_be_decoded_fails_set` | `set`의 같은 case |
   | `redis_session.remove` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_remove`, `a_key_that_cannot_be_decoded_fails_remove` | `remove`의 같은 case |
   | `redis_session.renew` | `record_not_array`, `record` | `model::`과 `server::a_key_that_holds_no_array_fails_renew`, `a_key_that_cannot_be_decoded_fails_renew` | `renew`의 같은 case |
   | `redis_session.close` | `lock_lost` | `model::`과 `server::a_request_that_lost_its_lock_writes_nothing_and_fails` | `a_lock_that_another_took_fails_the_close_with_lock_lost` |
-  | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock` | 없음 |
+  | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock`, `model_served::a_reply_of_another_type_to_the_expiry_fails_the_close_with_reply` | `close_reply`를 장전하는 `a_reply_of_another_type_to_the_expiry_fails_the_close_with_reply` |
   | `redis_session.close` | `redis` | `model::an_error_reply_to_the_write_fails_and_releases_the_lock` | `a_lock_key_of_another_type_fails_the_close_with_redis` |
   | `redis_session.close` | `record_write` | `model::`과 `server::a_value_too_deep_for_a_record_fails_the_close` | `a_value_too_deep_for_a_record_fails_the_close_with_record_write` |

@@ -740,6 +740,76 @@ fn made_close(case: &Value) -> Result<(), Failed> {
     }
 }
 
+/// SE-9.6, SE-10.7: a case of the service `redis` that arms a point, run against the model with the scope
+/// `rust:<member id>:<case id>:` as the prefix of its store: the setup gives the keys of the model, the opening of
+/// `redis_sessions.open` or the close of a session that the receiver opened runs under the faults of the case, and the
+/// check gives the keys after it. A point that imitates a reply of another type needs no server.
+fn served_fault(case: &Value, member: &str) -> Result<(), Failed> {
+    let id = str_of(case, "id")?;
+    let scope = format!("rust:{member}:{id}:");
+    let service = case.get("service").ok_or("the case has no service")?;
+    let state = |name: &str| -> Result<BTreeMap<Vec<u8>, Vec<u8>>, Failed> {
+        let Some(Value::Object(keys)) = service.get(name) else {
+            return Err(format!("the service of the case has no {name}").into());
+        };
+        keys.iter()
+            .map(|(key, value)| {
+                let text = value.as_str().ok_or("a key of the model holds no string")?;
+                Ok((latin1(&format!("{scope}{key}"))?, latin1(text)?))
+            })
+            .collect()
+    };
+    let options = Options::new(None, Some(scope.clone()), 30, None, None).map_err(failed)?;
+    let mut model = Model {
+        keys: state("setup")?,
+        text_replies: false,
+        error_replies: BTreeMap::new(),
+        status_replies: Vec::new(),
+        log: Vec::new(),
+    };
+    let opening_of = |value: &Value| -> Result<Opening, Failed> {
+        let cookie = latin1(str_of(value, "cookie")?)?;
+        match Opening::new(&options, Some(&cookie)).map_err(failed)? {
+            Ok(opening) => Ok(opening),
+            Err(_) => Err("the cookie of the case is no identifier".into()),
+        }
+    };
+    let outcome = if member == "redis_sessions.open" {
+        let mut opening = opening_of(case)?;
+        armed(case, member, || model.drive(|reply| opening.next(reply)).map(|_| None))?
+    } else {
+        let receiver = case.get("receiver").ok_or("the case has no receiver")?;
+        let mut opening = opening_of(receiver.get("args").ok_or("the receiver has no args")?)?;
+        let mut session = model.drive(|reply| opening.next(reply)).map_err(failed)?;
+        let mut steps = Vec::new();
+        for then in receiver.get("then").and_then(Value::as_array).into_iter().flatten() {
+            let name =
+                str_of(then, "call")?.strip_prefix("redis_session.").ok_or("a call of then is no call of a session")?;
+            let arguments: Vec<Value> = ["key", "value"]
+                .iter()
+                .filter_map(|key| then.get("args").and_then(|args| args.get(*key)).cloned())
+                .collect();
+            steps.push(Value::Array(vec![Value::String(name.to_owned()), Value::Array(arguments)]));
+        }
+        if let Err(error) = calls(&mut session, &serde_json::json!({ "calls": steps }))? {
+            return Err(format!("a call of then fails: {error}").into());
+        }
+        let mut closing = Closing::new(&options, session);
+        armed(case, member, || model.drive(|reply| closing.next(reply)))?
+    };
+    let raises = case.get("raises").ok_or("the case has no raises")?;
+    match outcome {
+        Ok(found) => return Err(format!("the call succeeds with {found:?}").into()),
+        Err(error) => {
+            expect_eq("kind", &error.kind(), &str_of(raises, "kind")?)?;
+            expect_eq("status", &error.status().map(u64::from), &raises.get("status").and_then(Value::as_u64))?;
+            expect_eq("category", &category(error.kind())?.as_str(), &str_of(raises, "category")?)?;
+        }
+    }
+    // SR-4.5: the lock is released, and the record is unchanged.
+    expect_eq("keys", &model.keys, &state("check")?)
+}
+
 type Group = fn(&Value) -> Result<(), Failed>;
 
 /// The Redis server of every trial, in a project of the run (`tests/servers`); each trial uses a database of its own.
@@ -927,6 +997,21 @@ fn main() {
                 panic!("a case has no id");
             };
             trials.push(Trial::test(format!("{group}::{id}"), move || run(&case)));
+        }
+    }
+    for (group, member) in
+        [("redis_sessions.open.served", "redis_sessions.open"), ("redis_session.close.served", "redis_session.close")]
+    {
+        let Some(Value::Array(cases)) = contract.get(group) else {
+            panic!("contracts/redis-sessions.json has no group {group}");
+        };
+        // Only a case that arms a point runs without a server; the others need the program of the test run (SE-10.7).
+        for case in cases.iter().filter(|case| case.get("faults").is_some()) {
+            let case = case.clone();
+            let Some(id) = case.get("id").and_then(Value::as_str) else {
+                panic!("a case has no id");
+            };
+            trials.push(Trial::test(format!("model_served::{id}"), move || served_fault(&case, member)));
         }
     }
     let conclusion = libtest_mimic::run(&arguments, trials);

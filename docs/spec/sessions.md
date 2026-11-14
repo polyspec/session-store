@@ -125,8 +125,8 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   the operating system fails (`random`, SE-5.4), or another process created the file of a new identifier
   (`identifier_taken`, SF-4.4). A caller that tells a defect from a failure of the environment by the class of the
   error is then right for both.
-  <a id="SE-9.6"></a> No input reaches some failures of the environment and the kind `internal`, so fault injection
-  points imitate them (binding design G-5, X-1). The module `fault` of `polyspec-session-store-core`, which
+  <a id="SE-9.6"></a> No input reaches some failures of the environment, the kind `internal` and a reply of another
+  type than a Redis server gives (SE-10.7), so fault injection points imitate them (binding design G-5, X-1). The module `fault` of `polyspec-session-store-core`, which
   `polyspec-session-store` gives again, names the points as `session_store.<id>`, the crates of the stores call the
   points of their places through it, and the interface contract names the same points in `faults`. A point does nothing
   unless the feature `fault-test` of `polyspec-session-store-core` is on: `polyspec-session-store` turns it on through
@@ -135,8 +135,13 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   `read_dir` is the failure of that call of the system with the `errno` of the fault, whose kind follows SF-9.2, or a
   failure without `errno` of the kind `io` when the fault names none. The `fills` of the contract name `io` alone of
   the kinds of SF-9.2, because the row of the variant `Io` in `errors.kinds` names no `kinds`, and a point fills only
-  the kinds of that table; `create` also fills `identifier_taken`, the kind of `EEXIST` at that call (SF-4.4). An `io` injection at `random` is a failure of the random source, which has no `errno`. The
-  core starts no task and no thread, so each point takes the arming of the call that reaches it. Every invariant branch
+  the kinds of that table; `create` also fills `identifier_taken`, the kind of `EEXIST` at that call (SF-4.4). An `io` injection at `random` is a failure of the random source, which has no `errno`. A
+  `broken` injection at `open_reply` or `close_reply` takes the reply of `GET` in the opening or of `EXPIRE` in the
+  close of a session that changed nothing as a reply of another type (`Reply::Other`), so the branch of SR-5.1 runs
+  with the release that follows it: no state of a Redis server gives such a reply (SE-10.7), while the commands before
+  it and the release go to the server, so the case of each point runs against the service of the test run. The
+  core starts no task and no thread, so each point takes the arming of the call that reaches it; a binding installs the
+  arming of an `open` or a `close` of the store of Redis around each poll of its future (binding GN-6n). Every invariant branch
   of the kind `internal` that `get`, `set` and `remove` of a record session reach, the calls of `file_session` and
   `redis_session`, has a point just before it, which imitates the failed invariant as `broken`; the points of the copy
   are also reached by `close`, which writes the record with the same copy. `get`, `set` and `remove` of `MemoryStore`
@@ -162,6 +167,8 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   | `open` | the open of the session file in `FileSessions::open` | `io` | `io` | SF-3.1, SF-9.2 | yes |
   | `create` | the exclusive creation of the file of a new session in `close` of `file_session` | `io` | `io`, `identifier_taken` | SF-4.4, SF-9.2 | yes |
   | `read_dir` | the read of the directory in `FileSessions::collect` | `io` | `io` | SF-5.1, SF-9.2 | yes |
+  | `open_reply` | the reply of `GET` in the opening of a found identifier of the store of Redis (`Opening::next`): the reply is treated as one of another type | `broken` | `reply` | SR-5.1, SE-10.7 | yes |
+  | `close_reply` | the reply of `EXPIRE` in the close of a session of the store of Redis that changed nothing (`Closing::next`): the reply is treated as one of another type | `broken` | `reply` | SR-5.1, SE-10.7 | yes |
 
 ## The store of files
 
@@ -524,7 +531,8 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   group `requests` arms a point. <a id="SE-10.7"></a> A kind of the store of Redis that only a state of a Redis server
   reaches, a stored record, a lock that another holder took or a key of another type, has a case of one call that runs
   against the service `redis` of the test run (binding GN-13j, CK-95), because a stored record and a reply of a server
-  are inputs, which no fault injection point imitates (SE-9.6). The interface contract declares the service in
+  are inputs, which no fault injection point imitates (SE-9.6); a reply of another type, which no state reaches, is
+  imitated by a point whose case runs against the same service. The interface contract declares the service in
   `services`: its `address` is the variable `SESSION_STORE_REDIS_URL`, the URL `redis://<name>:<port>` of the server,
   and its `state` is the variable `SESSION_STORE_REDIS_STATE`, the absolute path of `scripts/redis-state.sh`, which runs
   `scripts/redis-state.mts` on the node of the checkout.
@@ -567,14 +575,19 @@ the statement that it checks. A PHP value and its serialize form are those of ph
     a list, so the `GET` of the lock gets the error reply `WRONGTYPE`; the release script then fails on the same key,
     and its error does not replace the first one (SR-4.5). `record_write` of `redis_session.close`: a new session sets
     a value of 4096 nested lists, and its close connects to the server and fails before it writes a key. The Rust tests
-    do not run these groups, which need the program of the run; the trials of the table below reach the same kinds.
-  - `reply` of `redis_sessions.open` and of `redis_session.close` has no case of one call, because no state of a Redis
-    server reaches it: a Redis server answers `GET` with a bulk string, nil or an error reply, `EXISTS`, `EXPIRE`, `DEL`
-    and the release script with an integer or an error reply, `SET ... NX PX` with `OK`, nil or an error reply and
-    `SETEX` with `OK` or an error reply, whatever its keys hold; only a server that does not follow the protocol of
-    Redis gives a reply of another type. Each of the two keeps its trial against the model (`text_replies`,
-    `status_replies`), and the contract check reports each (binding CK-22), which stops `binding generate` for every
-    target. No fault injection point imitates it (SE-9.6).
+    run of these groups only the cases that arm a point (below), which need no server; the other cases need the
+    program of the run, and the trials of the table below reach the same kinds.
+  - No state of a Redis server reaches `reply` of `redis_sessions.open` and of `redis_session.close`: a Redis server
+    answers `GET` with a bulk string, nil or an error reply, `EXISTS`, `EXPIRE`, `DEL` and the release script with an
+    integer or an error reply, `SET ... NX PX` with `OK`, nil or an error reply and `SETEX` with `OK` or an error reply,
+    whatever its keys hold; only a server that does not follow the protocol of Redis gives a reply of another type. So
+    each is a failure that no input reaches, which a fault injection point imitates (SE-9.6): `open_reply` and
+    `close_reply`. The case of each runs against the service and arms its point for its one call: the opening of a
+    stored session whose `GET` is armed (`a_reply_of_another_type_to_the_read_fails_the_opening_with_reply`) and the
+    close of a stored session that only read a value, whose `EXPIRE` is armed
+    (`a_reply_of_another_type_to_the_expiry_fails_the_close_with_reply`); each releases its lock, and its check finds
+    the session unchanged and no lock key. The Rust tests run these two cases against the model, with the scope
+    `rust:<member id>:<case id>:` and the keys of the setup, and arm the same point (`model_served::`).
 
   Each kind and the trials of `packages/redis/rust/tests/contract.rs` that reach it (`model::` against the model,
   `server::` against the server), with the case of one call of the service:
@@ -582,13 +595,13 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   | Member | Kind | Trials | Case of the service |
   |---|---|---|---|
   | `redis_sessions.open` | `lock_timeout` | `model::` and `server::a_request_that_finds_the_lock_taken_fails_and_changes_nothing` | `a_lock_that_another_holds_fails_the_opening_with_lock_timeout` |
-  | `redis_sessions.open` | `reply` | `model::a_reply_that_is_not_bytes_fails_and_releases_the_lock` | none |
+  | `redis_sessions.open` | `reply` | `model::a_reply_that_is_not_bytes_fails_and_releases_the_lock`, `model_served::a_reply_of_another_type_to_the_read_fails_the_opening_with_reply` | `a_reply_of_another_type_to_the_read_fails_the_opening_with_reply`, which arms `open_reply` |
   | `redis_sessions.open` | `redis` | `model::an_error_reply_to_the_read_fails_and_releases_the_lock` | `a_session_key_of_another_type_fails_the_opening_with_redis` |
   | `redis_session.get` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_the_call`, `a_key_that_cannot_be_decoded_fails_the_call` | `a_stored_key_that_holds_no_array_fails_get_with_record_not_array`, `a_stored_key_that_cannot_be_decoded_fails_get_with_record` |
   | `redis_session.set` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_set`, `a_key_that_cannot_be_decoded_fails_set` | the same for `set` |
   | `redis_session.remove` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_remove`, `a_key_that_cannot_be_decoded_fails_remove` | the same for `remove` |
   | `redis_session.renew` | `record_not_array`, `record` | `model::` and `server::a_key_that_holds_no_array_fails_renew`, `a_key_that_cannot_be_decoded_fails_renew` | the same for `renew` |
   | `redis_session.close` | `lock_lost` | `model::` and `server::a_request_that_lost_its_lock_writes_nothing_and_fails` | `a_lock_that_another_took_fails_the_close_with_lock_lost` |
-  | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock` | none |
+  | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock`, `model_served::a_reply_of_another_type_to_the_expiry_fails_the_close_with_reply` | `a_reply_of_another_type_to_the_expiry_fails_the_close_with_reply`, which arms `close_reply` |
   | `redis_session.close` | `redis` | `model::an_error_reply_to_the_write_fails_and_releases_the_lock` | `a_lock_key_of_another_type_fails_the_close_with_redis` |
   | `redis_session.close` | `record_write` | `model::` and `server::a_value_too_deep_for_a_record_fails_the_close` | `a_value_too_deep_for_a_record_fails_the_close_with_record_write` |

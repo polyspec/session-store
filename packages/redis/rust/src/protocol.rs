@@ -6,7 +6,7 @@ use std::time::Duration;
 use polyspec_php_serialization::PhpValue;
 use polyspec_session_store_core::{accept, random_hex, Failure, Found, Outcome, RecordSession, Store};
 
-use polyspec_session_store_core::Error;
+use polyspec_session_store_core::{fault, Error};
 
 /// The release script (SR-2.3).
 pub const RELEASE: &str =
@@ -229,6 +229,15 @@ pub enum Step<T> {
     Done(T),
 }
 
+/// The reply of a command at the fault injection point `point`: armed as broken, it is a reply of another type, which no
+/// state of a Redis server gives (SE-9.6, SE-10.7), so the branch of SR-5.1 runs with the release that follows it.
+fn at_point(point: &'static str, reply: Option<Reply>) -> Option<Reply> {
+    match reply {
+        Some(_) if fault::broken(point) => Some(Reply::Other("a reply of another type (fault injection)")),
+        other => other,
+    }
+}
+
 fn unexpected(command: &'static str, reply: &Reply) -> Error {
     match reply {
         Reply::Error(message) => Error::Redis { command, message: message.clone() },
@@ -300,6 +309,7 @@ impl Opening {
     /// The next step, given the reply of the command of the last step (`None` at the start and after a wait).
     pub fn next(&mut self, reply: Option<Reply>) -> Result<Step<Session>, Error> {
         let state = std::mem::replace(&mut self.state, OpeningState::Ended);
+        let reply = if matches!(state, OpeningState::Get) { at_point(fault::OPEN_REPLY, reply) } else { reply };
         match (state, reply) {
             (OpeningState::Start, None) => {
                 self.state = OpeningState::Exists;
@@ -395,6 +405,7 @@ impl Closing {
     /// The next step, given the reply of the command of the last step (`None` at the start).
     pub fn next(&mut self, reply: Option<Reply>) -> Result<Step<Option<String>>, Error> {
         let state = std::mem::replace(&mut self.state, ClosingState::Ended);
+        let reply = if matches!(state, ClosingState::Expire) { at_point(fault::CLOSE_REPLY, reply) } else { reply };
         match (state, reply) {
             (ClosingState::Start(Err(error)), None) => self.release(After::Err(error)),
             (ClosingState::Start(Ok(Outcome::Unused)), None) => self.release(After::Ok(None)),

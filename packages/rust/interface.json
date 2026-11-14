@@ -389,6 +389,30 @@
       ],
       "reason": "SE-6.6",
       "place": "polyspec_session_store::RecordSession::get"
+    },
+    {
+      "id": "open_reply",
+      "core": "polyspec_session_store::fault::OPEN_REPLY",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "reply"
+      ],
+      "reason": "SE-10.7",
+      "place": "polyspec_session_store::RedisSessions::open"
+    },
+    {
+      "id": "close_reply",
+      "core": "polyspec_session_store::fault::CLOSE_REPLY",
+      "inject": [
+        "broken"
+      ],
+      "fills": [
+        "reply"
+      ],
+      "reason": "SE-10.7",
+      "place": "polyspec_session_store::RedisSession::close"
     }
   ],
   "units": [

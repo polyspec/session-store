@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 212a5d304a3576130a2dd84cd249a4acebe2e184b4885121cfbae1ea66a4b39f -->
+<!-- source-sha256: 22b145766b62ebe0fe1b262d6ebc8945fc9d693ac9bd8e3bd4fa795bf52fa452 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -154,9 +154,10 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   Go의 생성된 시험을 위해 그 서버를 시작하며 그 시험에 `SESSION_STORE_REDIS_URL`과 `SESSION_STORE_REDIS_STATE`를 준다.
   후자는 case의 scope의 키를 setup, change, check하는 프로그램 `scripts/redis-state.sh`의 경로이고,
   `make redis-state-test`가 그 프로그램을 시험한다. 이 형식에는 아직 고정되지 않은 binding 0.0.7이 필요하다. binding
-  0.0.6은 계약의 키 `services`를 거부한다(CK-1). `redis_sessions.open`과 `redis_session.close`의 `reply`에는 case가
-  없다. 어떤 Redis 서버 상태도 다른 형의 응답을 주지 않기 때문이다(SE-10.7). 그래서 계약 검사는 둘을 지적하고(CK-22),
-  그 지적은 다섯 target 모두의 `binding generate`를 멈춘다(T1.30-4). 고정한 binding 0.0.6은 `file_sessions.open`의 parameter
+  0.0.6은 계약의 키 `services`를 거부한다(CK-1). 어떤 Redis 서버 상태도 다른 형의 응답을 주지 않으므로,
+  `redis_sessions.open`과 `redis_session.close`의 `reply`는 결함 주입점 `open_reply`와 `close_reply`가 흉내 낸다
+  (SE-9.6). 그 case는 같은 서비스에 대해 실행한다. binding 0.0.7로는 계약 검사가 case 없는 kind를 지적하지 않고,
+  `binding generate`가 다섯 target을 쓴다(T1.30-4). 고정한 binding 0.0.6은 `file_sessions.open`의 parameter
   `cancel`의 `only`를 읽으므로, Go는 그것을 위해 첫 parameter `ctx`를 두지 않는다(T1.30-5).
 - Go 모듈에서 binding은 파일 `zz_generated_*.go`를 소유한다(binding GN-3). Go 모듈은 소스로 받아지므로 이 파일들은
   추적되고, `make bindings`가 다시 쓴다. `packages/ts/wasm/generated`와 `packages/go/internal/ffi/generated`는 추적하지

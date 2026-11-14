@@ -156,15 +156,16 @@ Rules for every change of session-store. The rules of the library are in [docs/s
 - No contract case runner is written yet: `make bindings` generates no target, so no binding API exists that a runner
   could call and be checked against. The interface contract declares only cases of one call, because the generator
   refuses a case of several requests (binding G-5): the groups `requests` and `store`, whose cases hold several calls,
-  are read by the Rust tests alone (SE-10.6). 13 kinds of the store of Redis that only a state of a Redis server
+  are read by the Rust tests alone (SE-10.6). The 13 kinds of the store of Redis that only a state of a Redis server
   reaches have cases of one call against the service `redis` of the test run (SE-10.7, binding GN-13j): the interface
   contract declares it in `services`, `scripts/test-run.mts --service redis` starts its server for the generated tests
   of PHP, Python, Node and Go and gives them `SESSION_STORE_REDIS_URL` and `SESSION_STORE_REDIS_STATE`, the path of
   `scripts/redis-state.sh`, the program that sets up, changes and checks the keys of the scope of a case, and
   `make redis-state-test` tests that program. That form needs binding 0.0.7, which is not pinned yet: binding 0.0.6
-  refuses the key `services` of the contract (CK-1). `reply` of `redis_sessions.open` and of `redis_session.close`
-  has no case, because no state of a Redis server gives a reply of another type (SE-10.7), so the contract check
-  reports both (CK-22), and that finding stops `binding generate` for each of the five targets (T1.30-4). The pinned
+  refuses the key `services` of the contract (CK-1). No state of a Redis server gives a reply of another type, so
+  `reply` of `redis_sessions.open` and of `redis_session.close` is imitated by the fault injection points
+  `open_reply` and `close_reply` (SE-9.6), whose cases run against the same service; with binding 0.0.7 the contract
+  check reports no kind without a case, and `binding generate` writes the five targets (T1.30-4). The pinned
   binding 0.0.6 reads the `only` of the parameter `cancel` of `file_sessions.open`, so Go needs no first parameter
   `ctx` for it (T1.30-5).
 - In the Go module binding owns the files `zz_generated_*.go` (binding GN-3); they are tracked, because a Go module is

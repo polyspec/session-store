@@ -1,7 +1,17 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 9d960f89d0b2783d665baf44461c9f3432261566fa6cff2304afc43c8b2e298f -->
+<!-- source-sha256: 538a4c2805f633690f0b3c896e9775b003583e2efd3b776e34d433b4194b598f -->
 
 ## Unreleased
+
+- `redis_sessions.open`과 `redis_session.close`의 `reply`에는 생성한 바인딩 시험이 실행하는 case가 없었다. 어떤
+  Redis 서버 상태도 명령이 주는 것과 다른 형의 응답을 주지 않기 때문이다. 계약 검사는 둘을 지적했고(CK-22), 그
+  지적은 모든 target의 `binding generate`를 멈췄다. 어떤 입력도 닿지 않는 실패는 결함 주입점이 흉내 내는
+  것이다(SE-9.6). `polyspec-session-store-core`의 주입점 `session_store.open_reply`와 `session_store.close_reply`는
+  `broken`으로 장전되면 열기의 `GET` 응답과 아무것도 바꾸지 않은 세션의 close의 `EXPIRE` 응답을 다른 형의 응답으로
+  받고, 인터페이스 계약은 그것을 채우는 kind `reply`와 함께 `faults`에 적는다. group `redis_sessions.open.served`와
+  `redis_session.close.served`는 각각에 주입점을 장전하고 잠금이 해제되었음을 확인하는, 서비스 `redis`에 대한 호출
+  하나의 case를 주고, Rust 시험은 둘을 모델에 대해 실행한다(`model_served::`, 시험 2개). binding 0.0.7의 소스로는 이제
+  계약 검사가 case 없는 kind를 지적하지 않고, `binding generate`가 다섯 target을 모두 쓴다(T1.30-4).
 
 - Redis 저장소의 kind 15개에는 생성한 바인딩 시험이 실행하는 case가 없었다. Redis 서버의 상태만 그것에 닿고, binding에는
   시험 run의 서비스에 대한 case의 형식이 없었기 때문이다. 계약 검사는 그 하나하나를 지적했다(CK-22). 이제 인터페이스

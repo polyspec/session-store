@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- `reply` of `redis_sessions.open` and of `redis_session.close` had no case that a generated binding test runs,
+  because no state of a Redis server gives a reply of another type than the command gives, and the contract check
+  reported both (CK-22), which stopped `binding generate` for every target. A failure that no input reaches is what a
+  fault injection point imitates (SE-9.6): the points `session_store.open_reply` and `session_store.close_reply` of
+  `polyspec-session-store-core`, armed as `broken`, take the reply of `GET` in the opening and of `EXPIRE` in the close
+  of a session that changed nothing as a reply of another type, and the interface contract names them in `faults`
+  with the fill `reply`. The groups `redis_sessions.open.served` and `redis_session.close.served` give each a case of
+  one call against the service `redis` that arms its point and checks that the lock is released, and the Rust tests
+  run both against the model (`model_served::`, 2 tests). With the source of binding 0.0.7 the contract check now
+  reports no kind without a case, and `binding generate` writes all five targets (T1.30-4).
+
 - 15 kinds of the store of Redis had no case that a generated binding test runs, because only a state of a Redis
   server reaches them and binding had no form of a case against a service of the test run; the contract check reported
   each (CK-22). The interface contract now declares the service `redis` in `services` (binding GN-13j, CK-95), and

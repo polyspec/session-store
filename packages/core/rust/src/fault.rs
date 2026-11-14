@@ -25,6 +25,14 @@ pub const CREATE: &str = "session_store.create";
 /// The read of the session directory, in `FileSessions::collect` (SF-5, SF-9.2).
 #[doc(hidden)]
 pub const READ_DIR: &str = "session_store.read_dir";
+/// The reply of `GET` in the opening of a found identifier of the store of Redis, taken as a reply of another type when
+/// it is armed as broken: no state of a Redis server gives one (SR-5.1, SE-10.7).
+#[doc(hidden)]
+pub const OPEN_REPLY: &str = "session_store.open_reply";
+/// The reply of `EXPIRE` in the close of a session of the store of Redis that changed nothing, taken as a reply of
+/// another type when it is armed as broken: no state of a Redis server gives one (SR-5.1, SE-10.7).
+#[doc(hidden)]
+pub const CLOSE_REPLY: &str = "session_store.close_reply";
 /// The array of a decoded record, which the root names, at the start of a record session that found a record (SE-6.3).
 #[doc(hidden)]
 pub const RECORD_ROOT: &str = "session_store.record_root";

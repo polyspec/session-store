@@ -1,7 +1,11 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 685d5c1a9edd810dd6748ca16941602ee0782b875eee324ca26bf625d7639738 -->
+<!-- source-sha256: 28b6d6ffb7f7a189c0e5511dd88f2255ce4c65e73c4595c7aa95b427a78bdeb6 -->
 
 ## Unreleased
+
+- T1.19, 곧 files 저장소의 정적 생성(`FileSessions::in_directory`, `file_sessions.in_directory`, 생성자가 없는
+  class)과 variant `setting`의 core enum이 끝났다. 이 Mac에서 이 branch의 깨끗한 tree로 `make test`는 157개가 통과하며
+  status 0으로 끝났고, `make -k lint-rust fmt-check binding-check`도 status 0으로 끝났다.
 
 - `/bin/sh`가 dash인 workflow `ci`의 runner에서 `make servers-test`의 run 시험 세 개가 표준 오류에 `scripts/test-run.sh:
   41: set: can't access tty; job control turned off`를 적고 실패했고, SIGINT나 SIGTERM이 멈추는 run의 시험은 끝나지

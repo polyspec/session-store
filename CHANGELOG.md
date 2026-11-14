@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- T1.19, the static making of the store of files (`FileSessions::in_directory`, `file_sessions.in_directory`, a class
+  without a constructor) and the core enum of the variant `setting`, is done. On the clean tree of this branch on
+  this Mac, `make test` ended with status 0 with 157 tests passed, and `make -k lint-rust fmt-check binding-check`
+  ended with status 0.
+
 - On the runner of the workflow `ci`, whose `/bin/sh` is dash, three tests of the run in `make servers-test` failed
   with `scripts/test-run.sh: 41: set: can't access tty; job control turned off` on standard error, and the test of a
   run that SIGINT or SIGTERM stops never ended. dash turns no job control on without a terminal, so the command of

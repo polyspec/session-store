@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- `make bindings` refused every target because the parameter `cancel` of `file_sessions.open` had the type `cancel`
+  with a computed default, which binding does not generate (U-2), the record `store_options` named no `core_type`,
+  and the cases of `redis_sessions.new` gave no `setting` and wrote a setting as `{"server": {...}}` (G-5). The
+  cancellation is now an `optional` of `cancel` with the default `{"computed": "SF-3.8"}`, which
+  `FileSessions::open` takes by value (`Option<Cancel>`, SF-3.8); `store_options` names `StoreOptions` (SR-1.2);
+  every case of the group `open` of the store of Redis gives `setting` and `options`, the case without `lock_expire`
+  is the group `openMissing`, which the interface contract does not declare, and every setting of the cases is a value
+  of the variant with its tag `kind` (SE-10.2). Three trials of the Rust tests read the interface contract and the
+  cases for these forms (T1.30-1 to T1.30-3). SE-10.6 now states that `file_session.close.made` gives `io` and
+  `identifier_taken` of `file_session.close` through the point `session_store.create`; it stated that the contract
+  had no such case. `make bindings` still refuses every target: the cases of the group `requests` hold several
+  requests, which the generator takes from no group, and without that group the check reports 26 findings, 24 kinds and the two members `found` without a case of one call
+  (T1.30-4); Go takes the parameter `cancel` only as its first parameter (T1.30-5).
+
 - `make binding-check` failed with CK-20, because `Cargo.lock` pinned `polyspec-binding-core` at an older commit than
   the binding that the check ran, and with CK-19 for ten files: the manifests of the five binding packages differed
   from what `binding scaffold` of the head of binding writes, and `packages/python/build.rs` was missing. `Cargo.lock`

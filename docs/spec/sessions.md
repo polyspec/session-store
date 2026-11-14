@@ -489,9 +489,16 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   `redis_session.<member>.made` of `get`, `set`, `remove` and `renew` arm `session_store.random`, which the start of the
   new session reaches (SE-5.4, SE-7.2); `redis_session.close.made` closes a session that set a value, whose close
   connects to that socket and fails with `connection` (SR-6.4). `file_sessions.open.cancel` gives `cancelled` of
-  `file_sessions.open` (SF-3.8) by a cancellation that fired before the call (`{"cancel": "fired"}`). The contract has
-  no case for `io` and `identifier_taken` of `file_session.close`, and the contract check reports both (binding
-  CK-22): no fault injection point is in the write of a session file, and no input reaches either kind on every
-  platform of the library. The check counts a case of the group `requests` for every member that reads the group, but a binding test
-  takes the keys of a case as the arguments of one call and runs no case of several requests (`steps`); so no case of
-  that group arms a point, because it would satisfy the check while no binding test runs it.
+  `file_sessions.open` (SF-3.8) by a cancellation that fired before the call (`{"cancel": "fired"}`).
+  `file_session.close.made` gives `io` and `identifier_taken` of `file_session.close`: the point
+  `session_store.create` fails the creation of the file of a new session with `EIO` and with `EEXIST` (SF-4.4, SF-9.2),
+  because no input reaches either kind on every platform of the library. The contract check counts a case of the group
+  `requests` for every member that reads the group, so it reports no member without a case of a kind. But the
+  generator of binding takes the keys of a case as the arguments of one call and refuses a case of several requests
+  (`steps`) by name (binding G-5), so `make bindings` generates no target while the interface contract declares the
+  group `requests` (T1.30). Without that group the check reports the kinds that only its cases reach: `record` and
+  `record_not_array` of `get`, `set`, `remove` and `renew` of both sessions, which need a stored record; `lock_timeout`,
+  `reply` and `redis` of `redis_sessions.open` and `lock_lost`, `reply`, `redis` and `record_write` of
+  `redis_session.close`, which need a Redis server or its model; `record_write` of `file_session.close`; and `found` of
+  both sessions, which no group but `requests` names. No case of the group `requests` arms a point, because it would
+  satisfy the check while no binding test runs it.

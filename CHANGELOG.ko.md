@@ -1,7 +1,20 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 2ac3be7630ebc76b74319c7a2c73c39032cf35469ec1a38f6b381e4708228926 -->
+<!-- source-sha256: 60429130f1409980002a991af73d853b186a1a5f72d42ed94021654f335c2a2e -->
 
 ## Unreleased
+
+- `make bindings`는 모든 target을 거부했다. `file_sessions.open`의 parameter `cancel`이 binding이 생성하지 않는
+  computed default를 가진 타입 `cancel`이었고(U-2), record `store_options`가 `core_type`을 적지 않았으며,
+  `redis_sessions.new`의 case가 `setting`을 주지 않고 설정을 `{"server": {...}}`로 썼기 때문이다(G-5). 이제 취소는
+  기본값 `{"computed": "SF-3.8"}`인 `cancel`의 `optional`이고, `FileSessions::open`은 그것을 값으로
+  받는다(`Option<Cancel>`, SF-3.8). `store_options`는 `StoreOptions`를 적는다(SR-1.2). Redis 저장소의 group
+  `open`의 모든 case는 `setting`과 `options`를 주고, `lock_expire`가 없는 case는 인터페이스 계약이 선언하지 않는
+  group `openMissing`에 있으며, case의 모든 설정은 tag `kind`를 가진 variant의 값이다(SE-10.2). Rust 시험의 세
+  trial이 인터페이스 계약과 case에서 이 형태를 읽는다(T1.30-1부터 T1.30-3). SE-10.6은 이제
+  `file_session.close.made`가 주입점 `session_store.create`로 `file_session.close`의 `io`와 `identifier_taken`을
+  준다고 적는다. 전에는 계약에 그런 case가 없다고 적었다. `make bindings`는 여전히 모든 target을 거부한다. group
+  `requests`의 case는 여러 요청을 담고 생성기는 어느 group에서도 그것을 받지 않으며, 그 group이 없으면 검사는 호출
+  하나의 case가 없는 24개 kind와 두 member `found`, 26건을 지적한다(T1.30-4). Go는 parameter `cancel`을 첫 parameter로만 받는다(T1.30-5).
 
 - `make binding-check`가 CK-20으로 실패했다. `Cargo.lock`이 `polyspec-binding-core`를 검사가 실행한 binding보다 오래된
   commit에 고정했기 때문이다. 또 열 파일에 대해 CK-19로 실패했다. 다섯 바인딩 패키지의 manifest가 binding head의

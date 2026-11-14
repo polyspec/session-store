@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 95cb478f6fc47e4b076edb16c7dc65326ee297388397a11356bf7e85ad90a173 -->
+<!-- source-sha256: fdbb0792e88d2700279e7664b89173c7f5a6fea20dbb3428123caec80e79cbdc -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -474,9 +474,15 @@
   `renew`의 group `file_session.<member>.made`와 `redis_session.<member>.made`는 새 세션의 시작이 닿는
   `session_store.random`을 장전한다(SE-5.4, SE-7.2). `redis_session.close.made`는 값을 set한 세션을 닫는다. 그 close는
   그 socket에 연결하므로 `connection`으로 실패한다(SR-6.4). `file_sessions.open.cancel`은 호출 전에 발동한
-  취소(`{"cancel": "fired"}`)로 `file_sessions.open`의 `cancelled`(SF-3.8)를 준다. 계약에는 `file_session.close`의
-  `io`와 `identifier_taken`의 case가 없고, 계약 검사는 둘을 지적한다(binding CK-22). 세션 파일의 쓰기에는 결함 주입
-  지점이 없고, 라이브러리의 모든 플랫폼에서 두 kind에 닿는 입력이 없기 때문이다. 검사는 group `requests`의 case를
-  그 group을 읽는 모든 member에 센다. 그러나 바인딩 시험은 case의 key를 한 호출의 인자로 받으며 여러 요청의
-  case(`steps`)는 하나도 실행하지 않는다. 그래서 그 group의 어떤 case도 주입점을 장전하지 않는다. 그런 case는
-  어떤 바인딩 시험도 실행하지 않는데 검사는 통과시키기 때문이다.
+  취소(`{"cancel": "fired"}`)로 `file_sessions.open`의 `cancelled`(SF-3.8)를 준다. `file_session.close.made`는
+  `file_session.close`의 `io`와 `identifier_taken`을 준다. 주입점 `session_store.create`가 새 세션 파일의 생성을
+  `EIO`와 `EEXIST`로 실패시킨다(SF-4.4, SF-9.2). 라이브러리의 모든 플랫폼에서 두 kind에 닿는 입력이 없기 때문이다.
+  계약 검사는 group `requests`의 case를 그 group을 읽는 모든 member에 세므로, 어떤 kind의 case가 없는 member를
+  지적하지 않는다. 그러나 binding의 생성기는 case의 key를 한 호출의 인자로 받고 여러 요청의 case(`steps`)를 이름으로
+  거부하므로(binding G-5), 인터페이스 계약이 group `requests`를 선언하는 동안 `make bindings`는 어떤 target도 생성하지
+  않는다(T1.30). 그 group이 없으면 검사는 그 case만 닿는 kind를 지적한다. 두 세션의 `get`, `set`, `remove`,
+  `renew`의 `record`와 `record_not_array`는 저장된 레코드가 필요하다. `redis_sessions.open`의 `lock_timeout`,
+  `reply`, `redis`와 `redis_session.close`의 `lock_lost`, `reply`, `redis`, `record_write`는 Redis 서버나 그 모델이
+  필요하다. 그 밖에 `file_session.close`의 `record_write`와, `requests` 말고는 어떤 group도 적지 않는 두 세션의
+  `found`가 있다. group `requests`의 어떤 case도 주입점을 장전하지 않는다. 그런 case는 어떤 바인딩 시험도 실행하지
+  않는데 검사는 통과시키기 때문이다.

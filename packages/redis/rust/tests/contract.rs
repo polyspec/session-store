@@ -456,6 +456,23 @@ fn category(kind: &str) -> Result<String, Failed> {
     Err(format!("errors.kinds has no kind {kind}").into())
 }
 
+/// The record `store_options` of the interface contract names its Rust type `StoreOptions` in `core_type` (SR-1.2):
+/// binding names the Rust type of a unit that a parameter takes by its `core_type` and refuses a unit without one.
+fn the_options_name_their_core_type() -> Result<(), Failed> {
+    let interface: Value = serde_json::from_str(INTERFACE).map_err(failed)?;
+    let units = interface.get("units").and_then(Value::as_array).ok_or("the contract has no list units")?;
+    let options = units
+        .iter()
+        .find(|unit| unit.get("id").and_then(Value::as_str) == Some("store_options"))
+        .ok_or("the contract has no unit store_options")?;
+    expect_eq("kind", &options.get("kind").and_then(Value::as_str), &Some("record"))?;
+    expect_eq(
+        "core_type",
+        &options.get("core_type").and_then(Value::as_str),
+        &Some("polyspec_session_store::StoreOptions"),
+    )
+}
+
 /// An opening of one call on a store whose setting names a socket under `/dev/null`, which no server has (SE-10.5):
 /// the group `opening`, whose connection fails (SR-6.4), and the group `openFaults`, whose case arms the fault
 /// injection points that it names (SE-9.6). Only `redis_sessions.open` reads the two groups. The future runs on a
@@ -676,7 +693,7 @@ fn main() {
     else {
         panic!("contracts/redis-sessions.json has no groups requests and open");
     };
-    let mut trials = Vec::new();
+    let mut trials = vec![Trial::test("interface::the_options_name_their_core_type", the_options_name_their_core_type)];
     for (index, case) in requests.iter().enumerate() {
         let Some(id) = case.get("id").and_then(Value::as_str) else {
             panic!("a case has no id");

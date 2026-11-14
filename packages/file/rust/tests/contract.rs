@@ -380,8 +380,7 @@ fn made_session(value: &Value) -> Result<FileSession, Failed> {
     let args = value.get("args").ok_or("an opening has no args")?;
     let (_trigger, cancel) = cancel_of(args.get("cancel").ok_or("an opening has no cancel")?)?;
     let cookie = cookie_of(args)?;
-    let mut session =
-        store.open(ProcessWait::for_generated_call(), cookie.as_deref(), Some(&cancel)).map_err(failed)?;
+    let mut session = store.open(ProcessWait::for_generated_call(), cookie.as_deref(), Some(cancel)).map_err(failed)?;
     for then in value.get("then").and_then(Value::as_array).into_iter().flatten() {
         let name =
             str_of(then, "call")?.strip_prefix("file_session.").ok_or("a call of then is no call of a session")?;
@@ -434,7 +433,7 @@ fn open_cancel(case: &Value) -> Result<(), Failed> {
     let store = store_with(case)?;
     let (_trigger, cancel) = cancel_of(case.get("cancel").ok_or("the case has no cancel")?)?;
     let cookie = cookie_of(case)?;
-    match store.open(ProcessWait::for_generated_call(), cookie.as_deref(), Some(&cancel)) {
+    match store.open(ProcessWait::for_generated_call(), cookie.as_deref(), Some(cancel)) {
         Ok(_) => Err("the session is opened".into()),
         Err(error) => expect_failure(&error, raises),
     }
@@ -495,6 +494,27 @@ fn the_store_of_files_is_made_by_a_static_member() -> Result<(), Failed> {
     expect_eq("core.path", &str_of(core, "path")?, &"polyspec_session_store::FileSessions::in_directory")
 }
 
+/// SF-3.8: the cancellation of `file_sessions.open` is an `optional` of `cancel` whose default the core decides, so a
+/// call may leave it out, and the core takes it by value (binding GN-6i, GN-6aq).
+fn the_cancellation_of_open_is_an_optional() -> Result<(), Failed> {
+    let interface: Value = serde_json::from_str(INTERFACE).map_err(failed)?;
+    let units = interface.get("units").and_then(Value::as_array).ok_or("the contract has no list units")?;
+    let opening = units
+        .iter()
+        .filter_map(|unit| unit.get("members").and_then(Value::as_array))
+        .flatten()
+        .find(|member| member.get("id").and_then(Value::as_str) == Some("file_sessions.open"))
+        .ok_or("the contract has no member file_sessions.open")?;
+    let parameters =
+        opening.get("parameters").and_then(Value::as_array).ok_or("file_sessions.open has no parameters")?;
+    let cancel = parameters
+        .iter()
+        .find(|parameter| parameter.get("name") == Some(&serde_json::json!(["cancel"])))
+        .ok_or("file_sessions.open has no parameter cancel")?;
+    expect_eq("type", &cancel.get("type"), &Some(&serde_json::json!({"optional": "cancel"})))?;
+    expect_eq("default", &cancel.get("default"), &Some(&serde_json::json!({"computed": "SF-3.8"})))
+}
+
 fn main() {
     let arguments = Arguments::from_args();
     let contract: Value = match serde_json::from_str(CONTRACT) {
@@ -519,6 +539,7 @@ fn main() {
             "interface::the_store_of_files_is_made_by_a_static_member",
             the_store_of_files_is_made_by_a_static_member,
         ),
+        Trial::test("interface::the_cancellation_of_open_is_an_optional", the_cancellation_of_open_is_an_optional),
     ];
     for (group, run) in groups {
         let Some(Value::Array(cases)) = contract.get(group) else {

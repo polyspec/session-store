@@ -94,7 +94,8 @@ fn a_cancelled_waiter_lets_the_next_request_go_on() {
     let store = store(directory.path());
     let (trigger, cancel) = cancel_pair();
     std::thread::scope(|scope| {
-        let first = scope.spawn(|| store.open(ProcessWait::for_generated_call(), Some(ID.as_bytes()), Some(&cancel)));
+        let first =
+            scope.spawn(|| store.open(ProcessWait::for_generated_call(), Some(ID.as_bytes()), Some(cancel.clone())));
         std::thread::sleep(Duration::from_millis(50));
         let second = scope.spawn(|| read_integer(&store));
         std::thread::sleep(Duration::from_millis(50));
@@ -123,7 +124,7 @@ fn a_cancelled_request_in_the_queue_returns_at_once() {
     std::thread::scope(|scope| {
         let waiter = scope.spawn(|| {
             let started = std::time::Instant::now();
-            let result = store.open(ProcessWait::for_generated_call(), Some(ID.as_bytes()), Some(&cancel));
+            let result = store.open(ProcessWait::for_generated_call(), Some(ID.as_bytes()), Some(cancel.clone()));
             (result.map(|_session| ()), started.elapsed())
         });
         std::thread::sleep(Duration::from_millis(50));
@@ -150,7 +151,7 @@ fn a_request_cancelled_before_it_waits_fails_at_once() {
     drop(session_file(directory.path(), b"a:0:{}", 0));
     let (trigger, cancel) = cancel_pair();
     trigger.cancel();
-    match store(directory.path()).open(ProcessWait::for_generated_call(), Some(ID.as_bytes()), Some(&cancel)) {
+    match store(directory.path()).open(ProcessWait::for_generated_call(), Some(ID.as_bytes()), Some(cancel)) {
         Err(error) => assert_eq!(error.kind(), "cancelled"),
         Ok(_) => panic!("the cancelled request opened the session"),
     }

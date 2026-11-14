@@ -366,8 +366,12 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   holding null, which is the serialize form `a:1:{i:0;` n times, `N;` and `}` n times. A case states in `found`, for
   each step, the identifier that the opening of the step found (SE-7.1), `#n` or null; a case without `found` does not
   compare it. A case of the group `open` of the store of files states the directory of the made store in
-  `store_directory`, and one of the store of Redis with `setting` makes the store of that connection setting (one of
-  `server`, `sentinel` and `cluster` with its fields, SR-6.1), which connects to nothing. <a id="SE-10.3"></a> Every
+  `store_directory`, and every case of the group `open` of the store of Redis gives `setting` and `options`, the two
+  parameters of `redis_sessions.new`, and makes the store of that connection setting (one of `server`, `sentinel` and
+  `cluster` with its fields, SR-6.1), which connects to nothing; a case that tests the options alone names the server
+  of a socket under `/dev/null`. A generated binding test takes the keys of a case as the arguments of one call and
+  takes no case that leaves out a required field (binding G-5), so the case whose options give no `lock_expire` is the
+  group `openMissing`, which the interface contract does not declare and the case runners of the bindings run. <a id="SE-10.3"></a> Every
   record that a case writes is read again by real PHP (`unserialize` of PHP 8.4) in the tests of the core, which fail
   when no PHP binary is given (`PHP`), so the records are those of PHP. <a id="SE-10.4"></a> The commands of the Redis cases run
   against a model of the Redis commands that the protocol sends, and the same requests run against a real Redis server.

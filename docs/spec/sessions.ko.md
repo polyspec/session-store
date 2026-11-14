@@ -363,8 +363,12 @@
   null을 갖는다. 이것은 serialize 형식으로 `a:1:{i:0;` n번, `N;`, `}` n번이다. case는 `found`에
   step마다 그 step의 열기가 찾은 식별자(SE-7.1)를 `#n`이나 null로 적는다. `found`가 없는 case는 그것을
   비교하지 않는다. 파일 저장소의 group `open`의 case는 만든 저장소의 디렉터리를
-  `store_directory`에 적고, `setting`을 가진 Redis 저장소의 case는 그 연결 설정(`server`, `sentinel`,
-  `cluster` 중 하나와 그 필드, SR-6.1)의 저장소를 만들며, 그 저장소는 어디에도 연결하지 않는다. <a id="SE-10.3"></a> case가 쓰는
+  `store_directory`에 적고, Redis 저장소의 group `open`의 모든 case는 `redis_sessions.new`의 두 parameter인
+  `setting`과 `options`를 주며 그 연결 설정(`server`, `sentinel`, `cluster` 중 하나와 그 필드, SR-6.1)의 저장소를
+  만들고, 그 저장소는 어디에도 연결하지 않는다. 옵션만 시험하는 case는 `/dev/null` 아래 socket의 서버를 적는다.
+  생성한 바인딩 시험은 case의 key를 한 호출의 인자로 받고 필수 field를 뺀 case는 받지 않으므로(binding G-5),
+  options가 `lock_expire`를 주지 않는 case는 group `openMissing`에 있다. 인터페이스 계약은 이 group을 선언하지 않고,
+  바인딩의 case runner가 그것을 실행한다. <a id="SE-10.3"></a> case가 쓰는
   모든 레코드는 코어의 시험에서 실제 PHP(PHP 8.4의 `unserialize`)가 다시 읽고, PHP 실행 파일이 주어지지
   않으면(`PHP`) 그 시험은 실패하므로, 그 레코드는 PHP의 레코드다. <a id="SE-10.4"></a> Redis case의 명령은
   프로토콜이 보내는 Redis 명령의 모델에 대해 실행되고, 같은 요청이 실제 Redis 서버에 대해 실행된다.

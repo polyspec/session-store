@@ -1061,6 +1061,11 @@
    "rules": [
     "SR-1.2"
    ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
    "options": {
     "lifetime": 0,
     "lock_expire": 30
@@ -1078,6 +1083,11 @@
    "rules": [
     "SR-1.2"
    ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
    "options": {
     "lock_expire": 0
    },
@@ -1094,6 +1104,11 @@
    "rules": [
     "SR-1.2"
    ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
    "options": {
     "lock_expire": 45
    },
@@ -1112,6 +1127,11 @@
     "SR-1.2",
     "SR-8.2"
    ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
    "options": {
     "lifetime": -1,
     "lock_expire": 30
@@ -1131,6 +1151,11 @@
     "SR-1.2",
     "SR-8.2"
    ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
    "options": {
     "lifetime": 1.5,
     "lock_expire": 30
@@ -1150,6 +1175,11 @@
     "SR-1.2",
     "SR-8.2"
    ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
    "options": {
     "lifetime": "60",
     "lock_expire": 30
@@ -1169,6 +1199,11 @@
     "SR-1.2",
     "SR-8.2"
    ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
    "options": {
     "lifetime": true,
     "lock_expire": 30
@@ -1188,6 +1223,11 @@
     "SR-1.2",
     "SR-8.2"
    ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
    "options": {
     "lock_expire": -1
    },
@@ -1206,6 +1246,11 @@
     "SR-1.2",
     "SR-8.2"
    ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
    "options": {
     "lock_expire": 1.5
    },
@@ -1224,6 +1269,11 @@
     "SR-1.2",
     "SR-8.2"
    ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
    "options": {
     "lock_expire": "60"
    },
@@ -1242,24 +1292,14 @@
     "SR-1.2",
     "SR-8.2"
    ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
    "options": {
     "lock_expire": true
    },
-   "binding": true,
-   "raises": {
-    "kind": "invalid_argument_type",
-    "status": null,
-    "category": "type",
-    "message": null
-   }
-  },
-  {
-   "id": "a_missing_lock_expiry_fails",
-   "label": "a store without a lock expiry is refused, because the expiry has no default",
-   "rules": [
-    "SR-1.2"
-   ],
-   "options": {},
    "binding": true,
    "raises": {
     "kind": "invalid_argument_type",
@@ -1353,6 +1393,28 @@
     "kind": "invalid_setting",
     "status": null,
     "category": "value",
+    "message": null
+   }
+  }
+ ],
+ "openMissing": [
+  {
+   "id": "a_missing_lock_expiry_fails",
+   "label": "a store whose options give no lock expiry is refused, because the expiry has no default (SR-1.2); a generated binding test takes no case without a required field (binding G-5), so the case runners of the bindings run the group openMissing",
+   "rules": [
+    "SR-1.2"
+   ],
+   "setting": {
+    "server": {
+     "url": "redis+unix:///dev/null/redis.sock"
+    }
+   },
+   "options": {},
+   "binding": true,
+   "raises": {
+    "kind": "invalid_argument_type",
+    "status": null,
+    "category": "type",
     "message": null
    }
   }

@@ -382,9 +382,11 @@ fn setting_case(case: &Value, setting: &Value) -> Result<(), Failed> {
     }
 }
 
+/// A case of the groups `open` and `openMissing`: a case with `defaults` reads the options that the store takes, and
+/// every other case makes the store of its setting and options (SR-1.2, SR-6.1).
 fn open_case(case: &Value) -> Result<(), Failed> {
-    if let Some(setting) = case.get("setting") {
-        return setting_case(case, setting);
+    if case.get("defaults").is_none() {
+        return setting_case(case, case.get("setting").ok_or("the case has no setting")?);
     }
     match (options_of(case), case.get("raises")) {
         (Err(error), Some(raises)) => {
@@ -742,11 +744,16 @@ fn main() {
             runtime.block_on(server_case(&server_case_value, index % 16))
         }));
     }
-    for case in opens.clone() {
+    let Some(Value::Array(missing)) = contract.get("openMissing") else {
+        panic!("contracts/redis-sessions.json has no group openMissing");
+    };
+    let opens = opens.iter().map(|case| ("open", case)).chain(missing.iter().map(|case| ("openMissing", case)));
+    for (group, case) in opens {
+        let case = case.clone();
         let Some(id) = case.get("id").and_then(Value::as_str) else {
             panic!("a case has no id");
         };
-        let name = format!("open::{id}");
+        let name = format!("{group}::{id}");
         // A value that no u64 holds is refused by the binding (SR-8.2); the bindings run such a case.
         let binding = case.get("binding").is_some();
         trials.push(Trial::test(name, move || open_case(&case)).with_ignored_flag(binding));

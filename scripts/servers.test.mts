@@ -194,13 +194,19 @@ test('a verb that the script does not know and a verb with other arguments fail'
 });
 
 /**
- * Runs scripts/test-run.sh on `machine` with a command of sh. The command reads PROJECTS_SEEN, the file into which it
+ * The shells that start a run: /bin/sh of the machine and dash, which is /bin/sh of Debian and Ubuntu and which has no
+ * job control without a terminal.
+ */
+const SHELLS = ['/bin/sh', '/bin/dash'].filter((shell) => existsSync(shell));
+
+/**
+ * Runs scripts/test-run.sh with `shell` on `machine` with a command of sh. The command reads PROJECTS_SEEN, the file into which it
  * writes the directory of the projects of its run.
  */
-function runTests(t: TestContext, machine: Machine, command: string): Run & { projects: string } {
+function runTests(t: TestContext, machine: Machine, command: string, shell = '/bin/sh'): Run & { projects: string } {
   const made = stand(t, machine);
   const seen = join(made.directory, 'seen');
-  const result = spawnSync('/bin/sh', [testRun, 'sh', '-c', command], { encoding: 'utf8', env: { ...made.env, PROJECTS_SEEN: seen } });
+  const result = spawnSync(shell, [testRun, 'sh', '-c', command], { encoding: 'utf8', env: { ...made.env, PROJECTS_SEEN: seen } });
   return { status: result.status, stdout: result.stdout, stderr: result.stderr, calls: made.calls(), projects: existsSync(seen) ? readFileSync(seen, 'utf8').trim() : '' };
 }
 
@@ -209,18 +215,20 @@ const leave = (names: string[]): string =>
   ['printf "%s\\n" "$SESSION_STORE_PROJECTS" > "$PROJECTS_SEEN"', ...names.map((name) => `mkdir "$SESSION_STORE_PROJECTS/${name}" && : > "$SESSION_STORE_PROJECTS/${name}/compose.yaml"`)].join(' && ');
 
 test('a run checks the programs, gives the tests a directory of projects named after the run and removes it', (t) => {
-  const ended = runTests(t, present, `${leave([])} && test -d "$SESSION_STORE_PROJECTS" && test -d "$TMPDIR"`);
-  // The first line of a run is the version of the bay that starts its servers.
-  assert.deepEqual([ended.status, ended.stdout, ended.stderr], [0, `${VERSION}\n`, '']);
-  assert.deepEqual(ended.calls, CHECKED);
-  assert.match(ended.projects, /\/session-store-test-[0-9]+$/);
-  assert.equal(existsSync(dirname(ended.projects)), false);
+  for (const shell of SHELLS) {
+    const ended = runTests(t, present, `${leave([])} && test -d "$SESSION_STORE_PROJECTS" && test -d "$TMPDIR"`, shell);
+    // The first line of a run is the version of the bay that starts its servers.
+    assert.deepEqual([ended.status, ended.stdout, ended.stderr], [0, `${VERSION}\n`, ''], shell);
+    assert.deepEqual(ended.calls, CHECKED);
+    assert.match(ended.projects, /\/session-store-test-[0-9]+$/);
+    assert.equal(existsSync(dirname(ended.projects)), false);
+  }
 });
 
 test('a run that ends or fails runs down for every Compose file that its directory still holds', (t) => {
-  for (const status of [0, 3]) {
-    const ended = runTests(t, present, `${leave(['p-1-0', 'p-1-1'])} && exit ${status}`);
-    assert.deepEqual([ended.status, ended.stderr], [status, '']);
+  for (const [shell, status] of SHELLS.flatMap((shell) => [[shell, 0], [shell, 3]] as const)) {
+    const ended = runTests(t, present, `${leave(['p-1-0', 'p-1-1'])} && exit ${status}`, shell);
+    assert.deepEqual([ended.status, ended.stderr], [status, ''], shell);
     assert.deepEqual(ended.calls, [
       ...CHECKED,
       ['bay', '-f', join(ended.projects, 'p-1-0', 'compose.yaml'), 'down'],
@@ -242,24 +250,26 @@ test('a run whose programs or machine setup are missing fails before its command
 });
 
 test('a project that down does not remove fails the run, which keeps its directory and names the file', (t) => {
-  const kept = runTests(t, { bay: true, status: { down: 1 } }, leave(['p-1-0']));
-  t.after(() => { if (kept.projects !== '') rmSync(dirname(kept.projects), { recursive: true, force: true }); });
-  const file = join(kept.projects, 'p-1-0', 'compose.yaml');
-  assert.equal(kept.status, 1);
-  assert.equal(kept.stderr, `scripts/test-run.sh: the servers of ${file} are not removed; the directory of the run is kept:\nbay: down fails\n`);
-  assert.equal(existsSync(file), true);
+  for (const shell of SHELLS) {
+    const kept = runTests(t, { bay: true, status: { down: 1 } }, leave(['p-1-0']), shell);
+    t.after(() => { if (kept.projects !== '') rmSync(dirname(kept.projects), { recursive: true, force: true }); });
+    const file = join(kept.projects, 'p-1-0', 'compose.yaml');
+    assert.equal(kept.status, 1, shell);
+    assert.equal(kept.stderr, `scripts/test-run.sh: the servers of ${file} are not removed; the directory of the run is kept:\nbay: down fails\n`, shell);
+    assert.equal(existsSync(file), true);
+  }
 });
 
 /**
  * A run that `signal` stops: its command leaves a project, reports that it started and then waits for a writer of a
  * FIFO, which never comes, so that only the signal ends it. The test sends the signal when it reads the report.
  */
-function stopped(t: TestContext, signal: 'SIGINT' | 'SIGTERM'): Promise<Run & { projects: string }> {
+function stopped(t: TestContext, signal: 'SIGINT' | 'SIGTERM', shell: string): Promise<Run & { projects: string }> {
   const made = stand(t, present);
   const seen = join(made.directory, 'seen');
   const fifo = join(made.directory, 'fifo');
   assert.equal(spawnSync('/usr/bin/mkfifo', [fifo]).status, 0);
-  const child = spawn('/bin/sh', [testRun, 'sh', '-c', `${leave(['p-1-0'])} && echo started && read line < "$FIFO"`], {
+  const child = spawn(shell, [testRun, 'sh', '-c', `${leave(['p-1-0'])} && echo started && read line < "$FIFO"`], {
     env: { ...made.env, PROJECTS_SEEN: seen, FIFO: fifo },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -283,10 +293,10 @@ function stopped(t: TestContext, signal: 'SIGINT' | 'SIGTERM'): Promise<Run & { 
 }
 
 test('a run that SIGINT or SIGTERM stops waits for its command, runs down for its Compose files and removes its directory', async (t) => {
-  for (const [signal, status] of [['SIGINT', 130], ['SIGTERM', 143]] as const) {
-    const run = await stopped(t, signal);
+  for (const [shell, signal, status] of SHELLS.flatMap((shell) => [[shell, 'SIGINT', 130], [shell, 'SIGTERM', 143]] as const)) {
+    const run = await stopped(t, signal, shell);
     // The shell of the script reports the stopped job on standard error, in words of its own.
-    assert.equal(run.status, status, signal);
+    assert.equal(run.status, status, `${shell} ${signal}`);
     assert.deepEqual(run.calls, [...CHECKED, ['bay', '-f', join(run.projects, 'p-1-0', 'compose.yaml'), 'down']]);
     assert.equal(existsSync(dirname(run.projects)), false);
   }

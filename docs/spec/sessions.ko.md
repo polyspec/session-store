@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 8e11bcb4cc9d2d87cad89a60760b192a8a0603818b193559f91fa8a52e252422 -->
+<!-- source-sha256: 78775c6d9a3032bb8582fd897833f2dd2851e6638199de21976bbedd0266416b -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -377,7 +377,9 @@
     하나다. 서버 하나를 함께 쓰고, case마다 자기 database를 쓴다.
   - 프로젝트의 이름은 그 디렉터리의 이름이다. 파일이 이름을 적지 않으면 bay가 디렉터리의 이름을 쓴다. 그 이름은
     run의 디렉터리 이름, 시험 process의 id, 순번으로 이루어진다. run의 디렉터리는 run의 process를 따라 이름 지으므로,
-    한 장비의 두 run이 같은 이름을 갖지 않는다.
+    한 장비의 두 run이 같은 이름을 갖지 않는다. bay는 이름에 글자, 숫자, `-`, `_` 밖의 문자가 있는 프로젝트를
+    거부한다. 그래서 harness나 `scripts/servers.sh`가 만드는 프로젝트의 디렉터리는 모두 그 문자들로만 이름 짓는다.
+    template 없이 `mktemp -d`가 주는 이름에는 점이 있다.
   - 모든 이름은 bay가 준다. 시작하기 전에 harness는 Compose 파일의 `bay plan --json`을 읽는다. 거기에 각 service의
     host 이름과, bay가 그 이름에 발급하는 certificate의 경로가 있다. 다른 서버의 이름을 적는 서버는 그 이름을
     plan에서 받는다. Sentinel의 설정이 primary의 이름을 이렇게 적는다. 그래서 한 번의 `up`이 한 시험의 모든 서버를
@@ -404,6 +406,8 @@
   - 어떤 시험도 image를 받지 않는다. harness는 프로젝트를 `up -no-pull`로 시작하고, 이 명령은 image가 설치되지
     않았으면 아무것도 만들기 전에 실패한다. 그렇게 실패한 시험은 `make redis-image`를 적는다. 그런 시험은 무시된
     시험으로 보고되지 않는다. `make redis-image`는 `bay pull`로 받으며, 받는 step은 이것뿐이다.
+    `scripts/servers.sh pull`은 image를 `TMPDIR` 아래 자기 디렉터리 `session-store-pull-<글자>`에 프로젝트의 service
+    하나로 적고, 받고, 그 디렉터리를 지운다.
   - bay는 make처럼 장비가 주는 도구다. run은 PATH의 `bay`를 시작하고, 그 version을 고정하지도 비교하지도 않는다.
     harness의 결과를 바꾸는 것은 bay 릴리스의 번호가 아니라 harness가 읽는 출력의 계약이다. 그래서 harness는
     `schemaVersion`이 1이 아닌 plan이나 `up`의 출력을 실패시키고, 자주 새 빌드가 되는 개발 장비의 bay는 그대로 시험을
@@ -424,8 +428,13 @@
     두므로, 설치와 검사와 받기와 시험의 모든 명령이 한 사용자로 실행되어야 하기 때문이다. `make setup-bay`는
     `bay install`을 실행한다. 장비의 설정을 바꾸는 target은 이것 하나이며, workflow가 자기 runner에서 실행하고
     개발자는 자기 선택으로 실행한다.
-  - `make test`는 시험을 `scripts/test-run.sh`로 실행하고, 이 script가 run의 디렉터리를 소유한다. Compose 파일은
-    `up`보다 먼저 쓰이므로, 시작된 모든 프로젝트에는 파일이 있다. run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출
+  - `make test`는 시험을 checkout의 node가 실행하는 `scripts/test-run.mts`로 실행하고, 이 script가 run의 디렉터리를
+    소유한다. Compose 파일은 `up`보다 먼저 쓰이므로, 시작된 모든 프로젝트에는 파일이 있다. run은 시험의 명령을 자기
+    session의 자기 process group의 leader로 시작하고(`detached`를 준 `spawn`, 이것이 `setsid`를 부른다), 자기가 받은
+    SIGINT와 SIGTERM을 그 group에 전하며, 명령의 종료를 기다린다. 그 종료가 기다림을 끝내는 event다. shell script는 이
+    일을 할 수 없다. POSIX shell은 script에게 process group을 만드는 방법을 주지 않고, Debian과 Ubuntu의 `/bin/sh`인
+    dash에서 `set -m`은 terminal이 있어야 하며, 그러면 명령은 run의 group에 남고 SIGINT를 무시한다. macOS에는 `setsid`
+    프로그램이 없다. run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출
     때 script는 시험을 기다리고, 디렉터리에 남은 모든 Compose 파일에 `down`을 실행하고, 디렉터리를 지운다. 신호가
     멈춘 `up`은 자기가 만든 것을 지운다. `down`이 지우지 못한 프로젝트가 있으면 run은 실패하고, 디렉터리를 남기고 그
     파일을 적는다.

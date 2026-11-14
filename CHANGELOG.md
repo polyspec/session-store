@@ -10,6 +10,42 @@
   new test of `make tool-pins-test` reads the dry run of `make install-binding`, the script and the job `rust`: before
   the change it gave 9 passed, 1 failed, and with it 10 passed, 0 failed.
 
+- T1.19, the static making of the store of files (`FileSessions::in_directory`, `file_sessions.in_directory`, a class
+  without a constructor) and the core enum of the variant `setting`, is done. On the clean tree of this branch on
+  this Mac, `make test` ended with status 0 with 157 tests passed, and `make -k lint-rust fmt-check binding-check`
+  ended with status 0.
+
+- On the runner of the workflow `ci`, whose `/bin/sh` is dash, three tests of the run in `make servers-test` failed
+  with `scripts/test-run.sh: 41: set: can't access tty; job control turned off` on standard error, and the test of a
+  run that SIGINT or SIGTERM stops never ended. dash turns no job control on without a terminal, so the command of
+  the run stayed in the process group of the run, ignored SIGINT as an asynchronous command of a shell does, and the
+  kill of the group of the command failed; the run then waited for a command that no signal had reached. A POSIX
+  shell gives a script no way to make a process group, and macOS has no `setsid` program, so the run is now
+  `scripts/test-run.mts`, which the node of the checkout runs: it starts the command as the leader of a process group
+  in a session of its own (`spawn` with `detached`), passes SIGINT and SIGTERM to that group and waits for the exit of
+  the command (SE-10.4). `scripts/test-run.sh` is removed, and `make test` starts `$(NODE) scripts/test-run.mts`. The
+  tests of the run run their commands with `/bin/sh` and with `/bin/dash` where it exists, and a new test requires
+  that the command leads its own process group. With `/bin/dash` of this Mac the tests failed on their commit: 15
+  tests without the signal test, 12 passed and 3 failed with that line, and by hand a run that received SIGTERM ended
+  only after its command read from its FIFO, with `ps` showing the command in the group of the run. After the change
+  `make servers-test` gives 17 passed. Not run: the tests on Linux and the workflow after the change.
+
+- `config/toolchain.json` pins bay v0.0.7 as the release that CI installs, with the sha256 of each archive from the
+  `SHA256SUMS` of that release, because the bay of this Mac is v0.0.7 and CI runs the release that a run here starts.
+  A runner applies the setup of that release, whose agent unit differs from the one of v0.0.6, with `make setup-bay`
+  in each run. On this Mac `make install-bay` downloads the archive of darwin-arm64, accepts its sha256 and installs
+  bay v0.0.7; `make tool-pins-test` gives 9 passed and `make install-bay-test` 4 passed. Not run: the install on
+  Linux and the job `test` of the workflow with this release.
+
+- `make redis-image` failed on the runner of the workflow `ci` with `bay: compose.yaml: project name
+  "tmp.x4bmuo3xsw" must be letters, digits, - or _`, and bay of this Mac refuses the same file in the same way:
+  `scripts/servers.sh pull` wrote the Compose file of the pull into the directory that `mktemp -d` gives without a
+  template, `tmp.<letters>`, and bay names a project after its directory and refuses a dot in that name. The pull
+  now writes into a directory `session-store-pull-<letters>` below `TMPDIR` (SE-10.4). The test of the pull requires
+  that name: on its commit `make servers-test` gave 15 passed and 1 failed (the name `tmp.4hb9OWSrEy`), after the
+  change 16 passed, and `bay plan --json` of this Mac accepts a Compose file in such a directory. Not run: the pull
+  itself, which downloads the image, and the job `test` of the workflow after the change.
+
 - No file named a release of bay, the workflow `ci` installed no bay, so its job `test` failed at the start of
   `make test`, and `scripts/servers.sh` started the bay of PATH alone. bay is a tool that the machine gives, as make
   is: a run starts `bay` of PATH, compares no version, writes the output of `bay version` as its first line, and the

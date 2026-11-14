@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 378fb71843846758b95b7d2c6696a4ff4fe49eb02ccb46cca807fb0796f9b32a -->
+<!-- source-sha256: 9c0f2a6d3a87337617595816c0c79b2fbb01e779a600e6a57b3e3e6dbd57bbe0 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -24,8 +24,8 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   내려받는 것은 `make install-binding`뿐이다. 그 target은 binding을 그 commit으로 `var/binding/<commit>`에 clone하고 그
   도구의 패키지를 `var/tools`의 npm으로 설치한다. 다른 모든 명령은 crate를 `cargo metadata --offline`으로 읽고 binding이
   설치되지 않았으면 실패한다. 내려받는 검사는 네트워크에 의존하기 때문이다(T1.28).
-- `scripts/test-run.sh`: `make test`의 시험을 자기 서버와 임시 디렉터리를 소유하는 run으로 실행한다(SE-10.4).
-- `scripts/servers.sh`: 시험의 Redis 서버를 위한 bay의 명령이다. 시험, `scripts/test-run.sh`, `make redis-image`가 이
+- `scripts/test-run.mts`: `make test`의 시험을 자기 서버와 임시 디렉터리를 소유하는 run으로 실행한다(SE-10.4).
+- `scripts/servers.sh`: 시험의 Redis 서버를 위한 bay의 명령이다. 시험, `scripts/test-run.mts`, `make redis-image`가 이
   script를 실행한다(SE-10.4). bay가 서버를 Compose 프로젝트로 시작하고 지우며, 서버의 이름과 certificate와 주소를 주고,
   image를 받고 찾는다. `scripts/servers.test.mts`가 두 script의 시험이며, `make servers-test`가 bay의 대역으로
   실행한다.
@@ -125,7 +125,7 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   않으며, 어떤 port도 공개하지 않는다. TLS 서버는 bay가 발급한 certificate를 읽고, 어떤 시험도 certificate를 만들지
   않는다. `up`의 반환이 시작의 event다. `redis-cli --cluster create`처럼 시험이 container 안에서 필요로 하는 Redis의
   명령은 `bay exec`로 실행하고, 서버의 나중 보고는 `bay logs -f`의 줄로 기다리며, 시간을 기다리지 않는다.
-  `scripts/test-run.sh`는 run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때 run의 디렉터리에 남은 모든 Compose
+  `scripts/test-run.mts`는 run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출 때 run의 디렉터리에 남은 모든 Compose
   파일에 `down`을 실행하고 그 디렉터리를 지운다.
 
 ## Bindings

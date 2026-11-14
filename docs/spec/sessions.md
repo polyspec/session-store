@@ -381,7 +381,10 @@ the statement that it checks. A PHP value and its serialize form are those of ph
     this sense: they share one server, each case in a database of its own.
   - The name of a project is the name of its directory, which bay takes when the file states none: the name of the
     directory of the run, the id of the test process and a count. The directory of the run is named after the
-    process of the run, so no two runs of a machine hold one name.
+    process of the run, so no two runs of a machine hold one name. bay refuses a project whose name holds another
+    character than a letter, a digit, `-` or `_`, so every directory of a project that the harness or
+    `scripts/servers.sh` makes is named from those characters alone; the name that `mktemp -d` gives without a
+    template holds a dot.
   - bay gives every name. Before the start the harness reads `bay plan --json` of the Compose file: the host name of
     each service and the paths of the certificate that bay issues for that name. A server that names another one
     takes the name from the plan, as the configuration of Sentinel names its primary, so one `up` starts every server
@@ -409,7 +412,9 @@ the statement that it checks. A PHP value and its serialize form are those of ph
     moment, so that a read before the change would have to be repeated.
   - No test pulls an image: the harness starts a project with `up -no-pull`, which fails before it creates anything
     when the image is not installed, and a test that fails this way names `make redis-image`; no such test is
-    reported as ignored. `make redis-image` pulls with `bay pull`, the only step that pulls.
+    reported as ignored. `make redis-image` pulls with `bay pull`, the only step that pulls: `scripts/servers.sh pull`
+    writes the image as the one service of a project in a directory `session-store-pull-<letters>` of its own below
+    `TMPDIR`, pulls it and removes the directory.
   - bay is a tool that the machine gives, as make is: a run starts `bay` of PATH and neither pins nor compares its
     version. What changes a result of the harness is not the number of a release of bay but the contract of the
     output that the harness reads, so the harness fails a plan or an output of `up` whose `schemaVersion` is not 1,
@@ -432,9 +437,14 @@ the statement that it checks. A PHP value and its serialize form are those of ph
     bay keeps its state below the home of the user who runs it, so the install, the check, the pull and every
     command of a test run as one user. `make setup-bay` runs `bay install`, the one target that changes the setup of
     a machine, which the workflow runs on its runner and a developer runs by choice.
-  - `make test` runs the tests through `scripts/test-run.sh`, which owns the directory of the run. A Compose file is
-    written before its `up`, so every project that started has its file. When the run ends, fails or is stopped by
-    SIGINT or SIGTERM, the script waits for the tests, runs `down` for every Compose file that the directory still
+  - `make test` runs the tests through `scripts/test-run.mts`, which the node of the checkout runs and which owns the
+    directory of the run. A Compose file is written before its `up`, so every project that started has its file.
+    The run starts the command of the tests as the leader of a process group of its own, in a session of its own
+    (`spawn` with `detached`, which calls `setsid`), passes SIGINT and SIGTERM that it receives to that group, and
+    waits for the exit of the command, which is the event that ends the wait. A shell script cannot do this: a POSIX
+    shell gives a script no way to make a process group, `set -m` needs a terminal in dash, the `/bin/sh` of Debian
+    and Ubuntu, where the command then stays in the group of the run and ignores SIGINT, and macOS has no `setsid`
+    program. When the run ends, fails or is stopped by SIGINT or SIGTERM, the script waits for the tests, runs `down` for every Compose file that the directory still
     holds and removes the directory. An `up` that the signal stops removes what it created. A project that `down`
     does not remove fails the run, which then keeps the directory and names the file.
 

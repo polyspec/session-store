@@ -1,5 +1,5 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 9a4b024ca431432a6e342669438cbdaffeed6627912e2408648ecd18adf2eaca -->
+<!-- source-sha256: 2ddfa65436309002f8f551741f03352d997e3f21a15b1555d4a7cb9671fe6e67 -->
 
 ## Unreleased
 
@@ -10,6 +10,37 @@
   binding-check`가 `var/binding`에 설치가 없으면 binding을 clone하고 `PATH`의 npm으로 `npm ci`를 실행했으며, `cargo
   metadata`가 내려받을 수 있었다. `make tool-pins-test`의 새 시험은 `make install-binding`의 dry run, 스크립트, job
   `rust`를 읽는다. 변경 전에는 9 passed, 1 failed였고 변경 후에는 10 passed, 0 failed다.
+
+- T1.19, 곧 files 저장소의 정적 생성(`FileSessions::in_directory`, `file_sessions.in_directory`, 생성자가 없는
+  class)과 variant `setting`의 core enum이 끝났다. 이 Mac에서 이 branch의 깨끗한 tree로 `make test`는 157개가 통과하며
+  status 0으로 끝났고, `make -k lint-rust fmt-check binding-check`도 status 0으로 끝났다.
+
+- `/bin/sh`가 dash인 workflow `ci`의 runner에서 `make servers-test`의 run 시험 세 개가 표준 오류에 `scripts/test-run.sh:
+  41: set: can't access tty; job control turned off`를 적고 실패했고, SIGINT나 SIGTERM이 멈추는 run의 시험은 끝나지
+  않았다. dash는 terminal 없이 job control을 켜지 않으므로, run의 명령은 run의 process group에 남았고, shell의 비동기
+  명령이 그렇듯 SIGINT를 무시했으며, 명령의 group에 보내는 kill은 실패했다. 그래서 run은 어떤 신호도 닿지 않은 명령을
+  기다렸다. POSIX shell은 script에게 process group을 만드는 방법을 주지 않고 macOS에는 `setsid` 프로그램이 없으므로,
+  run은 이제 checkout의 node가 실행하는 `scripts/test-run.mts`다. 이 script는 명령을 자기 session의 process group
+  leader로 시작하고(`detached`를 준 `spawn`), SIGINT와 SIGTERM을 그 group에 전하며, 명령의 종료를 기다린다(SE-10.4).
+  `scripts/test-run.sh`는 지웠고, `make test`는 `$(NODE) scripts/test-run.mts`를 시작한다. run의 시험은 자기 명령을
+  `/bin/sh`로, 그리고 있으면 `/bin/dash`로 실행하며, 새 시험은 명령이 자기 process group을 이끌 것을 요구한다. 이
+  Mac의 `/bin/dash`로 그 commit에서 시험이 실패했다. 신호 시험을 뺀 15개 중 12개가 통과하고 3개가 그 줄로 실패했고,
+  손으로 SIGTERM을 보낸 run은 명령이 FIFO에서 읽은 뒤에야 끝났으며 `ps`는 명령이 run의 group에 있음을 보였다. 변경
+  뒤에 `make servers-test`는 17개가 통과한다. 미실행: 변경 뒤의 Linux 시험과 workflow.
+
+- `config/toolchain.json`은 CI가 설치하는 릴리스로 bay v0.0.7을, 그 릴리스의 `SHA256SUMS`에서 받은 archive별 sha256과
+  함께 고정한다. 이 Mac의 bay가 v0.0.7이고, CI는 여기의 run이 시작하는 릴리스를 실행하기 때문이다. runner는 매 run의
+  `make setup-bay`로 그 릴리스의 설정을 적용하며, 그 agent unit은 v0.0.6의 것과 다르다. 이 Mac에서 `make install-bay`는
+  darwin-arm64의 archive를 받고 그 sha256을 받아들여 bay v0.0.7을 설치한다. `make tool-pins-test`는 9개,
+  `make install-bay-test`는 4개가 통과한다. 미실행: Linux에서의 설치, 이 릴리스로 실행하는 workflow job `test`.
+
+- workflow `ci`의 runner에서 `make redis-image`가 `bay: compose.yaml: project name "tmp.x4bmuo3xsw" must be
+  letters, digits, - or _`로 실패했고, 이 Mac의 bay도 같은 파일을 같은 방법으로 거부한다. `scripts/servers.sh
+  pull`은 받기 위한 Compose 파일을 template 없이 `mktemp -d`가 주는 디렉터리 `tmp.<글자>`에 썼고, bay는 프로젝트의
+  이름을 그 디렉터리에서 받으며 그 이름의 점을 거부한다. 이제 pull은 `TMPDIR` 아래 디렉터리
+  `session-store-pull-<글자>`에 쓴다(SE-10.4). pull의 시험은 그 이름을 요구한다. 그 commit에서 `make servers-test`는
+  15개 통과, 1개 실패였고(이름 `tmp.4hb9OWSrEy`), 변경 뒤에는 16개가 통과하며, 이 Mac의 `bay plan --json`은 그런
+  디렉터리의 Compose 파일을 받아들인다. 미실행: image를 내려받는 pull 자체, 변경 뒤의 workflow job `test`.
 
 - 어떤 파일도 bay의 릴리스를 적지 않았고, workflow `ci`는 bay를 설치하지 않아 job `test`가 `make test`를 시작할 때
   실패했으며, `scripts/servers.sh`는 PATH의 bay만 시작했다. bay는 make처럼 장비가 주는 도구다. run은 PATH의 `bay`를

@@ -72,7 +72,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-binding php-serialization-checkout php-serialization-python php-serialization-php php-serialization-go php-serialization-node install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
 	release-recipes
@@ -153,6 +153,7 @@ ci-bindings:
 	$(MAKE) --no-print-directory install-rust
 	$(MAKE) --no-print-directory install-tools
 	$(MAKE) --no-print-directory install-php-tools
+	$(MAKE) --no-print-directory install-binding
 	$(MAKE) --no-print-directory redis-image
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_BINDINGS)
 
@@ -316,13 +317,65 @@ check-declarations: bindings-node bindings-wasm
 # The WASM tests run without it, because their core has no socket and the cases of a service have no WASM test.
 SERVICE_RUN = BAY='$(BAY)' REDIS_IMAGE='$(REDIS_IMAGE)' $(NODE) $(CURDIR)/scripts/test-run.mts --service redis
 
-# The wheel that the maturin of mise.toml builds, installed into a virtual environment without an index; the generated
-# tests (binding G-5), which run the contract cases.
-test-python: bindings-python
+# The generated packages of session-store require those of php-serialization (php_value, SE-1.5): the wheel, the PHP
+# extension, the npm package and the Go module of the release that Cargo.lock pins by its tag and commit. make
+# install-binding fetches the crates of Cargo.lock and clones the checkout of php-serialization at that commit into
+# PHP_SERIALIZATION (scripts/deps.mts); the targets php-serialization-python, -php, -go and -node generate its bindings
+# there with the binding of package-lock.json and build them: the wheel PHP_SERIALIZATION_WHEEL, which test-python
+# installs beside the wheel of this repository, the extension PHP_SERIALIZATION_EXTENSION, which test-php loads before
+# this one, the static library of its Go crate with GO_WORK, which names the Go modules of both checkouts, and the npm
+# package and its platform package in PHP_SERIALIZATION_NPM, which node-package installs beside this one (T1.34-1 to
+# T1.34-3). maturin runs in this checkout with the manifest of the clone, because the shim of mise refuses a folder whose
+# mise.toml mise does not trust.
+install-binding:
+	$(ONLINE) $(CARGO) fetch --locked
+	$(ONLINE) $(NODE) scripts/deps.mts
+
+PHP_SERIALIZATION := $(VAR)/deps/php-serialization
+PHP_SERIALIZATION_WHEEL = $(wildcard $(VAR)/deps/wheels/*.whl)
+PHP_SERIALIZATION_EXTENSION = $(CARGO_TARGET_DIR)/debug/libpolyspec_php_serialization.$(CDYLIB)
+PHP_SERIALIZATION_NPM := $(VAR)/deps/npm
+GO_WORK := $(VAR)/go.work
+
+php-serialization-checkout:
+	test -d "$(PHP_SERIALIZATION)/.git" || { echo 'the checkout of php-serialization is missing: run make install-binding'; exit 1; }
+
+php-serialization-python: php-serialization-checkout
+	$(BINDING) generate --root $(PHP_SERIALIZATION) --target python
+	rm -rf $(VAR)/deps/wheels
+	$(MATURIN) build --locked --manifest-path $(PHP_SERIALIZATION)/packages/python/Cargo.toml --interpreter $(PYTHON) --features panic-test --out $(VAR)/deps/wheels $(CARGOFLAGS)
+
+php-serialization-php: php-serialization-checkout
+	$(BINDING) generate --root $(PHP_SERIALIZATION) --target php
+	$(CARGO) build $(CARGOFLAGS) --manifest-path $(PHP_SERIALIZATION)/Cargo.toml -p polyspec-php-serialization-php-ext --locked --features panic-test
+
+php-serialization-go: php-serialization-checkout
+	$(BINDING) generate --root $(PHP_SERIALIZATION) --target go
+	$(CARGO) build $(CARGOFLAGS) --manifest-path $(PHP_SERIALIZATION)/Cargo.toml -p polyspec-php-serialization-go --locked --features panic-test,codec-test
+	printf 'go $(GO_RELEASE)\n\nuse (\n\t$(CURDIR)/packages/go\n\t$(PHP_SERIALIZATION)/packages/go\n)\n' > $(GO_WORK)
+
+PHP_SERIALIZATION_ADDON = php-serialization.$(PLATFORM).node
+php-serialization-node: php-serialization-checkout
+	$(BINDING) generate --root $(PHP_SERIALIZATION) --target node
+	$(BINDING) generate --root $(PHP_SERIALIZATION) --target wasm
+	$(CARGO) build $(CARGOFLAGS) --manifest-path $(PHP_SERIALIZATION)/Cargo.toml -p polyspec-php-serialization-wasm --locked --target wasm32-unknown-unknown
+	$(WASM_BINDGEN) --target web --out-dir $(PHP_SERIALIZATION)/packages/ts/wasm/generated --out-name php_serialization_wasm \
+		$(CARGO_TARGET_DIR)/wasm32-unknown-unknown/debug/polyspec_php_serialization_wasm.wasm
+	$(CARGO) build $(CARGOFLAGS) --manifest-path $(PHP_SERIALIZATION)/Cargo.toml -p polyspec-php-serialization-node --locked
+	rm -rf $(PHP_SERIALIZATION_NPM) $(VAR)/deps/npm-platform && mkdir -p $(PHP_SERIALIZATION_NPM) $(VAR)/deps/npm-platform
+	cp $(CARGO_TARGET_DIR)/debug/libpolyspec_php_serialization_node.$(CDYLIB) $(VAR)/deps/npm-platform/$(PHP_SERIALIZATION_ADDON)
+	$(NODE) -e 'const p = require("$(PHP_SERIALIZATION)/packages/ts/package.json"); require("fs").writeFileSync("$(VAR)/deps/npm-platform/package.json", JSON.stringify({ name: p.name + "-$(PLATFORM)", version: p.version, os: [process.platform], cpu: [process.arch], main: "$(PHP_SERIALIZATION_ADDON)", files: ["$(PHP_SERIALIZATION_ADDON)"] }, null, 2) + "\n")'
+	cd $(VAR)/deps/npm-platform && $(NPM) pack --pack-destination $(PHP_SERIALIZATION_NPM)
+	cd $(PHP_SERIALIZATION)/packages/ts && $(NPM) pack --pack-destination $(PHP_SERIALIZATION_NPM)
+
+# The wheel that the maturin of mise.toml builds, installed with the wheel of php-serialization into a virtual
+# environment without an index; the generated tests (binding G-5), which run the contract cases.
+test-python: bindings-python php-serialization-python
+	test -f "$(PHP_SERIALIZATION_WHEEL)"
 	$(PYTHON) -m venv --clear $(VAR)/venv
 	rm -rf $(VAR)/wheels
 	cd packages/python && $(MATURIN) build --locked --interpreter $(VAR)/venv/bin/python --features panic-test,fault-test --out $(VAR)/wheels $(CARGOFLAGS)
-	$(VAR)/venv/bin/pip install -q --no-index --force-reinstall $(VAR)/wheels/*.whl
+	$(VAR)/venv/bin/pip install -q --no-index --force-reinstall $(VAR)/deps/wheels/*.whl $(VAR)/wheels/*.whl
 	cd $(VAR) && $(SERVICE_RUN) venv/bin/python -m unittest discover -s $(CURDIR)/packages/python/generated/tests -t $(CURDIR)/packages/python/generated/tests
 
 # The package and the platform package of the addon, packed and installed into var/node. The addon is the npm package
@@ -332,9 +385,9 @@ test-python: bindings-python
 PLATFORM = $(shell $(NODE) -p 'process.platform + "-" + process.arch + (process.platform === "linux" ? "-gnu" : "")')
 NODE_ADDON = session-store.$(PLATFORM).node
 WASM_BINDGEN_RELEASE := $(shell sed -n 's/^wasm-bindgen = "=\(.*\)"$$/\1/p' packages/ts/wasm/Cargo.toml)
-node-package: bindings-node bindings-wasm
+node-package: bindings-node bindings-wasm php-serialization-node
 	test "$$($(WASM_BINDGEN) --version)" = "wasm-bindgen $(WASM_BINDGEN_RELEASE)"
-	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-wasm --locked --target wasm32-unknown-unknown --features panic-test
+	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-wasm --locked --target wasm32-unknown-unknown --features panic-test,fault-test
 	$(WASM_BINDGEN) --target web --out-dir packages/ts/wasm/generated --out-name session_store_wasm \
 		$(CARGO_TARGET_DIR)/wasm32-unknown-unknown/debug/polyspec_session_store_wasm.wasm
 	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-node --locked --features panic-test,fault-test
@@ -344,7 +397,8 @@ node-package: bindings-node bindings-wasm
 	cd $(VAR)/node-platform && $(NPM) pack --pack-destination $(VAR)/node
 	cd packages/ts && $(NPM) pack --pack-destination $(VAR)/node
 	echo '{ "private": true }' > $(VAR)/node/package.json
-	cd $(VAR)/node && $(NPM) install --no-audit --no-fund --omit=optional ./*.tgz
+	cp $(PHP_SERIALIZATION_NPM)/*.tgz $(VAR)/node/
+	cd $(VAR)/node && $(NPM) install --offline --no-audit --no-fund --omit=optional ./*.tgz
 
 # The generated tests of the Node binding, which run the contract cases, on node --test against the installed package.
 test-node: node-package
@@ -359,17 +413,18 @@ test-wasm: node-package
 
 # The extension built against PHP_CONFIG and loaded into PHP; the stub is linted, then the generated tests and the
 # contract cases that they hold run on PHPUnit.
-test-php: bindings-php
+test-php: bindings-php php-serialization-php
+	test -f "$(PHP_SERIALIZATION_EXTENSION)"
 	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-php-ext --locked --features panic-test,fault-test
 	$(PHP) -l packages/php-ext/generated/polyspec_session_store.stub.php
-	$(SERVICE_RUN) $(PHP) -d extension=$(CARGO_TARGET_DIR)/debug/libpolyspec_session_store.$(CDYLIB) $(PHPUNIT) packages/php-ext/generated/tests
+	$(SERVICE_RUN) $(PHP) -d extension=$(PHP_SERIALIZATION_EXTENSION) -d extension=$(CARGO_TARGET_DIR)/debug/libpolyspec_session_store.$(CDYLIB) $(PHPUNIT) packages/php-ext/generated/tests
 
 # The static library with the test features (binding GN-13b), which Go links through CGO_LDFLAGS; gofmt and go vet,
 # then the generated tests, which run the contract cases, on go test. GOTOOLCHAIN=local: a go of another
 # release than the go directive fails instead of fetching that release.
 GO_RELEASE := $(shell sed -n 's/^go \(.*\)$$/\1/p' packages/go/go.mod)
-GO_ENV := GOTOOLCHAIN=local CGO_LDFLAGS=-L$(CARGO_TARGET_DIR)/debug GOFLAGS=-tags=polyspec_panic_test,polyspec_codec_test
-test-go: bindings-go
+GO_ENV := GOTOOLCHAIN=local GOWORK=$(GO_WORK) CGO_LDFLAGS=-L$(CARGO_TARGET_DIR)/debug GOFLAGS=-tags=polyspec_panic_test,polyspec_codec_test
+test-go: bindings-go php-serialization-go
 	test "$$($(GO_ENV) $(GO) env GOVERSION)" = "go$(GO_RELEASE)"
 	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-go --locked --features panic-test,codec-test
 	test -z "$$(cd packages/go && $(GOFMT) -l .)"

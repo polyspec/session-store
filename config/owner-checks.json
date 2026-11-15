@@ -63,7 +63,8 @@
         "composer.lock",
         "scripts/test-run.mts",
         "scripts/redis-state.mts",
-        "scripts/redis-state.sh"
+        "scripts/redis-state.sh",
+        "scripts/deps.mts"
       ],
       "targets": [
         "test-bindings"

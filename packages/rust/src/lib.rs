@@ -11,7 +11,7 @@ pub use polyspec_session_store_core::{
     accept, key_of, new_identifier, random_hex, Error, Failure, Found, IoKind, MemoryStore, Outcome, RecordSession,
     Store,
 };
-#[cfg(feature = "file")]
+#[cfg(all(feature = "file", not(target_arch = "wasm32")))]
 pub use polyspec_session_store_file::{FileSession, FileSessions, DEFAULT_LIFETIME};
-#[cfg(feature = "redis")]
+#[cfg(all(feature = "redis", not(target_arch = "wasm32")))]
 pub use polyspec_session_store_redis::{protocol, Options, RedisSession, RedisSessions, Setting, StoreOptions};

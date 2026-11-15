@@ -28,6 +28,10 @@ fault-test = ["polyspec-session-store-core/fault-test"]
 # contract names the types of another library (binding T-3).
 polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.11" }
 polyspec-session-store-core = { path = "../core/rust" }
+
+# SF-1.4, SR-1.4: the stores of files and of Redis have no WASM binding, and the client of Redis runs on the sockets of
+# Tokio, which do not build for WebAssembly, so a build for wasm32 takes neither store.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 polyspec-session-store-file = { path = "../file/rust", optional = true }
 polyspec-session-store-redis = { path = "../redis/rust", optional = true }
 

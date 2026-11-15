@@ -416,7 +416,7 @@ fn setting_of(setting: &Value) -> Result<Setting, Failed> {
 
 /// A case with a setting makes the store, which connects to nothing before its first request (SR-6.1).
 fn setting_case(case: &Value, setting: &Value) -> Result<(), Failed> {
-    match (RedisSessions::new(setting_of(setting)?, store_options(case)), case.get("raises")) {
+    match (RedisSessions::new(&setting_of(setting)?, &store_options(case)), case.get("raises")) {
         (Err(error), Some(raises)) => {
             expect_eq("kind", &error.kind(), &str_of(raises, "kind")?)?;
             expect_eq("status", &error.status().map(u64::from), &raises.get("status").and_then(Value::as_u64))
@@ -637,7 +637,7 @@ fn the_cases_of_one_call_reach_their_members() -> Result<(), Failed> {
 fn opening(case: &Value) -> Result<(), Failed> {
     let raises = case.get("raises").ok_or("the case has no raises")?;
     let setting = setting_of(case.get("setting").ok_or("the case has no setting")?)?;
-    let store = RedisSessions::new(setting, store_options(case)).map_err(failed)?;
+    let store = RedisSessions::new(&setting, &store_options(case)).map_err(failed)?;
     let cookie = latin1(str_of(case, "cookie")?)?;
     let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(failed)?;
     let open = || runtime.block_on(store.open(Some(&cookie)));
@@ -665,7 +665,7 @@ fn made_session(
     expect_eq("new", &str_of(store, "new")?, &"redis_sessions.new")?;
     let args = store.get("args").ok_or("a store has no args")?;
     let store =
-        RedisSessions::new(setting_of(args.get("setting").ok_or("a store has no setting")?)?, store_options(args))
+        RedisSessions::new(&setting_of(args.get("setting").ok_or("a store has no setting")?)?, &store_options(args))
             .map_err(failed)?;
     let cookie = match value.get("args").and_then(|args| args.get("cookie")) {
         Some(Value::Null) => None,
@@ -861,7 +861,7 @@ async fn server_case(case: &Value, database: usize) -> Result<(), Failed> {
             .await
             .map_err(failed)?;
     }
-    let store = RedisSessions::new(Setting::Server { url: address }, store_options(case)).map_err(failed)?;
+    let store = RedisSessions::new(&Setting::Server { url: address }, &store_options(case)).map_err(failed)?;
     let raises = case.get("raises");
     let mut created = Vec::new();
     let mut results = Vec::new();

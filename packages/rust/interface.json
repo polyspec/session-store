@@ -1288,6 +1288,15 @@
       "module": "",
       "kind": "class",
       "visibility": "public",
+      "only": {
+        "targets": [
+          "php",
+          "python",
+          "node",
+          "go"
+        ],
+        "reason": "SR-1.4"
+      },
       "origin": "generated",
       "core_type": "polyspec_session_store::RedisSessions",
       "final": true,
@@ -1376,6 +1385,15 @@
       "module": "",
       "kind": "class",
       "visibility": "public",
+      "only": {
+        "targets": [
+          "php",
+          "python",
+          "node",
+          "go"
+        ],
+        "reason": "SR-1.4"
+      },
       "origin": "generated",
       "core_type": "polyspec_session_store::RedisSession",
       "final": true,

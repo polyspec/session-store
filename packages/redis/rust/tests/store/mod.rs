@@ -29,7 +29,7 @@ pub fn runtime() -> Result<tokio::runtime::Runtime, Failed> {
 
 /// Writes a session with `n` = 1 and reads it back through a store of the setting.
 pub async fn round_trip(setting: Setting) -> Result<(), Failed> {
-    let store = RedisSessions::new(setting, options()).map_err(failed)?;
+    let store = RedisSessions::new(&setting, &options()).map_err(failed)?;
     let mut opened = store.open(None).await.map_err(failed)?;
     opened.set("n", &integer(1)).map_err(|error| failed(format!("{error:?}")))?;
     let Some(id) = opened.close().await.map_err(failed)? else {

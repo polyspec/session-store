@@ -32,7 +32,7 @@ fn the_requests_of_one_session_in_one_process_lose_no_write() -> Result<(), Fail
     let (_project, server) = plain(&[])?;
     runtime()?.block_on(async {
         let setting = Setting::Server { url: format!("redis://{}/", server.name) };
-        let store = Arc::new(RedisSessions::new(setting, options()).map_err(failed)?);
+        let store = Arc::new(RedisSessions::new(&setting, &options()).map_err(failed)?);
         let mut opened = store.open(None).await.map_err(failed)?;
         opened.set("n", &integer(0)).map_err(|error| failed(format!("{error:?}")))?;
         let Some(id) = opened.close().await.map_err(failed)? else {
@@ -82,7 +82,7 @@ fn an_acl_user_connects_and_a_wrong_password_tells_nothing() -> Result<(), Faile
     runtime.block_on(round_trip(Setting::Server { url: format!("redis://alice:sesame@{address}/") }))?;
     let wrong = runtime.block_on(async {
         let store =
-            RedisSessions::new(Setting::Server { url: format!("redis://alice:wrongword@{address}/") }, options())
+            RedisSessions::new(&Setting::Server { url: format!("redis://alice:wrongword@{address}/") }, &options())
                 .map_err(failed)?;
         Ok::<_, Failed>(store.open(Some(&[b'a'; 32])).await)
     })?;

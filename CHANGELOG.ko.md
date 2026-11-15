@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: b2f8efbaa135aa5c0e3631902d3f289cbb5d3d3308fd24ac256296b1526b2c5a -->
+<!-- source-sha256: 87616a26e57a07a01f26aa648df4ce350970f1221110b4d3503840802ce75e0f -->
 
 ## Unreleased
 
+- WASM crate가 빌드됩니다(T1.38). Redis store에는 WASM binding이 없습니다(SR-1.4): interface contract의 unit `redis_sessions`와 `redis_session`은 파일 store처럼(SF-1.4) 대상 PHP, Python, Node, Go를 가리키고, wasm32용으로 빌드한 라이브러리는 파일 crate도 Redis crate도 받지 않습니다. 새 식별자는 wasm32에서 `getrandom` 0.3의 backend `wasm_js`를 통해 host의 `crypto.getRandomValues`에서 난수 바이트를 받습니다. 코어 crate는 이 feature를 wasm32에서만 켜고 `.cargo/config.toml`이 `--cfg getrandom_backend="wasm_js"`로 그것을 고릅니다(SR-1.5). 이전에는 WASM crate가 Redis client를 빌드했는데 그 Tokio socket은 WebAssembly용으로 빌드되지 않았고(`This wasm target is unsupported by mio`), 그 다음에는 `getrandom`이 target을 거부했습니다. `RedisSessions::new`는 생성된 binding이 record를 넘기는 형태인 `&Setting`과 `&StoreOptions`를 받습니다. 이전에는 값으로 받아 생성된 호출이 컴파일되지 않았습니다(E0308). `cargo check -p polyspec-session-store --target wasm32-unknown-unknown --locked`: 이전에는 `getrandom`에서 실패했고, 이후에는 통과합니다.
 - binding 0.0.8이 binding 0.0.7을 대신한다(T1.37): `polyspec-binding-core`에 대한 모든 의존 줄이 태그 `v0.0.8`을 가리키고, `package.json`은 GitHub Release의 asset `polyspec-binding-0.0.8.tgz`를 가리키며 `package-lock.json`이 그 integrity를 고정한다. php-serialization v0.0.11은 아직 binding-core 0.0.7을 요구하므로, php-serialization이 binding 0.0.8로 릴리스되고 의존이 그 태그를 가리킬 때까지 `Cargo.lock`에는 태그 `v0.0.7`과 `v0.0.8`이 함께 있다.
 
 ## 0.0.1

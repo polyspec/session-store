@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 00153a2aa8f9724aed21205dae5681a7be3cea70d83195af355f98e87c591eb5 -->
+<!-- source-sha256: 8ed81936df90edda62665764dc7ef09fe0905e4c06c2c963c8d4b9d91a70f76d -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -287,6 +287,14 @@
   <a id="SR-1.3"></a> Redis 서버 하나의 모든 프로세스는 옵션에 같은 값을 주고, `lock_expire`는 어떤 요청보다도
   길다. `lock_expire`에는 기본값이 없다. 모든 애플리케이션의 모든 요청보다 긴 값은 없고
   phpredis에도 기본값이 없기 때문이다(phpredis의 0은 `max_execution_time`을 쓴다). 호출자가 그 값을 적는다.
+  <a id="SR-1.4"></a> Redis store에는 WASM binding이 없다. 브라우저는 Redis 서버로 TCP 연결을 열지 못하고, store의
+  client는 WebAssembly용으로 빌드되지 않는 Tokio의 socket 위에서 동작한다. 클래스 `RedisSessions`와
+  `RedisSession`은 PHP, Python, Node, Go의 클래스이며, wasm32용으로 빌드한 라이브러리는 파일 store도 Redis store도 갖지 않는다.
+  <a id="SR-1.5"></a> wasm32용으로 빌드한 라이브러리는 새 식별자(SE-5.3)의 난수 바이트를 `getrandom` 0.3의
+  backend `wasm_js`를 통해 host의 `crypto.getRandomValues`에서 받는다: 코어 crate는 wasm32에서만 feature `wasm_js`를
+  켜고, `.cargo/config.toml`은 target `wasm32-unknown-unknown`에 `--cfg getrandom_backend="wasm_js"`를 둔다.
+  식별자에는 암호학적 난수원이 필요하고, 브라우저와 Node 모두 그 함수로 난수원을 준다. 이 backend가 없으면
+  `getrandom` 0.3은 wasm32용으로 빌드되지 않는다.
 - **SR-2** <a id="SR-2.1"></a> 세션은 key `<prefix><id>`이고, 그 바이트는 세션의 레코드이며(SE-6), 이 key는
   수명 뒤에 만료된다. 세션의 잠금은 key `<prefix><id>_LOCK`이다. <a id="SR-2.2"></a> 요청은 자신만의
   secret으로 잠금을 얻는다: 운영체제 난수원의 16바이트를 소문자 16진수 32자리로 적은 것이다. 그래서

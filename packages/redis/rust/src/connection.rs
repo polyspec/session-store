@@ -259,10 +259,17 @@ impl Inner {
 
 impl RedisSessions {
     /// The store of a connection setting with its options (SR-1.2, SR-6.1). It connects at its first request.
-    pub fn new(setting: Setting, options: StoreOptions) -> Result<Self, Error> {
-        let options = Options::of(&options)?;
-        Link::new(&setting)?;
-        Ok(Self { inner: Arc::new(Inner { options, setting, links: Mutex::new(None), turns: Turns::default() }) })
+    pub fn new(setting: &Setting, options: &StoreOptions) -> Result<Self, Error> {
+        let options = Options::of(options)?;
+        Link::new(setting)?;
+        Ok(Self {
+            inner: Arc::new(Inner {
+                options,
+                setting: setting.clone(),
+                links: Mutex::new(None),
+                turns: Turns::default(),
+            }),
+        })
     }
 
     /// The options (SR-1.2).

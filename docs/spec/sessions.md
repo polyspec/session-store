@@ -291,6 +291,15 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   <a id="SR-1.3"></a> Every process of one Redis server gives the options the same values, and `lock_expire` is longer
   than any request. `lock_expire` has no default, because no value is longer than every request of every application
   and phpredis has none either (its 0 takes `max_execution_time`); the caller states it.
+  <a id="SR-1.4"></a> The store of Redis has no WASM binding: a browser opens no TCP connection to a Redis server, and
+  the client of the store runs on the sockets of Tokio, which do not build for WebAssembly. The classes `RedisSessions`
+  and `RedisSession` are classes of PHP, Python, Node and Go, and the library built for wasm32 holds neither the store
+  of files nor the store of Redis.
+  <a id="SR-1.5"></a> The library built for wasm32 takes the random bytes of a new identifier (SE-5.3) from
+  `crypto.getRandomValues` of its host through the backend `wasm_js` of `getrandom` 0.3: the crate of the core enables
+  the feature `wasm_js` for wasm32 only, and `.cargo/config.toml` sets `--cfg getrandom_backend="wasm_js"` for the
+  target `wasm32-unknown-unknown`. An identifier needs a cryptographic random source, and both a browser and Node give
+  one through that function; without the backend `getrandom` 0.3 does not build for wasm32.
 - **SR-2** <a id="SR-2.1"></a> A session is the key `<prefix><id>`, whose bytes are its record (SE-6) and which expires
   after the lifetime. Its lock is the key `<prefix><id>_LOCK`. <a id="SR-2.2"></a> A request takes the lock with a
   secret of its own: 16 bytes of the random source of the operating system as 32 lowercase hexadecimal digits, so that

@@ -44,8 +44,6 @@ BAY ?= bay
 # Redis 8.10.3, the highest stable release of Redis, in the official image of Debian trixie, pinned by the digest of its
 # index; make redis-image pulls it, and the tests fail while it is not installed, so that no test pulls an image.
 REDIS_IMAGE := docker.io/library/redis:8.10.3-trixie@sha256:de1068af6f552240dfab67bcc9bfef99bfc60f776bb4580ef077ea4c8c97e848
-# The directory of the cases (SE-10), which the contract case runners of the bindings read.
-CASES := $(CURDIR)/contracts
 VAR := $(CURDIR)/var
 export CARGO_TARGET_DIR ?= $(CURDIR)/target
 # The runtimes and tools of the bindings. PHP is also the binary whose headers the extension is built against
@@ -170,14 +168,16 @@ ci-assets-platform:
 	$(release_check)
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) release-go-static release-wheel release-npm-platform
 
-# The job php: the PHP extension for the PHP on PATH, whose minor is EXPECTED_PHP_MINOR.
+# The job php: the PHP extension for the PHP on PATH, whose minor is EXPECTED_PHP_MINOR. The job provisions the LLVM of
+# config/toolchain.json before it (binding GN-19i): the ubuntu-26.04 images hold it at /usr/lib/llvm-<major>, the default
+# LLVM_ROOT of packages/release.mk, and on macOS install-llvm-action installs it and sets LLVM_PATH, which the build takes
+# as LLVM_ROOT.
 ci-assets-php:
 	@test -n "$(EXPECTED_PHP_MINOR)" || { echo 'ci-assets-php needs EXPECTED_PHP_MINOR, the PHP minor of the job, for example make ci-assets-php EXPECTED_PHP_MINOR=8.4' >&2; exit 2; }
 	$(MAKE) --no-print-directory install-rust
 	$(MAKE) --no-print-directory release-recipes
 	$(release_check)
-	$(MAKE) --no-print-directory install-llvm
-	$(MAKE) --no-print-directory release-php-ext PHP=php EXPECTED_PHP_MINOR=$(EXPECTED_PHP_MINOR)
+	$(MAKE) --no-print-directory release-php-ext PHP=php EXPECTED_PHP_MINOR=$(EXPECTED_PHP_MINOR) $(if $(LLVM_PATH),LLVM_ROOT=$(LLVM_PATH))
 
 # The job npm: the npm package, packed with the wasm-bindgen of mise.toml.
 ci-assets-npm:
@@ -312,14 +312,13 @@ check-declarations: bindings-node bindings-wasm
 SERVICE_RUN = BAY='$(BAY)' REDIS_IMAGE='$(REDIS_IMAGE)' $(NODE) $(CURDIR)/scripts/test-run.mts --service redis
 
 # The wheel that the maturin of mise.toml builds, installed into a virtual environment without an index; the generated
-# tests (binding G-5) and the contract cases (SE-10).
+# tests (binding G-5), which run the contract cases.
 test-python: bindings-python
 	$(PYTHON) -m venv --clear $(VAR)/venv
 	rm -rf $(VAR)/wheels
 	cd packages/python && $(MATURIN) build --locked --interpreter $(VAR)/venv/bin/python --features panic-test,fault-test --out $(VAR)/wheels $(CARGOFLAGS)
 	$(VAR)/venv/bin/pip install -q --no-index --force-reinstall $(VAR)/wheels/*.whl
 	cd $(VAR) && $(SERVICE_RUN) venv/bin/python -m unittest discover -s $(CURDIR)/packages/python/generated/tests -t $(CURDIR)/packages/python/generated/tests
-	cd $(VAR) && SESSION_STORE_CASES=$(CASES) venv/bin/python -m unittest discover -s $(CURDIR)/packages/python/tests -t $(CURDIR)/packages/python/tests
 
 # The package and the platform package of the addon, packed and installed into var/node. The addon is the npm package
 # of this machine's platform, which the package names in optionalDependencies; the recipe packs it as a release does and
@@ -342,28 +341,26 @@ node-package: bindings-node bindings-wasm
 	echo '{ "private": true }' > $(VAR)/node/package.json
 	cd $(VAR)/node && $(NPM) install --no-audit --no-fund --omit=optional ./*.tgz
 
-# The generated tests and the contract cases of the Node binding on node --test, against the installed package.
+# The generated tests of the Node binding, which run the contract cases, on node --test against the installed package.
 test-node: node-package
-	cp packages/ts/generated/tests/generated.test.mjs packages/ts/tests/cases.test.mjs $(VAR)/node/
-	cd $(VAR)/node && $(SERVICE_RUN) env SESSION_STORE_CASES=$(CASES) $(NODE) --test generated.test.mjs cases.test.mjs
+	cp packages/ts/generated/tests/generated.test.mjs $(VAR)/node/
+	cd $(VAR)/node && $(SERVICE_RUN) $(NODE) --test generated.test.mjs
 
-# The generated tests and the contract cases of the WASM binding through the subpath ./wasm of the installed package
+# The generated tests of the WASM binding, which run the contract cases, through the subpath ./wasm of the installed package
 # (binding P-5); --expose-gc serves the generated tests that collect instances (binding GN-18a).
 test-wasm: node-package
 	cp packages/ts/wasm/generated/tests/generated.test.mjs $(VAR)/node/generated.wasm.test.mjs
-	cp packages/ts/tests/cases.wasm.test.mjs $(VAR)/node/
-	cd $(VAR)/node && SESSION_STORE_CASES=$(CASES) $(NODE) --expose-gc --test generated.wasm.test.mjs cases.wasm.test.mjs
+	cd $(VAR)/node && $(NODE) --expose-gc --test generated.wasm.test.mjs
 
 # The extension built against PHP_CONFIG and loaded into PHP; the stub is linted, then the generated tests and the
-# contract cases run on PHPUnit.
+# contract cases that they hold run on PHPUnit.
 test-php: bindings-php
 	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-php-ext --locked --features panic-test,fault-test
 	$(PHP) -l packages/php-ext/generated/polyspec_session_store.stub.php
 	$(SERVICE_RUN) $(PHP) -d extension=$(CARGO_TARGET_DIR)/debug/libpolyspec_session_store.$(CDYLIB) $(PHPUNIT) packages/php-ext/generated/tests
-	SESSION_STORE_CASES=$(CASES) $(PHP) -d extension=$(CARGO_TARGET_DIR)/debug/libpolyspec_session_store.$(CDYLIB) $(PHPUNIT) packages/php-ext/tests
 
 # The static library with the test features (binding GN-13b), which Go links through CGO_LDFLAGS; gofmt and go vet,
-# then the generated tests and the contract cases of packages/go/tests on go test. GOTOOLCHAIN=local: a go of another
+# then the generated tests, which run the contract cases, on go test. GOTOOLCHAIN=local: a go of another
 # release than the go directive fails instead of fetching that release.
 GO_RELEASE := $(shell sed -n 's/^go \(.*\)$$/\1/p' packages/go/go.mod)
 GO_ENV := GOTOOLCHAIN=local CGO_LDFLAGS=-L$(CARGO_TARGET_DIR)/debug GOFLAGS=-tags=polyspec_panic_test,polyspec_codec_test
@@ -372,7 +369,7 @@ test-go: bindings-go
 	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-go --locked --features panic-test,codec-test
 	test -z "$$(cd packages/go && $(GOFMT) -l .)"
 	cd packages/go && $(GO_ENV) $(GO) vet ./...
-	cd packages/go && $(SERVICE_RUN) env $(GO_ENV) SESSION_STORE_CASES=$(CASES) $(GO) test -count=1 -v ./...
+	cd packages/go && $(SERVICE_RUN) env $(GO_ENV) $(GO) test -count=1 -v ./...
 
 # ---- Release recipes of the bindings (binding GN-19h) ----
 # binding release-recipes writes the recipes that build the assets of each platform (the static library of the Go module,

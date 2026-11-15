@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- binding 0.0.8 replaces binding 0.0.7 (T1.37): every dependency line on `polyspec-binding-core` names the tag `v0.0.8`, and `package.json` names the asset `polyspec-binding-0.0.8.tgz` of its GitHub Release, whose integrity `package-lock.json` pins. php-serialization v0.0.11 still requires binding-core 0.0.7, so `Cargo.lock` holds the tags `v0.0.7` and `v0.0.8` until php-serialization releases on binding 0.0.8 and the dependency names that tag.
+
 ## 0.0.1
 
 - Every dependency line on `polyspec-php-serialization` names the tag `v0.0.11` of php-serialization, which `Cargo.lock` pins, instead of its branch `v1/rust-core` (T1.36); `binding scaffold` writes the version 0.0.11 of php-serialization into `packages/python/pyproject.toml`, `packages/ts/package.json` and `packages/go/go.mod`, and `Cargo.lock` holds one `polyspec-binding-core`, of the tag `v0.0.7`.

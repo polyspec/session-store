@@ -21,7 +21,7 @@ fault-test = ["polyspec-session-store/fault-test"]
 
 [dependencies]
 polyspec-session-store = { path = "../rust" }
-polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.7", features = ["construct", "lock", "driver"] }
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.8", features = ["construct", "lock", "driver"] }
 polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.11" }
 ext-php-rs = "=0.16.4"
 

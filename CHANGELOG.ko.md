@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+- binding 0.0.8이 binding 0.0.7을 대신한다(T1.37): `polyspec-binding-core`에 대한 모든 의존 줄이 태그 `v0.0.8`을 가리키고, `package.json`은 GitHub Release의 asset `polyspec-binding-0.0.8.tgz`를 가리키며 `package-lock.json`이 그 integrity를 고정한다. php-serialization v0.0.11은 아직 binding-core 0.0.7을 요구하므로, php-serialization이 binding 0.0.8로 릴리스되고 의존이 그 태그를 가리킬 때까지 `Cargo.lock`에는 태그 `v0.0.7`과 `v0.0.8`이 함께 있다.
+
 ## 0.0.1
 
 - `polyspec-php-serialization`에 대한 모든 의존 줄은 php-serialization의 branch `v1/rust-core` 대신 `Cargo.lock`이 pin하는 tag `v0.0.11`을 가리킵니다(T1.36). `binding scaffold`는 php-serialization의 버전 0.0.11을 `packages/python/pyproject.toml`, `packages/ts/package.json`, `packages/go/go.mod`에 쓰고, `Cargo.lock`은 tag `v0.0.7`의 `polyspec-binding-core` 하나를 가집니다.

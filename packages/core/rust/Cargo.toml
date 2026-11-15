@@ -22,7 +22,7 @@ fault-test = ["polyspec-binding-core/fault-test"]
 # The random source of the operating system (SE-5.3).
 getrandom = "0.3"
 # The failure of a call into a store of another language (binding design E-1c, SE-3.2) and the kind interface (F-2).
-polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.7" }
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.8" }
 # PHP values and their serialize form (SE-1.5, SE-6).
 polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.11" }
 
@@ -30,7 +30,7 @@ polyspec-php-serialization = { git = "https://github.com/polyspec/php-serializat
 # tests/contract.rs arms the fault injection points of the cases that name them, as a generated binding test does. The
 # points are judged by the feature fault-test of this crate, which writes them (binding GN-5), so the tests turn it on.
 polyspec-session-store-core = { path = ".", features = ["fault-test"] }
-polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.7", features = ["fault-test"] }
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.8", features = ["fault-test"] }
 libtest-mimic = "=0.8.2"
 serde_json = "1"
 

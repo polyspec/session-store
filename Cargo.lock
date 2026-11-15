@@ -1368,6 +1368,16 @@ source = "git+https://github.com/polyspec/binding.git?tag=v0.0.7#38bd5b401927f21
 dependencies = [
  "indexmap",
  "libc",
+ "tokio-util",
+]
+
+[[package]]
+name = "polyspec-binding-core"
+version = "0.0.8"
+source = "git+https://github.com/polyspec/binding.git?tag=v0.0.8#7b71949ede916c00c17c0ab35ddc735ab33fa8f6"
+dependencies = [
+ "indexmap",
+ "libc",
  "serde_json",
  "tokio",
  "tokio-util",
@@ -1378,7 +1388,7 @@ name = "polyspec-php-serialization"
 version = "0.0.11"
 source = "git+https://github.com/polyspec/php-serialization.git?tag=v0.0.11#05fdf66c978c5203765f04d48e3bef7afbdab277"
 dependencies = [
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.7",
  "ryu",
 ]
 
@@ -1399,7 +1409,7 @@ version = "0.0.1"
 dependencies = [
  "getrandom 0.3.4",
  "libtest-mimic",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.8",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "serde_json",
@@ -1410,7 +1420,7 @@ name = "polyspec-session-store-file"
 version = "0.0.1"
 dependencies = [
  "libtest-mimic",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.8",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "rustix",
@@ -1422,7 +1432,7 @@ dependencies = [
 name = "polyspec-session-store-go"
 version = "0.0.1"
 dependencies = [
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.8",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
@@ -1434,7 +1444,7 @@ dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.8",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
@@ -1444,7 +1454,7 @@ name = "polyspec-session-store-php-ext"
 version = "0.0.1"
 dependencies = [
  "ext-php-rs",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.8",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
@@ -1453,7 +1463,7 @@ dependencies = [
 name = "polyspec-session-store-python"
 version = "0.0.1"
 dependencies = [
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.8",
  "polyspec-php-serialization",
  "polyspec-session-store",
  "pyo3",
@@ -1464,7 +1474,7 @@ name = "polyspec-session-store-redis"
 version = "0.0.1"
 dependencies = [
  "libtest-mimic",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.8",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "redis",
@@ -1479,7 +1489,7 @@ name = "polyspec-session-store-wasm"
 version = "0.0.1"
 dependencies = [
  "js-sys",
- "polyspec-binding-core",
+ "polyspec-binding-core 0.0.8",
  "polyspec-php-serialization",
  "polyspec-session-store",
  "wasm-bindgen",

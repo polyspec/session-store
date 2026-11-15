@@ -8,7 +8,7 @@ name = "polyspec-session-store"
 version = "0.0.1"
 requires-python = ">=3.14"
 license = "MIT"
-dependencies = ["polyspec-php-serialization==0.0.11"]
+dependencies = ["polyspec-php-serialization==0.0.12"]
 
 [tool.maturin]
 module-name = "polyspec.session_store._native"

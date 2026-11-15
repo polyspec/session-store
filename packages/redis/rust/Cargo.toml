@@ -14,9 +14,9 @@ name = "polyspec_session_store_redis"
 path = "src/lib.rs"
 
 [dependencies]
-polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.11" }
+polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.12" }
 polyspec-session-store-core = { path = "../../core/rust" }
-polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.8" }
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.10" }
 # The connection (SR-6): a server, Sentinel or Cluster, TLS with rustls, an ACL user and password in the URL.
 redis = { version = "=1.8.1", default-features = false, features = ["tokio-comp", "tokio-rustls-comp", "sentinel", "cluster-async"] }
 # The cryptography of rustls for TLS (SR-6.1): one provider, ring, so that rustls selects it for the process.
@@ -28,7 +28,7 @@ tokio = { version = "1.54.1", default-features = false, features = ["sync", "tim
 # tests/contract.rs arms the fault injection points of the cases that name them, as a generated binding test does.
 # The points are in polyspec-session-store-core and judged by its feature fault-test (binding GN-5).
 polyspec-session-store-core = { path = "../../core/rust", features = ["fault-test"] }
-polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.8", features = ["fault-test"] }
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.10", features = ["fault-test"] }
 libtest-mimic = "=0.8.2"
 redis = { version = "=1.8.1", default-features = false, features = ["tokio-comp"] }
 serde_json = "1"

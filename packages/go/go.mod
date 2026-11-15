@@ -3,4 +3,4 @@ module github.com/polyspec/session-store/packages/go
 
 go 1.27.3
 
-require github.com/polyspec/php-serialization/packages/go v0.0.11
+require github.com/polyspec/php-serialization/packages/go v0.0.12

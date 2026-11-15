@@ -19,8 +19,8 @@ codec-test = []
 
 [dependencies]
 polyspec-session-store = { path = "../../../rust" }
-polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.8", features = ["construct", "lock", "driver"] }
-polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.11" }
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.10", features = ["construct", "lock", "driver"] }
+polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.12" }
 
 [lints]
 workspace = true

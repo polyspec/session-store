@@ -26,7 +26,7 @@ fault-test = ["polyspec-session-store-core/fault-test"]
 [dependencies]
 # The PHP values of the contract (php_value, SE-1.5): the binding crates take the dependency of the crate whose
 # contract names the types of another library (binding T-3).
-polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.11" }
+polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.12" }
 polyspec-session-store-core = { path = "../core/rust" }
 
 # SF-1.4, SR-1.4: the stores of files and of Redis have no WASM binding, and the client of Redis runs on the sockets of

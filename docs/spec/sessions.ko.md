@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 54c351a07605df6a5bf42b0b6ea1effbd5a376c9d4dc9d42caf6c58923a28aaa -->
+<!-- source-sha256: 00153a2aa8f9724aed21205dae5681a7be3cea70d83195af355f98e87c591eb5 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate

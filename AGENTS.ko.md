@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 391e7a2b8a0001ebe6cbdbd172127d4c1f67cbbb25e2787810771779446078b9 -->
+<!-- source-sha256: a7112d1e8478c2f73799f90d688fd3d8ed0d4e473553a3c6afdf69115332acfc -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.

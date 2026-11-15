@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: f42e529e7422965169b9d4804df648c00a223b449a1fc7212eefa67c350f5897 -->
+<!-- source-sha256: 54c351a07605df6a5bf42b0b6ea1effbd5a376c9d4dc9d42caf6c58923a28aaa -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -579,3 +579,7 @@
   | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock`, `model_served::a_reply_of_another_type_to_the_expiry_fails_the_close_with_reply` | `close_reply`를 장전하는 `a_reply_of_another_type_to_the_expiry_fails_the_close_with_reply` |
   | `redis_session.close` | `redis` | `model::an_error_reply_to_the_write_fails_and_releases_the_lock` | `a_lock_key_of_another_type_fails_the_close_with_redis` |
   | `redis_session.close` | `record_write` | `model::`과 `server::a_value_too_deep_for_a_record_fails_the_close` | `a_value_too_deep_for_a_record_fails_the_close_with_record_write` |
+
+## PHP 릴리스 격리
+
+PHP 자산은 플랫폼과 지원 PHP minor마다 새 job을 사용하고 설치 한 번 뒤에 빌드 한 번을 실행하며 플랫폼과 minor별 고유 artifact를 게시한다. PHP 외 native 자산은 플랫폼마다 한 번 빌드한다. 명시적 include-only matrix가 정확히 이 job들을 정의하며 추가 axis, exclusion과 중복 native 소유는 거부한다. PATH가 바뀌어도 프로세스는 로드된 라이브러리를 유지할 수 있으므로 각 PHP 빌드는 자기 설치 입력에서 `EXPECTED_PHP_MINOR`를 전달한다. workflow 소유 검증과 native 자산 검증은 별개이며, 후자는 일치하는 릴리스 recipe를 설치할 때까지 미검증 상태다.

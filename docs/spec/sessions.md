@@ -605,3 +605,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   | `redis_session.close` | `reply` | `model::a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock`, `model_served::a_reply_of_another_type_to_the_expiry_fails_the_close_with_reply` | `a_reply_of_another_type_to_the_expiry_fails_the_close_with_reply`, which arms `close_reply` |
   | `redis_session.close` | `redis` | `model::an_error_reply_to_the_write_fails_and_releases_the_lock` | `a_lock_key_of_another_type_fails_the_close_with_redis` |
   | `redis_session.close` | `record_write` | `model::` and `server::a_value_too_deep_for_a_record_fails_the_close` | `a_value_too_deep_for_a_record_fails_the_close_with_record_write` |
+
+## PHP release isolation
+
+PHP assets require a fresh job for every platform and supported PHP minor, with one setup before one build and a unique platform-and-minor artifact. The non-PHP native assets build once per platform. Explicit include-only matrices define exactly these jobs; extra axes, exclusions and repeated native owners are refused. Each PHP build passes `EXPECTED_PHP_MINOR` from its own setup input, because a process can retain a loaded library after PATH changes. Workflow owner verification and native asset verification are separate: the latter remains pending until matching released recipes are installed.

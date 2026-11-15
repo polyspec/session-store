@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- PHP extension assets use independent platform-and-minor jobs (T1.33-1). Before, a platform job installed PHP 8.4 and then 8.5, allowing loaded PHP library state to cross minor boundaries. The PHP job sets up its minor before one build with EXPECTED_PHP_MINOR and publishes a unique artifact. Non-PHP native assets build once per platform. Owner assertions reject expanded matrices, detached setup, wrong runners and duplicate native ownership. The tracked-workflow assertion failed before the split and passes afterward; the complete `make workflows-test` reports 12 passed and one failure because the installed generator refuses `services` (CK-1). No full owner pass is claimed. Native asset and full-job evidence remain pending released provider recipes.
+
 - The binding plan separates API generation, missing runner development, native provider installation inputs and
   full-job verification (T1.6-1). Before, T1.7 and T1.9 waited for T1.30 to finish while its service verification
   needed those runners. Their retry conditions now require the resolved tagged graph and generated APIs instead.

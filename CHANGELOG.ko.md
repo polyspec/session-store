@@ -1,7 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 7b1b0620a4e99d31b386d9bab1ca152f2b0f41302d822b63179f9090a60b771c -->
+<!-- source-sha256: c27b206a6cd46b634080aed5aebd78febfd118ce89cdae7d0af3bca0ddcdb9d6 -->
 
 ## Unreleased
+
+- PHP 확장 자산은 플랫폼과 minor별 독립 job을 사용한다(T1.33-1). 이전에는 플랫폼 job이 PHP 8.4와 8.5를 차례로 설치하여 로드된 PHP 라이브러리 상태가 minor 사이에 남을 수 있었다. PHP job은 자기 minor를 설치한 뒤 EXPECTED_PHP_MINOR를 전달하여 한 번 빌드하고 고유 artifact를 게시한다. PHP 외 native 자산은 플랫폼마다 한 번 빌드한다. 소유 검사는 matrix 확장, 분리된 설치 입력, 잘못된 runner와 중복 native 소유를 거부한다. 추적 workflow 검사는 분리 전 실패하고 분리 후 통과한다. 전체 `make workflows-test`는 12개 통과와 1개 실패를 보고하며, 설치된 generator가 `services`를 거부하는 CK-1이 원인이다. 전체 소유 검사 통과를 주장하지 않는다. native 자산과 전체 job 증명은 릴리스 provider recipe를 기다린다.
 
 - Binding plan은 API 생성, 없는 runner 개발, native provider 설치 입력, 전체 job 검증을 분리한다(T1.6-1).
   이전에는 T1.7과 T1.9가 T1.30 완료를 기다리지만 그 service 검증에는 해당 runner가 필요했다. 재시도 조건은

@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: 22b145766b62ebe0fe1b262d6ebc8945fc9d693ac9bd8e3bd4fa795bf52fa452 -->
+<!-- source-sha256: 391e7a2b8a0001ebe6cbdbd172127d4c1f67cbbb25e2787810771779446078b9 -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -180,7 +180,7 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
 ## CI와 릴리스
 
 - GitHub workflow의 모든 job은 `ubuntu-26.04-arm`에서 실행한다. 예외는 `.github/workflows/assets.yml`의 job
-  `platform`이며, 릴리스의 각 platform의 runner(`ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`)에서 실행한다. 한
+  `platform`과 `php`이며, 릴리스의 각 platform의 runner(`ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`)에서 실행한다. 한
   platform의 asset은 그 platform에서만 link되고 load되며, 릴리스의 어떤 도구도 다른 platform으로 compile하지 않기
   때문이다(binding GN-19a). 모든 action은 `.github/actions`의 local action이거나
   전체 commit으로 고정하고, 그 파일의 주석이 action의 릴리스를 적는다. action 고정은 추적 파일이 적는 유일한 Git
@@ -219,13 +219,15 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   사본이 아니다. binding check가 그것과 include가 없는 Makefile을 CK-94로 보고한다. 저장소는 recipe가 시작하는 것을
   고정한다. napi CLI `@napi-rs/cli`는 `package.json`에, uv, Python, Go, wasm-bindgen CLI는 `mise.toml`에, LLVM의 major
   릴리스는 `config/toolchain.json`의 `llvm.version`에, `llvm-tools`와 musl target은 `rust-toolchain.toml`에 둔다.
-- workflow `assets`(`.github/workflows/assets.yml`)는 각 platform의 asset을 만든다(binding GN-19i). job `platform`은
-  각 platform의 runner에서 `make install-rust`, `make install-tools TOOLS="uv python"`, `make release-recipes`,
-  `make release-go-static`, `make release-wheel`, `make install-llvm`, PHP 8.4와 8.5에 대한
-  `make release-php-ext PHP=php`, `make release-npm-platform`를 실행한다. job `npm`은 `make install-rust`,
-  `make release-recipes`, `make install-wasm-bindgen`, `make release-npm`를 실행한다. 각 job은 `var/release/assets`를
-  올린다. workflow `ci`는 job `assets`에서 그것을 부르고 `ci-passed`가 그 job을 `needs`에 두므로, 만들어지지 않는
-  asset은 tag가 생기기 전에 릴리스를 멈춘다.
+- workflow `assets`는 job `platform`에서 PHP 외 native 자산을 플랫폼마다 한 번 빌드하고, job `php`에서 플랫폼과
+  PHP minor(8.4와 8.5)마다 새 job으로 확장을 빌드한다. 두 matrix는 추가 axis나 exclusion이 없는 명시적 include-only
+  목록이다. 각 PHP job은 bootstrap, 고정 Rust 입력, release recipe와 release check를 소유하고 LLVM을 설치하며 PHP
+  minor 하나를 설치한 뒤 `make release-php-ext PHP=php EXPECTED_PHP_MINOR=${{ matrix.php }}`를 한 번 실행한다.
+  동적 minor 입력은 그 설치 step에 속한다. artifact `assets-php-${{ matrix.platform }}-${{ matrix.php }}`는 격리된
+  결과를 식별한다. 다른 job은 PHP 설치나 native 자산 빌드를 반복하지 않는다. PATH가 바뀌어도 로드된 PHP 라이브러리는
+  남을 수 있으므로 minor는 job을 공유하지 않는다. job `npm`은 wrapper와 WASM을 한 번 포장한다. CI는 모든 자산 job을
+  요구한다. native 자산 증명은 일치하는 릴리스 recipe가 expected minor를 검사할 때까지 미검증 상태다.
+  `make workflows-test`가 이 규칙을 소유한다.
 - workflow `release`는 `ci`의 run이 `main`에서 성공하면 시작하고, 그런 run의 id를 준 dispatch로도 시작한다. job
   `tag`는 `make release-tag`와 `make release-tag-output`을 실행한다. job `assets`는 tag에 대해 workflow `assets`를
   부르며 먼저 `make release-binding-check`를 실행한다. job `release`는 tag를 checkout하고 `make release-tools`,

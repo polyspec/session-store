@@ -189,7 +189,7 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
 
 ## CI and release
 
-- Every job of a GitHub workflow runs on `ubuntu-26.04-arm`, except the job `platform` of
+- Every job of a GitHub workflow runs on `ubuntu-26.04-arm`, except the jobs `platform` and `php` of
   `.github/workflows/assets.yml`, which runs on the runner of each platform of the release (`ubuntu-26.04`,
   `ubuntu-26.04-arm` and `macos-15`), because the asset of a platform is linked and loaded only on that platform and no
   tool of the release compiles for another platform (binding GN-19a). Every action is a local action of `.github/actions` or is
@@ -232,13 +232,15 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   napi CLI `@napi-rs/cli` in `package.json`, uv, Python, Go and the wasm-bindgen CLI in `mise.toml`, the major release
   of LLVM in `llvm.version` of `config/toolchain.json`, and `llvm-tools` with the musl targets in
   `rust-toolchain.toml`.
-- The workflow `assets` (`.github/workflows/assets.yml`) builds the assets of each platform (binding GN-19i): its job
-  `platform`, on the runner of each platform, runs `make install-rust`, `make install-tools TOOLS="uv python"`,
-  `make release-recipes`, `make release-go-static`, `make release-wheel`, `make install-llvm`, `make release-php-ext
-  PHP=php` for PHP 8.4 and 8.5 and `make release-npm-platform`; its job `npm` runs `make install-rust`,
-  `make release-recipes`, `make install-wasm-bindgen` and `make release-npm`. Each uploads `var/release/assets`. The
-  workflow `ci` calls it in its job `assets`, which `ci-passed` needs, so an asset that does not build stops the
-  release before a tag exists.
+- The workflow `assets` builds non-PHP native assets once per platform in job `platform` and the PHP extension
+  in a fresh job `php` for every platform and PHP minor (8.4 and 8.5). Both matrices are explicit include-only lists,
+  without extra axes or exclusions. Each PHP job owns bootstrap, locked Rust inputs, release recipes and release
+  check, installs LLVM, sets up one PHP minor and then runs
+  `make release-php-ext PHP=php EXPECTED_PHP_MINOR=${{ matrix.php }}` once. The dynamic minor input belongs to that
+  setup step. Artifact `assets-php-${{ matrix.platform }}-${{ matrix.php }}` identifies its isolated result. No other
+  job repeats PHP setup or native asset builds. A loaded PHP library may remain after PATH changes, so minors
+  never share a job. The job `npm` packs the wrapper and WASM once. CI requires every asset job. Native asset proof
+  remains pending until matching released recipes check the expected minor. `make workflows-test` owns this rule.
 - The workflow `release` starts when a run of `ci` succeeds on `main`, or by a dispatch with the id of such a run. Its
   job `tag` runs `make release-tag` and `make release-tag-output`; its job `assets` calls the workflow `assets` for the
   tag with `make release-binding-check` first; its job `release` checks out the tag and runs `make release-tools`,

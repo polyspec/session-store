@@ -3,6 +3,9 @@
 /packages/*/generated/
 /packages/ts/wasm/generated/
 /packages/go/internal/ffi/generated/
+# The Go files zz_generated_*.go that make bindings writes into packages/go, which a release adds in the commit of its
+# Go tag (binding GN-15g).
+/packages/go/**/zz_generated_*.go
 __pycache__/
 /node_modules/
 # The release recipes that make release-recipes writes with binding (binding GN-19h), and the folder of the npm platform

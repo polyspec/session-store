@@ -1363,18 +1363,8 @@ checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 
 [[package]]
 name = "polyspec-binding-core"
-version = "0.0.1"
-source = "git+https://github.com/polyspec/binding.git?branch=v1%2Frust-core#fa5954b7231b2620d53b2bb95f2b304622411519"
-dependencies = [
- "indexmap",
- "libc",
- "tokio-util",
-]
-
-[[package]]
-name = "polyspec-binding-core"
-version = "0.0.6"
-source = "git+https://github.com/polyspec/binding.git?tag=v0.0.6#5333a40c29891294a9a3f04cd147fe41a00d9726"
+version = "0.0.7"
+source = "git+https://github.com/polyspec/binding.git?tag=v0.0.7#38bd5b401927f21dd215a30bc9e2323434b44b7b"
 dependencies = [
  "indexmap",
  "libc",
@@ -1385,16 +1375,16 @@ dependencies = [
 
 [[package]]
 name = "polyspec-php-serialization"
-version = "0.0.6"
-source = "git+https://github.com/polyspec/php-serialization.git?branch=v1%2Frust-core#ac73e52e5338b303c3db451a3d118581ae73fe57"
+version = "0.0.10"
+source = "git+https://github.com/polyspec/php-serialization.git?branch=v1%2Frust-core#0e2f09f807b9f56a1d5befbea19e9c9e2748a3c8"
 dependencies = [
- "polyspec-binding-core 0.0.1",
+ "polyspec-binding-core",
  "ryu",
 ]
 
 [[package]]
 name = "polyspec-session-store"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "polyspec-php-serialization",
  "polyspec-session-store",
@@ -1405,11 +1395,11 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-core"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "getrandom 0.3.4",
  "libtest-mimic",
- "polyspec-binding-core 0.0.6",
+ "polyspec-binding-core",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "serde_json",
@@ -1417,10 +1407,10 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-file"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "libtest-mimic",
- "polyspec-binding-core 0.0.6",
+ "polyspec-binding-core",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "rustix",
@@ -1430,40 +1420,40 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-go"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
- "polyspec-binding-core 0.0.6",
+ "polyspec-binding-core",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
 
 [[package]]
 name = "polyspec-session-store-node"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
- "polyspec-binding-core 0.0.6",
+ "polyspec-binding-core",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
 
 [[package]]
 name = "polyspec-session-store-php-ext"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "ext-php-rs",
- "polyspec-binding-core 0.0.6",
+ "polyspec-binding-core",
  "polyspec-php-serialization",
  "polyspec-session-store",
 ]
 
 [[package]]
 name = "polyspec-session-store-python"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
- "polyspec-binding-core 0.0.6",
+ "polyspec-binding-core",
  "polyspec-php-serialization",
  "polyspec-session-store",
  "pyo3",
@@ -1471,10 +1461,10 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-redis"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "libtest-mimic",
- "polyspec-binding-core 0.0.6",
+ "polyspec-binding-core",
  "polyspec-php-serialization",
  "polyspec-session-store-core",
  "redis",
@@ -1486,10 +1476,10 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-wasm"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "js-sys",
- "polyspec-binding-core 0.0.6",
+ "polyspec-binding-core",
  "polyspec-php-serialization",
  "polyspec-session-store",
  "wasm-bindgen",

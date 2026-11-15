@@ -198,17 +198,30 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   `Makefile` or the release recipes that it includes (`packages/release.mk`) define, so that the settings of the
   Makefile apply to every command of CI. `make workflows-test` fails a
   workflow or an action that breaks one of these rules.
+- Every job of the workflows that CI runs, `ci.yml` and `assets.yml`, which it calls, has one `run` step,
+  `make ci-<job>` for a job of `ci.yml` and `make ci-assets-<job>` for a job of `assets.yml`, which GitHub names
+  `assets / <job>`, whose only arguments are make variables: a value such as `BAY_SUDO=1`, a matrix value as
+  `NAME=${{ matrix.<key> }}` and an input of `assets.yml` as `NAME=${{ inputs.<key> }}`, and no other expression. The
+  judgement job `ci-passed`, which exists only in CI, runs `make ci-passed FAIL_SKIPPED=1 RESULTS='${{ toJSON(needs) }}'`.
+  Every other step is a `uses` step that provisions the runner or carries a result (checkout, setup-php, the bootstrap
+  action, upload-artifact), only a `uses` step has an `if` condition, and no job sets `env`. The recipe `ci-<job>` of
+  the `Makefile` holds the order and the conditions of the job: its installs and prerequisites first, which stop at a
+  failure, then its checks or builds, each to its end, several of them through ci-targets, and its status is theirs;
+  the Redis servers of a test target are started and removed by `scripts/test-run.mts` inside that target, also when
+  it fails. So a local run is the call that CI makes, `make ci-<job> NAME=value`, and needs no emulation of the runner
+  of GitHub, because the content of a job is in the recipe and not in the YAML. `make workflows-test` fails a job of
+  these workflows that breaks the rule.
 - The workflow `ci` starts on a push of `main` and on `workflow_dispatch` alone. Its job `shared` runs
   `make ci-shared` (`CI_SHARED` of the Makefile: `make docs-check`, `make owner-validate`, `make workflows-test`,
-  `make tool-pins-test`, `make servers-test`, `make redis-state-test`, `make install-bay-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make install-rust` and `make ci-rust`
-  (`CI_RUST`: `make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
+  `make tool-pins-test`, `make servers-test`, `make redis-state-test`, `make install-bay-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make ci-rust`, which runs `make install-rust`
+  and then `CI_RUST` (`make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
-- The job `bindings` of the workflow `ci` sets up the PHP of `.php-version` and runs `make install-rust`,
-  `make install-tools`, `make install-php-tools`, `make install-bay`, `make setup-bay BAY_SUDO=1`,
-  `make redis-image BAY_SUDO=1` and `make ci-bindings BAY_SUDO=1` (`CI_BINDINGS`: `make lint-bindings`,
+- The job `bindings` of the workflow `ci` sets up the PHP of `.php-version` and runs `make ci-bindings BAY_SUDO=1`,
+  whose recipe runs `make install-rust`, `make install-tools`, `make install-php-tools`, `make install-bay`,
+  `make setup-bay` and `make redis-image`, in that order, and then `CI_BINDINGS` (`make lint-bindings`,
   `make check-declarations`, `make test-python`, `make test-node`, `make test-wasm`, `make test-php` and
   `make test-go`), so that no binding package of a release is untested; `ci-passed` needs it, and
-  `make workflows-test` fails a workflow `ci` without it, without those steps in that order or with a `CI_BINDINGS`
+  `make workflows-test` fails a workflow `ci` without it, a recipe without those targets in that order or a `CI_BINDINGS`
   that leaves a target out. bay and the image are installed as in the job `test`, because `make test-python`,
   `make test-node`, `make test-php` and `make test-go` run their generated tests in a run of `scripts/test-run.mts`
   that starts the Redis service of the cases (SE-10.7).
@@ -216,8 +229,8 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   of them, and `make ci-passed FAIL_SKIPPED=1` (ci-passed of kit) passes only when each has the result success, so that
   one job states the result of the run. `make workflows-test` fails a workflow `ci` whose last job is another or whose
   `needs` leaves a job out.
-- The job `test` of the workflow `ci` sets up the PHP of `.php-version` and runs `make install-rust`,
-  `make install-bay`, `make setup-bay`, `make redis-image` and `make test`, the last three with `BAY_SUDO=1`: the bay
+- The job `test` of the workflow `ci` sets up the PHP of `.php-version` and runs `make ci-test BAY_SUDO=1`, whose
+  recipe runs `make install-rust`, `make install-bay`, `make setup-bay`, `make redis-image` and `make test`: the bay
   that `config/toolchain.json` pins for CI runs the Redis servers of the tests on Docker of the runner from the image
   of `REDIS_IMAGE` (SE-10.4), and every command of bay runs as root, the one user that holds its state. The test
   process does not run as root and cannot read the authority file below the home of root, so the test of TLS trusts

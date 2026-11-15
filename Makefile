@@ -74,13 +74,13 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay setup-bay install-bay-test ci-shared ci-rust ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
 	release-recipes
 
 # The targets of each job of .github/workflows/ci.yml, which ci-targets of kit runs past failures into CI_REPORT. The
-# job test runs make redis-image and make test, one target each.
+# job test runs make test after its prerequisites (ci-test).
 CI_SHARED := docs-check owner-validate workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test release-coverage
 CI_RUST := lint-rust fmt-check binding-check
 # The tests of the bindings of every target of the contract (binding BD-27), which the job bindings runs, so that no
@@ -129,14 +129,66 @@ install-rust:
 	rustup toolchain install --no-self-update
 	$(CARGO) fetch --locked
 
+# Each job of .github/workflows/ci.yml and assets.yml runs one recipe ci-<job>, with the values of its matrix and of the
+# inputs of assets.yml as make variables, so that a local run is the call that CI makes: make ci-<job> NAME=value. A recipe
+# runs the installs and the prerequisites of its job first, which stop at a failure, then the checks or the builds of the
+# job, several of them with ci-targets past failures into CI_REPORT; its status is that of the checks. The other steps of
+# a job only provision the runner (checkout, setup-php, the bootstrap action) or carry a result (upload-artifact). The
+# servers of a test run are started and removed by scripts/test-run.mts inside the test target, also when it fails.
 ci-shared:
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_SHARED)
 
 ci-rust:
+	$(MAKE) --no-print-directory install-rust
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_RUST)
 
+# The job test: the toolchain, bay with its machine setup and the pinned Redis image, then make test. CI passes BAY_SUDO=1.
+ci-test:
+	$(MAKE) --no-print-directory install-rust
+	$(MAKE) --no-print-directory install-bay
+	$(MAKE) --no-print-directory setup-bay
+	$(MAKE) --no-print-directory redis-image
+	$(MAKE) --no-print-directory test
+
+# The job bindings: the toolchain, every tool of mise.toml, PHPUnit, bay with its machine setup and the pinned Redis image
+# of the service of the generated tests (SE-10.7), then the tests of CI_BINDINGS. CI passes BAY_SUDO=1.
 ci-bindings:
+	$(MAKE) --no-print-directory install-rust
+	$(MAKE) --no-print-directory install-tools
+	$(MAKE) --no-print-directory install-php-tools
+	$(MAKE) --no-print-directory install-bay
+	$(MAKE) --no-print-directory setup-bay
+	$(MAKE) --no-print-directory redis-image
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_BINDINGS)
+
+# The jobs of assets.yml. Each writes the release recipes, and with RELEASE=true, the input release of assets.yml that the
+# workflow release passes, runs the release check of binding before it builds.
+release_check = $(if $(filter true,$(RELEASE)),$(MAKE) --no-print-directory release-binding-check)
+
+# The job platform: the static library of the Go module, the wheel and the npm platform package of this host.
+ci-assets-platform:
+	$(MAKE) --no-print-directory install-rust
+	$(MAKE) --no-print-directory install-tools TOOLS="uv python"
+	$(MAKE) --no-print-directory release-recipes
+	$(release_check)
+	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) release-go-static release-wheel release-npm-platform
+
+# The job php: the PHP extension for the PHP on PATH, whose minor is EXPECTED_PHP_MINOR.
+ci-assets-php:
+	@test -n "$(EXPECTED_PHP_MINOR)" || { echo 'ci-assets-php needs EXPECTED_PHP_MINOR, the PHP minor of the job, for example make ci-assets-php EXPECTED_PHP_MINOR=8.4' >&2; exit 2; }
+	$(MAKE) --no-print-directory install-rust
+	$(MAKE) --no-print-directory release-recipes
+	$(release_check)
+	$(MAKE) --no-print-directory install-llvm
+	$(MAKE) --no-print-directory release-php-ext PHP=php EXPECTED_PHP_MINOR=$(EXPECTED_PHP_MINOR)
+
+# The job npm: the npm package, packed with the wasm-bindgen of mise.toml.
+ci-assets-npm:
+	$(MAKE) --no-print-directory install-rust
+	$(MAKE) --no-print-directory release-recipes
+	$(MAKE) --no-print-directory install-wasm-bindgen
+	$(release_check)
+	$(MAKE) --no-print-directory release-npm
 
 # The last job of .github/workflows/ci.yml: fails unless every job of RESULTS, the JSON of toJSON(needs), has the result
 # success; with FAIL_SKIPPED=1 a skipped job fails it too. RESULTS that is not set or names no job fails it with status 2.

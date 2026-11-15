@@ -187,18 +187,29 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   commit이다. 어떤 job과 step도 `timeout-minutes`를 두지 않는다. 모든 `run` step은 `Makefile`이나 그것이 include하는 릴리스
   recipe(`packages/release.mk`)가 정의하는 make target 하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
   workflow와 action을 실패시킨다.
+- CI가 실행하는 workflow, 곧 `ci.yml`과 그것이 호출하는 `assets.yml`의 모든 job은 `run` step 하나, 곧 `ci.yml`의 job은 `make ci-<job>`, GitHub가 `assets / <job>`로 부르는 `assets.yml`의 job은 `make ci-assets-<job>`을
+  두고, 그 인자는 make 변수뿐이다: `BAY_SUDO=1` 같은 값, `NAME=${{ matrix.<key> }}`로 쓰는 matrix 값,
+  `NAME=${{ inputs.<key> }}`로 쓰는 `assets.yml`의 input이며, 다른 식은 없다. CI에만 있는 판정 job `ci-passed`는
+  `make ci-passed FAIL_SKIPPED=1 RESULTS='${{ toJSON(needs) }}'`를 실행한다. 다른 모든 step은 runner를 준비하거나
+  결과를 옮기는 `uses` step이고(checkout, setup-php, bootstrap action, upload-artifact), `if` 조건은 `uses` step에만
+  두며, 어떤 job도 `env`를 두지 않는다. `Makefile`의 recipe `ci-<job>`이 job의 순서와 조건을 가진다: 설치와 선행
+  작업을 먼저 하고 실패하면 멈추며, 그다음 검사나 빌드를 각각 끝까지 실행하며 여럿이면 ci-targets로 실행하고, 그
+  상태가 recipe의 상태다. 시험 target의 Redis 서버는 그 target 안에서 `scripts/test-run.mts`가 시작하고, target이
+  실패해도 지운다. 그래서 job의 내용이 YAML이 아니라 recipe에 있으므로, 로컬 실행은 CI가 하는 호출
+  `make ci-<job> NAME=value`와 같고 GitHub runner를 흉내 낼 필요가 없다. `make workflows-test`는 이 규칙을 어기는
+  이 workflow의 job을 실패시킨다.
 - workflow `ci`는 `main`의 push와 `workflow_dispatch`에서만 시작한다. job `shared`는 `make ci-shared`(Makefile의
   `CI_SHARED`: `make docs-check`, `make owner-validate`, `make workflows-test`, `make tool-pins-test`, `make servers-test`, `make redis-state-test`, `make install-bay-test`,
   `make commit-names-check`,
-  `make commit-names-test`, `make release-coverage`)를 실행하고, job `rust`는 `make install-rust`와 `make ci-rust`(`CI_RUST`: `make lint-rust`,
+  `make commit-names-test`, `make release-coverage`)를 실행하고, job `rust`는 `make ci-rust`를 실행하며, 그 recipe는 `make install-rust` 뒤에 `CI_RUST`(`make lint-rust`,
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
   보고서 `var/report/ci-targets`를 올린다.
-- workflow `ci`의 job `bindings`는 `.php-version`의 PHP를 설치하고 `make install-rust`, `make install-tools`,
-  `make install-php-tools`, `make install-bay`, `make setup-bay BAY_SUDO=1`, `make redis-image BAY_SUDO=1`,
-  `make ci-bindings BAY_SUDO=1`(`CI_BINDINGS`: `make lint-bindings`, `make check-declarations`,
+- workflow `ci`의 job `bindings`는 `.php-version`의 PHP를 설치하고 `make ci-bindings BAY_SUDO=1`을 실행한다. 그
+  recipe는 `make install-rust`, `make install-tools`, `make install-php-tools`, `make install-bay`, `make setup-bay`,
+  `make redis-image`를 그 순서로 실행한 뒤 `CI_BINDINGS`(`make lint-bindings`, `make check-declarations`,
   `make test-python`, `make test-node`, `make test-wasm`, `make test-php`, `make test-go`)를 실행한다. 그래서
   릴리스의 바인딩 package는 시험되지 않은 채로 나가지 않는다. `ci-passed`가 이 job을 `needs`에 두고,
-  `make workflows-test`는 이 job이 없거나 그 단계를 그 순서로 갖지 않은 workflow `ci`와 target 하나를 빠뜨린
+  `make workflows-test`는 이 job이 없는 workflow `ci`, 그 target을 그 순서로 갖지 않은 recipe, target 하나를 빠뜨린
   `CI_BINDINGS`를 실패시킨다. bay와 이미지는 job `test`에서처럼 설치된다. `make test-python`, `make test-node`,
   `make test-php`, `make test-go`가 case의 Redis 서비스를 시작하는 `scripts/test-run.mts`의 run 안에서 생성된 시험을
   실행하기 때문이다(SE-10.7).
@@ -206,8 +217,8 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   `needs`에 둔다. `make ci-passed FAIL_SKIPPED=1`(kit의 ci-passed)은 각 job의 결과가 success일 때만 통과한다. 그래서
   job 하나가 run의 결과를 말한다. `make workflows-test`는 마지막 job이 다른 job이거나 `needs`가 job 하나를 빠뜨린
   workflow `ci`를 실패시킨다.
-- workflow `ci`의 job `test`는 `.php-version`의 PHP를 설치하고 `make install-rust`, `make install-bay`,
-  `make setup-bay`, `make redis-image`, `make test`를 실행한다. 뒤의 셋은 `BAY_SUDO=1`로 실행한다.
+- workflow `ci`의 job `test`는 `.php-version`의 PHP를 설치하고 `make ci-test BAY_SUDO=1`을 실행하며, 그 recipe는
+  `make install-rust`, `make install-bay`, `make setup-bay`, `make redis-image`, `make test`를 실행한다.
   `config/toolchain.json`이 CI를 위해 고정한 bay가 시험의 Redis 서버를 runner의 Docker에서 `REDIS_IMAGE`의 image로
   실행하고(SE-10.4), bay의 모든 명령은 그 상태를 가진 한 사용자인 root로 실행된다. 시험 process는 root로 실행되지
   않아 root의 home 아래에 있는 authority 파일을 읽지 못하므로, TLS의 시험은 `bay install`이 authority를 더한 시스템의

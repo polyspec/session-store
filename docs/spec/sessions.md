@@ -471,7 +471,8 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   - How bay is started is one value, `BAY` of the Makefile, which `scripts/servers.sh` alone reads; no other file
     starts bay. Its default is `bay` of PATH. The setup of bay is state of the machine (the resolver, the DNS agent,
     the authority) that `bay install` writes for the user who runs it, so on a development machine bay is the one
-    that its owner installed and set up. The workflow `ci` sets `BAY_SUDO=1` on each step that runs bay, which makes
+    that its owner installed and set up. The workflow `ci` passes `BAY_SUDO=1` to the recipe of each job that runs bay
+    (`make ci-test BAY_SUDO=1`, `make ci-bindings BAY_SUDO=1`), which passes it to every target that it runs and makes
     `BAY` the bay of `var/tools/bay` behind `sudo -n`: on Linux the setup and the commands of bay run as root, and
     bay keeps its state below the home of the user who runs it, so the install, the check, the pull and every
     command of a test run as one user. `make setup-bay` runs `bay install`, the one target that changes the setup of
@@ -545,8 +546,8 @@ the statement that it checks. A PHP value and its serialize form are those of ph
     that is not installed (`make redis-image` pulls it) and an output of `up` of another `schemaVersion` or without the
     service fail the run before the tests. The WASM tests run without the service: the core of WASM has no socket, so
     each row of `cases` of a group of such cases has `only` for `php`, `python`, `node` and `go`, with this rule as its
-    reason (binding GN-13h, CK-95). The job `bindings` of the workflow `ci` installs bay, applies its setup and pulls the
-    image as the job `test` does, and runs `make ci-bindings BAY_SUDO=1`.
+    reason (binding GN-13h, CK-95). The job `bindings` of the workflow `ci` runs `make ci-bindings BAY_SUDO=1`, whose
+    recipe installs bay, applies its setup and pulls the image as `make ci-test` does before the tests.
   - The program. The test runs it as `<program> setup|change|check <scope>` with a JSON object on its standard input,
     which maps the name of a key after the scope to its value: a text, whose characters U+0000 to U+00FF are the bytes
     of a string (SE-10.2), or `{"list": [<text>, ...]}`, a list of at least one such item; in `change`, null removes

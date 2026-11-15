@@ -1,12 +1,14 @@
-# CI of session-store: one workflow whose jobs run the targets of the Makefile, each job the target that names its list
-# (CI_SHARED and CI_RUST of the Makefile), past failures, with the report of ci-targets as an artifact. The last job
+# CI of session-store: one workflow whose every job runs one recipe of the Makefile, make ci-<job>, which installs what the
+# job needs and then runs its checks (CI_SHARED, CI_RUST and CI_BINDINGS of the Makefile, and make test) past failures,
+# with the report of ci-targets as an artifact; a local run is the same call. The other steps of a job provision the
+# runner or upload its report. The last job
 # ci-passed passes only when every other job succeeded. The release workflow releases the commit whose run of this
 # workflow succeeded. The job assets calls .github/workflows/assets.yml, which builds the assets of each platform of the
 # bindings as a release does, so that an asset that does not build stops the release before a tag exists.
 #
 # The job test runs make test: bay runs the Redis servers of its tests on Docker from the image that REDIS_IMAGE of the
-# Makefile pins by its digest, the same image that it runs on Apple container on a development machine (SE-10.4). The
-# job installs the pinned release of bay and applies its machine setup first.
+# Makefile pins by its digest, the same image that it runs on Apple container on a development machine (SE-10.4). Its
+# recipe ci-test installs the pinned release of bay and applies its machine setup first.
 name: ci
 
 on:
@@ -50,8 +52,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/bootstrap
-      - name: install the Rust toolchain and the locked crates
-        run: make install-rust
       - name: lint and contract check
         run: make ci-rust
       - name: report
@@ -75,25 +75,19 @@ jobs:
           tools: none
           coverage: none
       - uses: ./.github/actions/bootstrap
-      - name: install the Rust toolchain and the locked crates
-        run: make install-rust
-      # bay of the release that config/toolchain.json pins, into var/tools/bay by the sha256 of its archive.
-      - name: install the pinned bay
-        run: make install-bay
-      # BAY_SUDO=1: every command of bay runs as root, the one user that holds its state on the runner.
-      - name: apply the machine setup of bay
-        run: make setup-bay BAY_SUDO=1
-      - name: pull the pinned Redis image
-        run: make redis-image BAY_SUDO=1
+      # The Rust toolchain, bay of the release that config/toolchain.json pins, into var/tools/bay by the sha256 of its
+      # archive, its machine setup and the pinned Redis image, then make test. BAY_SUDO=1: every command of bay runs as
+      # root, the one user that holds its state on the runner.
       - name: tests
-        run: make test BAY_SUDO=1
+        run: make ci-test BAY_SUDO=1
 
   # The tests of the bindings of every target of the contract (binding BD-27): clippy on the workspace, the generated
   # declarations, and the tests that binding generates with the contract cases of each binding on the runner of its
   # language (make ci-bindings, CI_BINDINGS of the Makefile), so that no binding package is released untested. The job
   # installs every tool of mise.toml, the PHP of .php-version and the PHPUnit of composer.lock, and, as the job test does,
-  # the pinned bay with its machine setup and the pinned Redis image: the generated tests of PHP, Python, Node and Go run
-  # the cases of the Redis service against a server of the image that each test target starts and removes (SE-10.7).
+  # the pinned bay with its machine setup and the pinned Redis image, all in its recipe ci-bindings: the generated tests of
+  # PHP, Python, Node and Go run the cases of the Redis service against a server of the image that each test target
+  # starts and removes (SE-10.7).
   bindings:
     runs-on: ubuntu-26.04-arm
     steps:
@@ -106,19 +100,7 @@ jobs:
           tools: none
           coverage: none
       - uses: ./.github/actions/bootstrap
-      - name: install the Rust toolchain and the locked crates
-        run: make install-rust
-      - name: install the tools of mise.toml
-        run: make install-tools
-      - name: install PHPUnit
-        run: make install-php-tools
-      - name: install the pinned bay
-        run: make install-bay
       # BAY_SUDO=1: every command of bay runs as root, the one user that holds its state on the runner.
-      - name: apply the machine setup of bay
-        run: make setup-bay BAY_SUDO=1
-      - name: pull the pinned Redis image
-        run: make redis-image BAY_SUDO=1
       - name: tests of the bindings
         run: make ci-bindings BAY_SUDO=1
       - name: report
@@ -145,6 +127,4 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/bootstrap
       - name: every job passed
-        env:
-          RESULTS: ${{ toJSON(needs) }}
-        run: make ci-passed FAIL_SKIPPED=1
+        run: make ci-passed FAIL_SKIPPED=1 RESULTS='${{ toJSON(needs) }}'

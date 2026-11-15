@@ -459,7 +459,8 @@
   - bay를 시작하는 방법은 값 하나, Makefile의 `BAY`이고, `scripts/servers.sh`만 그 값을 읽는다. 다른 어떤 파일도
     bay를 시작하지 않는다. 기본값은 PATH의 `bay`다. bay의 설정은 `bay install`이 그것을 실행한 사용자를 위해 쓰는
     장비의 상태(resolver, DNS agent, authority)다. 그래서 개발 장비의 bay는 그 장비의 주인이 설치하고 설정한 것이다.
-    workflow `ci`는 bay를 실행하는 step마다 `BAY_SUDO=1`을 주고, 그러면 `BAY`는 `sudo -n` 뒤의 `var/tools/bay`의
+    workflow `ci`는 bay를 실행하는 job의 recipe마다 `BAY_SUDO=1`을 주고(`make ci-test BAY_SUDO=1`,
+    `make ci-bindings BAY_SUDO=1`), recipe는 그것을 자기가 실행하는 모든 target에 넘기며, 그러면 `BAY`는 `sudo -n` 뒤의 `var/tools/bay`의
     bay가 된다. Linux에서는 bay의 설정과 명령이 root로 실행되고 bay는 자기 상태를 실행한 사용자의 home 아래에
     두므로, 설치와 검사와 받기와 시험의 모든 명령이 한 사용자로 실행되어야 하기 때문이다. `make setup-bay`는
     `bay install`을 실행한다. 장비의 설정을 바꾸는 target은 이것 하나이며, workflow가 자기 runner에서 실행하고
@@ -525,8 +526,8 @@
     이미지(`make redis-image`가 받는다), 다른 `schemaVersion`이거나 서비스가 없는 `up`의 출력은 시험 전에 run을
     실패시킨다. WASM 시험은 서비스 없이 실행된다. WASM의 코어에는 socket이 없으므로, 그런 case의 group을 가리키는
     `cases`의 각 행은 이 규칙을 이유로 `php`, `python`, `node`, `go`의 `only`를 갖는다(binding GN-13h, CK-95).
-    workflow `ci`의 job `bindings`는 job `test`처럼 bay를 설치하고 그 설정을 적용하고 이미지를 받으며,
-    `make ci-bindings BAY_SUDO=1`을 실행한다.
+    workflow `ci`의 job `bindings`는 `make ci-bindings BAY_SUDO=1`을 실행하며, 그 recipe는 시험 전에
+    `make ci-test`처럼 bay를 설치하고 그 설정을 적용하고 이미지를 받는다.
   - 프로그램. 시험은 그것을 표준 입력의 JSON 객체와 함께 `<program> setup|change|check <scope>`로 실행한다. 그
     객체는 scope 뒤의 키 이름을 그 값에 대응시킨다. 값은 문자 U+0000부터 U+00FF가 문자열의 바이트인 텍스트(SE-10.2)이거나,
     그런 항목을 하나 이상 가진 목록 `{"list": [<text>, ...]}`이고, `change`에서 null은 그 키를 지운다. `setup`은

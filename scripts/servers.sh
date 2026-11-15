@@ -5,7 +5,7 @@
 #
 #   scripts/servers.sh check                          prints the version of bay and fails unless the machine setup
 #                                                     that a project needs is in place; changes nothing
-#   scripts/servers.sh pull <image>                   pulls the image
+#   scripts/servers.sh pull <image>                   pulls the image and fails unless the store then holds it
 #   scripts/servers.sh plan <compose file>            prints as JSON the name and the certificate paths of each service,
 #                                                     as up will create them; changes nothing
 #   scripts/servers.sh up <compose file>              starts the services of the project, returns after each accepts
@@ -73,6 +73,15 @@ pull)
 	# shellcheck disable=SC2086 # BAY is words
 	$bay -f "$directory/compose.yaml" pull </dev/null
 	status=$?
+	# A pull that ends with status 0 is no evidence that the store holds the image, so the store is asked for it, and a
+	# pull after which the store does not hold it fails with the image.
+	if [ "$status" -eq 0 ]; then
+		# shellcheck disable=SC2086 # BAY is words
+		if ! $bay -f "$directory/compose.yaml" images </dev/null; then
+			echo "scripts/servers.sh: bay pull ended, but the local store does not hold $1" >&2
+			status=1
+		fi
+	fi
 	rm -rf "$directory"
 	exit "$status"
 	;;

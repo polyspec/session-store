@@ -133,8 +133,10 @@ test('pull fetches the image through bay, as the image of a project that the scr
   const made = stand(t, present);
   const pulled = run(t, present, ['pull', IMAGE], made);
   assert.equal(pulled.status, 0);
-  assert.equal(pulled.calls.length, 1);
+  assert.equal(pulled.calls.length, 2);
   const [program, option, file, command, ...rest] = pulled.calls[0] ?? [];
+  // After the pull, the store is asked for the image of the same project.
+  assert.deepEqual(pulled.calls[1], ['bay', '-f', file, 'images']);
   assert.deepEqual([program, option, command, rest], ['bay', '-f', 'pull', []]);
   assert.match(file ?? '', /\/compose\.yaml$/);
   // bay names the project after the directory and refuses a name with another character than these.
@@ -142,6 +144,13 @@ test('pull fetches the image through bay, as the image of a project that the scr
   assert.equal(readFileSync(join(made.directory, 'pulled'), 'utf8'), `services:\n  redis:\n    image: "${IMAGE}"\n`);
   assert.equal(existsSync(dirname(file ?? '')), false);
   assert.equal(run(t, { bay: true, status: { pull: 1 } }, ['pull', IMAGE]).status, 1);
+});
+
+test('pull fails and names the image when bay ends the pull but the local store does not hold the image', (t) => {
+  const failed = run(t, { bay: true, status: { images: 1 } }, ['pull', IMAGE]);
+  assert.equal(failed.status, 1);
+  assert.deepEqual(failed.calls.map((call) => call[3]), ['pull', 'images']);
+  assert.match(failed.stderr, new RegExp(`scripts/servers\\.sh: bay pull ended, but the local store does not hold ${IMAGE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\n$`));
 });
 
 test('check writes the version of bay, whatever build it is, and passes when the machine setup that a run needs is in place', (t) => {
@@ -171,7 +180,7 @@ test('BAY names the words that start bay, and every verb starts bay by them', (t
   const checked = run(t, present, ['check'], undefined, { BAY: 'wrap -n bay' });
   assert.deepEqual([checked.status, checked.calls.filter(([program]) => program === 'bay')], [0, CHECKED]);
   const pulled = run(t, present, ['pull', IMAGE], undefined, { BAY: 'wrap -n bay' });
-  assert.deepEqual([pulled.status, pulled.calls.map(([program]) => program)], [0, ['wrap', 'bay']]);
+  assert.deepEqual([pulled.status, pulled.calls.map(([program]) => program)], [0, ['wrap', 'bay', 'wrap', 'bay']]);
   const missing = run(t, present, ['down', FILE], undefined, { BAY: 'absent -n bay' });
   assert.equal(missing.status, 1);
   assert.match(missing.stderr, /^scripts\/servers\.sh: absent is not found on PATH: /);

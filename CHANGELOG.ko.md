@@ -1,10 +1,11 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 0185da0bed26295e6544e794f4fbbd973baa0dfb81ca52251df136b4874651c5 -->
+<!-- source-sha256: b2f8efbaa135aa5c0e3631902d3f289cbb5d3d3308fd24ac256296b1526b2c5a -->
 
 ## Unreleased
 
 ## 0.0.1
 
+- `polyspec-php-serialization`에 대한 모든 의존 줄은 php-serialization의 branch `v1/rust-core` 대신 `Cargo.lock`이 pin하는 tag `v0.0.11`을 가리킵니다(T1.36). `binding scaffold`는 php-serialization의 버전 0.0.11을 `packages/python/pyproject.toml`, `packages/ts/package.json`, `packages/go/go.mod`에 쓰고, `Cargo.lock`은 tag `v0.0.7`의 `polyspec-binding-core` 하나를 가집니다.
 - `make ci-assets-php`는 `DYLD_LIBRARY_PATH`와 `LD_LIBRARY_PATH`를 비운 채 실행됩니다(T1.36). macOS에서 `install-llvm-action`이 두 변수를 `/usr/lib`을 앞에 두고 `GITHUB_ENV`에 더하므로, Homebrew의 PHP가 시스템의 libsqlite3를 읽고 exit status 134로 중단되었습니다. 빌드는 `LLVM_ROOT`만으로 LLVM을 읽습니다. workflow step은 `env`를 두지 않으므로 `Makefile`의 target 전용 줄이 두 변수를 비웁니다. `make workflows-test`는 두 줄을 요구하고, 그 중 하나가 없는 예시 `Makefile`을 실패시킵니다.
 - kit 0.0.114가 0.0.113을 대신합니다(T1.36). binding 0.0.7은 recipe `install-llvm`을 `packages/release.mk`에 더 이상 쓰지 않으므로 `make ci-assets-php`는 그것을 만들지 않습니다: ubuntu-26.04 이미지는 기본 `LLVM_ROOT`인 `/usr/lib/llvm-21`에 LLVM 21을 가지고, macOS에서는 `assets.yml`의 job `php`가 커밋으로 pin한 `KyleMayes/install-llvm-action`으로 LLVM 21.1.8을 설치하며, recipe는 그 `LLVM_PATH`를 `LLVM_ROOT`로 넘깁니다. `make test-python`, `make test-node`, `make test-wasm`, `make test-php`, `make test-go`는 contract case를 실행하는 생성된 binding 테스트만 실행합니다. 이전에는 저장소에 없는 `packages/*/tests`의 손으로 쓴 case runner도 실행해서, 각각 생성된 테스트 뒤에 실패했습니다. 변수 `CASES`는 제거되었습니다.
 - kit 0.0.113과 binding 0.0.7이 kit 0.0.109와 binding 0.0.6을 대신합니다(T1.36): devDependency는 각 GitHub Release의 asset `polyspec-kit-0.0.113.tgz`와 `polyspec-binding-0.0.7.tgz`를 `package-lock.json`의 integrity와 함께 가리키고, `polyspec-binding-core`에 대한 모든 의존 줄은 tag `v0.0.7`을 가리킵니다. 이전에는 `Cargo.lock`이 php-serialization이 요구한 binding의 branch `v1/rust-core`에서 온 두 번째 `polyspec-binding-core`를 가졌고, 이제는 tag `v0.0.7`만 가집니다. binding 0.0.6은 contract의 key `services`를 거부해서 `make workflows-test`가 실패했고, 0.0.7에서는 통과합니다. `.gitignore`는 `make bindings`가 `packages/go`에 쓰는 Go 파일 `zz_generated_*.go`를 무시합니다.

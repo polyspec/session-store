@@ -26,7 +26,7 @@ fault-test = ["polyspec-session-store-core/fault-test"]
 [dependencies]
 # The PHP values of the contract (php_value, SE-1.5): the binding crates take the dependency of the crate whose
 # contract names the types of another library (binding T-3).
-polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", branch = "v1/rust-core" }
+polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.11" }
 polyspec-session-store-core = { path = "../core/rust" }
 polyspec-session-store-file = { path = "../file/rust", optional = true }
 polyspec-session-store-redis = { path = "../redis/rust", optional = true }

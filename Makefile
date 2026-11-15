@@ -172,6 +172,11 @@ ci-assets-platform:
 # config/toolchain.json before it (binding GN-19i): the ubuntu-26.04 images hold it at /usr/lib/llvm-<major>, the default
 # LLVM_ROOT of packages/release.mk, and on macOS install-llvm-action installs it and sets LLVM_PATH, which the build takes
 # as LLVM_ROOT.
+# install-llvm-action appends DYLD_LIBRARY_PATH and LD_LIBRARY_PATH with /usr/lib first to GITHUB_ENV, and the PHP of
+# Homebrew then loads the libsqlite3 of the system and aborts; the recipe and its sub-makes run with both empty, and the
+# build reads LLVM through LLVM_ROOT alone.
+ci-assets-php: DYLD_LIBRARY_PATH :=
+ci-assets-php: LD_LIBRARY_PATH :=
 ci-assets-php:
 	@test -n "$(EXPECTED_PHP_MINOR)" || { echo 'ci-assets-php needs EXPECTED_PHP_MINOR, the PHP minor of the job, for example make ci-assets-php EXPECTED_PHP_MINOR=8.4' >&2; exit 2; }
 	$(MAKE) --no-print-directory install-rust

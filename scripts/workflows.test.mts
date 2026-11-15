@@ -199,7 +199,7 @@ function stepsOf(lines: string[]): string[][] {
 /** The recipe lines of the target `target` of the text of a Makefile, without their tab; empty when no rule names it. */
 function recipeOf(makefile: string, target: string): string[] {
   const lines = makefile.split('\n');
-  const at = lines.findIndex((line) => new RegExp(`^${target.replaceAll('.', '\\.')} *:(?!=)`).test(line));
+  const at = lines.findIndex((line) => new RegExp(`^${target.replaceAll('.', '\\.')} *:(?!=)(?! *[A-Za-z_]+ *[:?+]?=)`).test(line));
   if (at < 0) return [];
   const recipe: string[] = [];
   for (const line of lines.slice(at + 1)) {
@@ -302,6 +302,9 @@ function platformFindings(file: string, text: string): string[] {
 // The run step of the job php and the one line of its recipe ci-assets-php that builds the extension of the minor of the job.
 const PHP_RUN = 'make ci-assets-php EXPECTED_PHP_MINOR=${{ matrix.php }} RELEASE=${{ inputs.release }}';
 const PHP_BUILD = '$(MAKE) --no-print-directory release-php-ext PHP=php EXPECTED_PHP_MINOR=$(EXPECTED_PHP_MINOR) $(if $(LLVM_PATH),LLVM_ROOT=$(LLVM_PATH))';
+// The target-specific lines that empty the library paths of the dynamic loader for ci-assets-php, which install-llvm-action
+// sets with /usr/lib first, so that the PHP of Homebrew does not load the libraries of the system.
+const PHP_LIBRARY_PATHS = ['ci-assets-php: DYLD_LIBRARY_PATH :=', 'ci-assets-php: LD_LIBRARY_PATH :='];
 // The native assets of the job platform, which its recipe ci-assets-platform builds once each.
 const NON_PHP = ['release-go-static', 'release-wheel', 'release-npm-platform'];
 
@@ -350,6 +353,7 @@ function phpMinorFindings(file: string, text: string, minors: string[], makefile
   const recipe = (name: string): string[] => recipeOf(makefile, recipeName(file, name));
   const php = recipe('php');
   if (naming(php, 'release-php-ext') !== 1 || !php.includes(PHP_BUILD)) fail(`the recipe ci-assets-php must build once with ${PHP_BUILD}`);
+  for (const line of PHP_LIBRARY_PATHS) if (!makefile.split('\n').includes(line)) fail(`the Makefile must hold ${line}`);
   for (const [name, other] of jobs) {
     if (name === 'php' || name === 'platform') continue;
     if (other.some((line) => valueOf(line, 'uses')?.startsWith('shivammathur/setup-php@') === true || valueOf(line, 'php-version') !== undefined) || ['release-php-ext', ...NON_PHP].some((target) => naming(recipe(name), target) > 0)) fail(`the job ${name} repeats a native asset setup or build`);
@@ -573,6 +577,8 @@ ${Object.entries(PLATFORM_RUNNERS).flatMap(([platform, runner]) => ['8.4', '8.5'
 const PHP_MAKEFILE = `ci-assets-platform: ## The assets of the platform
 	$(MAKE) --no-print-directory release-recipes
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) release-go-static release-wheel release-npm-platform
+ci-assets-php: DYLD_LIBRARY_PATH :=
+ci-assets-php: LD_LIBRARY_PATH :=
 ci-assets-php: ## The PHP extension of EXPECTED_PHP_MINOR
 	$(MAKE) --no-print-directory release-recipes
 	${PHP_BUILD}
@@ -607,6 +613,8 @@ test('PHP asset jobs isolate the exact platform and minor product (T1.33-1)', ()
     PHP_MAKEFILE.replace(' EXPECTED_PHP_MINOR=$(EXPECTED_PHP_MINOR)', ''),
     PHP_MAKEFILE.replace(PHP_BUILD, `${PHP_BUILD}\n\t${PHP_BUILD}`),
     PHP_MAKEFILE.replace(PHP_BUILD, `${PHP_BUILD}\n\t$(MAKE) release-wheel`),
+    PHP_MAKEFILE.replace('ci-assets-php: DYLD_LIBRARY_PATH :=\n', ''),
+    PHP_MAKEFILE.replace('ci-assets-php: LD_LIBRARY_PATH :=\n', ''),
   ];
   for (const [index, recipe] of recipes.entries()) assert.notDeepEqual(phpMinorFindings(ASSETS, PHP_SAMPLE, ['8.4', '8.5'], recipe), [], `recipe mutation ${index}`);
   assert.notDeepEqual(phpMinorFindings(ASSETS, PHP_SAMPLE, ['8.4', '8.5', '8.6'], PHP_MAKEFILE), []);

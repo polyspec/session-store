@@ -37,10 +37,10 @@ BINDING := $(NODE) $(CURDIR)/node_modules/@polyspec/binding/dist/cli.js
 # given fails and names what gives it.
 PHP ?= $(shell command -v php)
 # How bay is started, the one value that scripts/servers.sh reads (SE-10.4): bay of PATH, a tool that the machine
-# gives as it gives make, whose version no recipe compares, or with BAY_SUDO=1 the bay that make install-bay put into
-# var/tools, as root without a question for a password. The workflow ci sets BAY_SUDO=1: on Linux the setup and the commands of bay
-# run as root, and bay keeps its state below the home of the user who runs it, so every command runs as one user.
-BAY ?= $(if $(BAY_SUDO),sudo -n $(VAR_TOOLS)/bay/bay,bay)
+# gives as it gives make, whose version no recipe compares, with its machine setup, which `bay install` applies once per
+# machine. No recipe of a check applies that setup; the run checks it with `bay check` and fails naming `bay install`.
+# On a runner of CI, the action .github/actions/bay gives both before the run step of the job.
+BAY ?= bay
 # Redis 8.10.3, the highest stable release of Redis, in the official image of Debian trixie, pinned by the digest of its
 # index; make redis-image pulls it, and the tests fail while it is not installed, so that no test pulls an image.
 REDIS_IMAGE := docker.io/library/redis:8.10.3-trixie@sha256:de1068af6f552240dfab67bcc9bfef99bfc60f776bb4580ef077ea4c8c97e848
@@ -74,7 +74,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
 	release-recipes
@@ -142,22 +142,19 @@ ci-rust:
 	$(MAKE) --no-print-directory install-rust
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_RUST)
 
-# The job test: the toolchain, bay with its machine setup and the pinned Redis image, then make test. CI passes BAY_SUDO=1.
+# The job test: the toolchain and the pinned Redis image, then make test. redis-image fails first, naming `bay install`,
+# on a machine whose bay or its setup is missing.
 ci-test:
 	$(MAKE) --no-print-directory install-rust
-	$(MAKE) --no-print-directory install-bay
-	$(MAKE) --no-print-directory setup-bay
 	$(MAKE) --no-print-directory redis-image
 	$(MAKE) --no-print-directory test
 
-# The job bindings: the toolchain, every tool of mise.toml, PHPUnit, bay with its machine setup and the pinned Redis image
-# of the service of the generated tests (SE-10.7), then the tests of CI_BINDINGS. CI passes BAY_SUDO=1.
+# The job bindings: the toolchain, every tool of mise.toml, PHPUnit and the pinned Redis image of the service of the
+# generated tests (SE-10.7), then the tests of CI_BINDINGS; redis-image checks bay and its setup as in ci-test.
 ci-bindings:
 	$(MAKE) --no-print-directory install-rust
 	$(MAKE) --no-print-directory install-tools
 	$(MAKE) --no-print-directory install-php-tools
-	$(MAKE) --no-print-directory install-bay
-	$(MAKE) --no-print-directory setup-bay
 	$(MAKE) --no-print-directory redis-image
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_BINDINGS)
 
@@ -262,8 +259,15 @@ redis-image:
 install-bay:
 	$(NODE) scripts/install-bay.mts
 
-# Applies the machine setup of bay with its install command, the one target that changes the setup of a machine: the
-# workflow ci runs it on its runner, and a developer runs it by choice.
+# Puts var/tools/bay, where make install-bay installs bay, on the PATH of the later steps of a job of GitHub
+# (GITHUB_PATH), so that BAY, bay of PATH, starts it: the action .github/actions/bay runs it.
+bay-path:
+	@test -n "$$GITHUB_PATH" || { echo 'bay-path: GITHUB_PATH is not set; run it in a job of GitHub' >&2; exit 2; }
+	@echo "$(VAR_TOOLS)/bay" >> "$$GITHUB_PATH"
+
+# Applies the machine setup of bay with its install command, once per machine, the one target that changes the setup of a
+# machine: the action .github/actions/bay runs it on a runner, before the run step of its job, and a developer runs it by
+# choice. No recipe of a job runs it.
 setup-bay:
 	$(BAY) install
 
@@ -403,6 +407,33 @@ release-tag:
 release-tag-output:
 	@test -n "$$GITHUB_OUTPUT" || { echo 'release-tag-output: GITHUB_OUTPUT is set only in a step of a workflow' >&2; exit 2; }
 	printf 'tag=%s\nversion=%s\n' "$$TAG" "$$VERSION" >> "$$GITHUB_OUTPUT"
+
+# The jobs of release.yml, each one recipe that its one run step runs (T1.35). ci-release-tag tags the commit of the run
+# RUN and gives the later jobs the TAG and VERSION that release-tag appended to GITHUB_ENV, which a later line of the same
+# step does not receive in its environment. ci-release-release builds and publishes the release of TAG: the tools of
+# release-tools are on PATH for its later lines (RELEASE_PATH, in the order that release-tools-path gives them), the
+# artifacts of the job assets, which the workflow downloads into var/release/downloaded before this step, join
+# var/release/assets after the draft release exists, and the commit of the Go module carries the identity of
+# GITHUB_ACTOR, the actor of the run.
+RELEASE_PATH = PATH="$(VAR_TOOLS)/mise/shims:$(VAR_TOOLS)/bin:$$PATH"
+RELEASE_IDENTITY = GIT_AUTHOR_NAME="$${GITHUB_ACTOR:?}" GIT_AUTHOR_EMAIL="$${GITHUB_ACTOR:?}@users.noreply.github.com" \
+	GIT_COMMITTER_NAME="$${GITHUB_ACTOR:?}" GIT_COMMITTER_EMAIL="$${GITHUB_ACTOR:?}@users.noreply.github.com"
+ci-release-tag:
+	@test -n "$$GITHUB_ENV" || { echo 'ci-release-tag: GITHUB_ENV is set only in a step of a workflow' >&2; exit 2; }
+	$(MAKE) --no-print-directory release-tag
+	$(MAKE) --no-print-directory release-tag-output TAG="$$(sed -n 's/^TAG=//p' "$$GITHUB_ENV" | tail -n 1)" VERSION="$$(sed -n 's/^VERSION=//p' "$$GITHUB_ENV" | tail -n 1)"
+
+ci-release-release:
+	@test -n "$(TAG)" || { echo 'ci-release-release: TAG is required, for example make ci-release-release TAG=v0.0.1' >&2; exit 2; }
+	$(MAKE) --no-print-directory release-tools
+	$(RELEASE_PATH) $(MAKE) --no-print-directory release-assets
+	$(RELEASE_PATH) $(MAKE) --no-print-directory release-publish
+	mkdir -p var/release/assets && cp var/release/downloaded/* var/release/assets/
+	$(RELEASE_PATH) $(MAKE) --no-print-directory install-rust
+	$(RELEASE_PATH) $(MAKE) --no-print-directory release-recipes
+	$(RELEASE_IDENTITY) $(RELEASE_PATH) $(MAKE) --no-print-directory release-go-module
+	$(RELEASE_PATH) $(MAKE) --no-print-directory release-platform-assets
+	$(RELEASE_PATH) $(MAKE) --no-print-directory release-undraft
 
 # The tools that the packages of config/release.json need: the Composer package of the PHP extension needs the tools of
 # mise.toml, which install-tools of kit installs into var/tools.

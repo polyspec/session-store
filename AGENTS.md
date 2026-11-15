@@ -46,6 +46,7 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   `scripts/commit-names.test.mts`, which `make commit-names-test` runs.
 - `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/actions/bootstrap`: CI, the release and the
   bootstrap of their jobs, which runs `make bootstrap`, `make install-tools TOOLS=npm` and `make install-packages`.
+  `.github/actions/bay`: the bay of a runner, which runs `make install-bay`, `make bay-path` and `make setup-bay`.
 - `mise.toml`, `mise.lock`, `.mise/locks`, `config/toolchain.json`: the pins of the tools of the checkout ("Tools").
   `scripts/tool-pins.test.mts` is their test, which `make tool-pins-test` runs.
 - `config/owner-checks.json`: the make targets that own each tracked path. `make owner-validate` fails a tracked path
@@ -89,7 +90,10 @@ Rules for every change of session-store. The rules of the library are in [docs/s
   `bay version` as its first line. A release of bay is pinned for CI alone, in `config/toolchain.json` (`bay`: its
   version, the address of its releases and the sha256 of its archive of each platform), because a runner holds no
   bay and a download is used only by its pinned digest: `make install-bay` installs it into `var/tools/bay`, and
-  `BAY_SUDO=1` makes `BAY` that bay behind `sudo -n`. To raise the pin, set `version` of `bay` in
+  `make bay-path` puts that directory on the PATH of the later steps of a job of GitHub. The machine setup of bay is
+  applied once per machine with `bay install` (`make setup-bay`), never by a recipe of a job and never with `sudo`: on
+  a runner the action `.github/actions/bay` runs `make install-bay`, `make bay-path` and `make setup-bay` before the run
+  step, and a run on a machine without the setup fails at `bay check` and names `bay install`. To raise the pin, set `version` of `bay` in
   `config/toolchain.json` to the tag of the release and each value of `sha256` to the line of that archive in the
   file `SHA256SUMS` of the release (`darwin-arm64`, `darwin-x64`, `linux-x64` and `linux-arm64` are the archives
   `darwin_arm64`, `darwin_amd64`, `linux_amd64` and `linux_arm64`); no other file names the release. Then run
@@ -198,13 +202,16 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   `Makefile` or the release recipes that it includes (`packages/release.mk`) define, so that the settings of the
   Makefile apply to every command of CI. `make workflows-test` fails a
   workflow or an action that breaks one of these rules.
-- Every job of the workflows that CI runs, `ci.yml` and `assets.yml`, which it calls, has one `run` step,
-  `make ci-<job>` for a job of `ci.yml` and `make ci-assets-<job>` for a job of `assets.yml`, which GitHub names
-  `assets / <job>`, whose only arguments are make variables: a value such as `BAY_SUDO=1`, a matrix value as
-  `NAME=${{ matrix.<key> }}` and an input of `assets.yml` as `NAME=${{ inputs.<key> }}`, and no other expression. The
+- Every job of the workflows, `ci.yml`, `release.yml` and `assets.yml`, which both call, has one `run` step,
+  `make ci-<job>` for a job of `ci.yml`, `make ci-release-<job>` for a job of `release.yml` and `make ci-assets-<job>`
+  for a job of `assets.yml`, which GitHub names `assets / <job>`, whose only arguments are make variables: a value, a
+  matrix value as `NAME=${{ matrix.<key> }}`, an input of `assets.yml` as `NAME=${{ inputs.<key> }}`, an output of a job
+  that the job needs as `NAME=${{ needs.<job>.outputs.<key> }}`, and a quoted expression of the event as
+  `NAME="${{ ... }}"`, such as the run id of the job `tag`. The
   judgement job `ci-passed`, which exists only in CI, runs `make ci-passed FAIL_SKIPPED=1 RESULTS='${{ toJSON(needs) }}'`.
   Every other step is a `uses` step that provisions the runner or carries a result (checkout, setup-php, the bootstrap
-  action, upload-artifact), only a `uses` step has an `if` condition, and no job sets `env`. The recipe `ci-<job>` of
+  action, the action bay, upload-artifact, download-artifact), only a `uses` step has an `if` condition, no step sets
+  `env`, and no job sets `env` other than `GH_TOKEN`, the token of the run that the release targets read with gh. The recipe `ci-<job>` of
   the `Makefile` holds the order and the conditions of the job: its installs and prerequisites first, which stop at a
   failure, then its checks or builds, each to its end, several of them through ci-targets, and its status is theirs;
   the Redis servers of a test target are started and removed by `scripts/test-run.mts` inside that target, also when
@@ -216,26 +223,26 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   `make tool-pins-test`, `make servers-test`, `make redis-state-test`, `make install-bay-test`, `make commit-names-check`, `make commit-names-test` and `make release-coverage`) and its job `rust` runs `make ci-rust`, which runs `make install-rust`
   and then `CI_RUST` (`make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
-- The job `bindings` of the workflow `ci` sets up the PHP of `.php-version` and runs `make ci-bindings BAY_SUDO=1`,
-  whose recipe runs `make install-rust`, `make install-tools`, `make install-php-tools`, `make install-bay`,
-  `make setup-bay` and `make redis-image`, in that order, and then `CI_BINDINGS` (`make lint-bindings`,
+- The job `bindings` of the workflow `ci` sets up the PHP of `.php-version`, uses the action bay and runs
+  `make ci-bindings`, whose recipe runs `make install-rust`, `make install-tools`, `make install-php-tools` and
+  `make redis-image`, in that order, and then `CI_BINDINGS` (`make lint-bindings`,
   `make check-declarations`, `make test-python`, `make test-node`, `make test-wasm`, `make test-php` and
   `make test-go`), so that no binding package of a release is untested; `ci-passed` needs it, and
-  `make workflows-test` fails a workflow `ci` without it, a recipe without those targets in that order or a `CI_BINDINGS`
-  that leaves a target out. bay and the image are installed as in the job `test`, because `make test-python`,
+  `make workflows-test` fails a workflow `ci` without it, a job that runs before the action bay, a recipe without
+  `make redis-image` before the tests, a recipe of `ci-bindings` or `ci-test` that applies the machine setup of bay, or a
+  `CI_BINDINGS` that leaves a target out. bay and the image are given as in the job `test`, because `make test-python`,
   `make test-node`, `make test-php` and `make test-go` run their generated tests in a run of `scripts/test-run.mts`
   that starts the Redis service of the cases (SE-10.7).
 - The last job of the workflow `ci` is `ci-passed`. It runs after every other job, also after a failed one, needs each
   of them, and `make ci-passed FAIL_SKIPPED=1` (ci-passed of kit) passes only when each has the result success, so that
   one job states the result of the run. `make workflows-test` fails a workflow `ci` whose last job is another or whose
   `needs` leaves a job out.
-- The job `test` of the workflow `ci` sets up the PHP of `.php-version` and runs `make ci-test BAY_SUDO=1`, whose
-  recipe runs `make install-rust`, `make install-bay`, `make setup-bay`, `make redis-image` and `make test`: the bay
-  that `config/toolchain.json` pins for CI runs the Redis servers of the tests on Docker of the runner from the image
-  of `REDIS_IMAGE` (SE-10.4), and every command of bay runs as root, the one user that holds its state. The test
-  process does not run as root and cannot read the authority file below the home of root, so the test of TLS trusts
-  the authority through the certificate store of the system, to which `bay install` adds it. Not confirmed until the
-  first run of CI: that a signal of the run reaches a bay that `sudo` started.
+- The job `test` of the workflow `ci` sets up the PHP of `.php-version`, uses the action bay and runs `make ci-test`,
+  whose recipe runs `make install-rust`, `make redis-image` and `make test`: the bay that `config/toolchain.json` pins
+  for CI runs the Redis servers of the tests on Docker of the runner from the image of `REDIS_IMAGE` (SE-10.4). bay,
+  its machine setup and the tests run as the user of the runner, the one user that holds the state of bay, so the test
+  of TLS reads the authority of that user. Not confirmed until the first run of CI: that `bay install` applies the
+  machine setup on the runner without `sudo`.
 - binding release-recipes writes the release recipes of the contract into `packages/release.mk` (binding GN-19h),
   which is generated and not tracked; `make release-recipes` writes it, and the Makefile includes it after it defines
   `BINDING_RUN`, `NODE`, `NPM`, `UV` and an empty `BINDING_DEP`. The recipes build the static library of the Go

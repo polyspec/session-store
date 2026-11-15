@@ -471,12 +471,13 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   - How bay is started is one value, `BAY` of the Makefile, which `scripts/servers.sh` alone reads; no other file
     starts bay. Its default is `bay` of PATH. The setup of bay is state of the machine (the resolver, the DNS agent,
     the authority) that `bay install` writes for the user who runs it, so on a development machine bay is the one
-    that its owner installed and set up. The workflow `ci` passes `BAY_SUDO=1` to the recipe of each job that runs bay
-    (`make ci-test BAY_SUDO=1`, `make ci-bindings BAY_SUDO=1`), which passes it to every target that it runs and makes
-    `BAY` the bay of `var/tools/bay` behind `sudo -n`: on Linux the setup and the commands of bay run as root, and
-    bay keeps its state below the home of the user who runs it, so the install, the check, the pull and every
-    command of a test run as one user. `make setup-bay` runs `bay install`, the one target that changes the setup of
-    a machine, which the workflow runs on its runner and a developer runs by choice.
+    that its owner installed and set up. The setup is applied once per machine and never by the recipe of a job, and
+    no command of bay runs with `sudo`, because bay keeps its state below the home of the user who runs it, so the
+    setup, the check, the pull and every command of a test run as one user. On a runner of CI the action
+    `.github/actions/bay` runs before the run step of each job that runs bay: `make install-bay`, `make bay-path`,
+    which puts `var/tools/bay` on the PATH of the later steps, and `make setup-bay`, which runs `bay install`, the one
+    target that changes the setup of a machine and that a developer runs by choice. The recipes `ci-test` and
+    `ci-bindings` then check the setup with `make redis-image` and fail naming `bay install` where it is missing.
   - `make test` runs the tests through `scripts/test-run.mts`, which the node of the checkout runs and which owns the
     directory of the run. A Compose file is written before its `up`, so every project that started has its file.
     The run starts the command of the tests as the leader of a process group of its own, in a session of its own
@@ -546,8 +547,8 @@ the statement that it checks. A PHP value and its serialize form are those of ph
     that is not installed (`make redis-image` pulls it) and an output of `up` of another `schemaVersion` or without the
     service fail the run before the tests. The WASM tests run without the service: the core of WASM has no socket, so
     each row of `cases` of a group of such cases has `only` for `php`, `python`, `node` and `go`, with this rule as its
-    reason (binding GN-13h, CK-95). The job `bindings` of the workflow `ci` runs `make ci-bindings BAY_SUDO=1`, whose
-    recipe installs bay, applies its setup and pulls the image as `make ci-test` does before the tests.
+    reason (binding GN-13h, CK-95). The job `bindings` of the workflow `ci` uses the action bay and runs `make ci-bindings`,
+    whose recipe pulls the image as `make ci-test` does before the tests.
   - The program. The test runs it as `<program> setup|change|check <scope>` with a JSON object on its standard input,
     which maps the name of a key after the scope to its value: a text, whose characters U+0000 to U+00FF are the bytes
     of a string (SE-10.2), or `{"list": [<text>, ...]}`, a list of at least one such item; in `change`, null removes

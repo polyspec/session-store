@@ -144,9 +144,10 @@ test('config/toolchain.json names the release of bay that CI installs with the s
     const digest = bay?.sha256?.[platform];
     assert.match(typeof digest === 'string' ? digest : '', /^[0-9a-f]{64}$/, `config/toolchain.json holds no sha256 of bay for ${platform}`);
   }
-  // bay of PATH by default, and the bay of var/tools behind sudo -n when BAY_SUDO is set; no recipe names bay itself.
+  // bay of PATH, with no sudo: the action bay of CI puts the bay of var/tools on PATH; no recipe names bay itself.
   const makefile = read('Makefile');
-  assert.match(makefile, /^BAY \?= \$\(if \$\(BAY_SUDO\),sudo -n \$\(VAR_TOOLS\)\/bay\/bay,bay\)$/m, 'BAY of the Makefile is not bay of PATH or the bay of var/tools behind sudo -n');
+  assert.match(makefile, /^BAY \?= bay$/m, 'BAY of the Makefile is not bay of PATH');
+  assert.doesNotMatch(makefile, /\bsudo\b|BAY_SUDO/, 'the Makefile starts a command with sudo, which runs bay as another user than the run');
   assert.doesNotMatch(makefile, /BAY_VERSION|BAY_RELEASE|toolchain\.json"\)\.bay/, 'the Makefile reads the pin of bay, which only the install of CI reads');
   const started = makefile.split('\n').filter((line) => /^\t(?:.*[ ;|&])?bay(?: |$)/.test(line));
   assert.deepEqual(started, [], 'a recipe starts bay by its name, not by BAY');

@@ -45,6 +45,7 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   `make commit-names-test`가 실행한다.
 - `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/actions/bootstrap`: CI, 릴리스, 그 job의
   bootstrap이다. bootstrap은 `make bootstrap`, `make install-tools TOOLS=npm`, `make install-packages`를 실행한다.
+  `.github/actions/bay`: runner의 bay이며, `make install-bay`, `make bay-path`, `make setup-bay`를 실행한다.
 - `mise.toml`, `mise.lock`, `.mise/locks`, `config/toolchain.json`: checkout의 도구 고정이다("도구").
   `scripts/tool-pins.test.mts`가 그 시험이며, `make tool-pins-test`가 실행한다.
 - `config/owner-checks.json`: 추적되는 각 경로를 소유하는 make target이다. `make owner-validate`는 어떤 규칙도 소유하지
@@ -86,7 +87,10 @@ session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규
   개발 장비의 bay는 자주 새 빌드가 되기 때문이다. recipe는 PATH의 `bay`를 시작하고(Makefile의 `BAY`), run은
   `bay version`의 출력을 첫 줄로 쓴다. bay의 릴리스는 CI를 위해서만 `config/toolchain.json`에 고정한다(`bay`: version,
   릴리스의 주소, 플랫폼별 archive의 sha256). runner에는 bay가 없고, 받은 것은 고정한 digest로만 쓰기 때문이다.
-  `make install-bay`가 그것을 `var/tools/bay`에 설치하고, `BAY_SUDO=1`이면 `BAY`는 `sudo -n` 뒤의 그 bay가 된다.
+  `make install-bay`가 그것을 `var/tools/bay`에 설치하고, `make bay-path`가 그 디렉터리를 GitHub job의 뒤 step의 PATH에
+  둔다. bay의 장비 설정은 장비마다 한 번 `bay install`(`make setup-bay`)로 적용하며, job의 recipe가 적용하지 않고
+  `sudo`로 적용하지도 않는다. runner에서는 action `.github/actions/bay`가 `run` step 앞에서 `make install-bay`,
+  `make bay-path`, `make setup-bay`를 실행하고, 설정이 없는 장비의 run은 `bay check`에서 실패하며 `bay install`을 알려 준다.
   고정 값을 올리려면 `config/toolchain.json`의 `bay`에서 `version`을 그 릴리스의 tag로, `sha256`의 각 값을 그 릴리스의
   파일 `SHA256SUMS`에 있는 해당 archive의 줄로 바꾼다(`darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`가
   archive `darwin_arm64`, `darwin_amd64`, `linux_amd64`, `linux_arm64`다). 다른 어떤 파일도 릴리스를 적지 않는다. 그런
@@ -187,12 +191,14 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   commit이다. 어떤 job과 step도 `timeout-minutes`를 두지 않는다. 모든 `run` step은 `Makefile`이나 그것이 include하는 릴리스
   recipe(`packages/release.mk`)가 정의하는 make target 하나다. 그래야 Makefile의 설정이 CI의 모든 명령에 적용된다. `make workflows-test`는 이 규칙 중 하나를 어기는
   workflow와 action을 실패시킨다.
-- CI가 실행하는 workflow, 곧 `ci.yml`과 그것이 호출하는 `assets.yml`의 모든 job은 `run` step 하나, 곧 `ci.yml`의 job은 `make ci-<job>`, GitHub가 `assets / <job>`로 부르는 `assets.yml`의 job은 `make ci-assets-<job>`을
-  두고, 그 인자는 make 변수뿐이다: `BAY_SUDO=1` 같은 값, `NAME=${{ matrix.<key> }}`로 쓰는 matrix 값,
-  `NAME=${{ inputs.<key> }}`로 쓰는 `assets.yml`의 input이며, 다른 식은 없다. CI에만 있는 판정 job `ci-passed`는
+- workflow `ci.yml`, `release.yml`과 둘이 호출하는 `assets.yml`의 모든 job은 `run` step 하나, 곧 `ci.yml`의 job은
+  `make ci-<job>`, `release.yml`의 job은 `make ci-release-<job>`, GitHub가 `assets / <job>`로 부르는 `assets.yml`의 job은
+  `make ci-assets-<job>`을 두고, 그 인자는 make 변수뿐이다: 값, `NAME=${{ matrix.<key> }}`로 쓰는 matrix 값,
+  `NAME=${{ inputs.<key> }}`로 쓰는 `assets.yml`의 input, `NAME=${{ needs.<job>.outputs.<key> }}`로 쓰는 job이 기다리는
+  job의 output, job `tag`의 run id처럼 `NAME="${{ ... }}"`로 따옴표에 넣은 이벤트의 식이다. CI에만 있는 판정 job `ci-passed`는
   `make ci-passed FAIL_SKIPPED=1 RESULTS='${{ toJSON(needs) }}'`를 실행한다. 다른 모든 step은 runner를 준비하거나
-  결과를 옮기는 `uses` step이고(checkout, setup-php, bootstrap action, upload-artifact), `if` 조건은 `uses` step에만
-  두며, 어떤 job도 `env`를 두지 않는다. `Makefile`의 recipe `ci-<job>`이 job의 순서와 조건을 가진다: 설치와 선행
+  결과를 옮기는 `uses` step이고(checkout, setup-php, bootstrap action, action bay, upload-artifact, download-artifact), `if` 조건은 `uses` step에만
+  두며, 어떤 step도 `env`를 두지 않고, job은 릴리스 target이 gh로 읽는 run의 token `GH_TOKEN` 외의 `env`를 두지 않는다. `Makefile`의 recipe `ci-<job>`이 job의 순서와 조건을 가진다: 설치와 선행
   작업을 먼저 하고 실패하면 멈추며, 그다음 검사나 빌드를 각각 끝까지 실행하며 여럿이면 ci-targets로 실행하고, 그
   상태가 recipe의 상태다. 시험 target의 Redis 서버는 그 target 안에서 `scripts/test-run.mts`가 시작하고, target이
   실패해도 지운다. 그래서 job의 내용이 YAML이 아니라 recipe에 있으므로, 로컬 실행은 CI가 하는 호출
@@ -204,25 +210,24 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   `make commit-names-test`, `make release-coverage`)를 실행하고, job `rust`는 `make ci-rust`를 실행하며, 그 recipe는 `make install-rust` 뒤에 `CI_RUST`(`make lint-rust`,
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
   보고서 `var/report/ci-targets`를 올린다.
-- workflow `ci`의 job `bindings`는 `.php-version`의 PHP를 설치하고 `make ci-bindings BAY_SUDO=1`을 실행한다. 그
-  recipe는 `make install-rust`, `make install-tools`, `make install-php-tools`, `make install-bay`, `make setup-bay`,
-  `make redis-image`를 그 순서로 실행한 뒤 `CI_BINDINGS`(`make lint-bindings`, `make check-declarations`,
+- workflow `ci`의 job `bindings`는 `.php-version`의 PHP를 설치하고 action bay를 쓴 뒤 `make ci-bindings`를 실행한다. 그
+  recipe는 `make install-rust`, `make install-tools`, `make install-php-tools`, `make redis-image`를 그 순서로 실행한 뒤 `CI_BINDINGS`(`make lint-bindings`, `make check-declarations`,
   `make test-python`, `make test-node`, `make test-wasm`, `make test-php`, `make test-go`)를 실행한다. 그래서
   릴리스의 바인딩 package는 시험되지 않은 채로 나가지 않는다. `ci-passed`가 이 job을 `needs`에 두고,
-  `make workflows-test`는 이 job이 없는 workflow `ci`, 그 target을 그 순서로 갖지 않은 recipe, target 하나를 빠뜨린
-  `CI_BINDINGS`를 실패시킨다. bay와 이미지는 job `test`에서처럼 설치된다. `make test-python`, `make test-node`,
+  `make workflows-test`는 이 job이 없는 workflow `ci`, action bay보다 먼저 실행하는 job, 시험 전에 `make redis-image`가
+  없는 recipe, bay의 장비 설정을 적용하는 `ci-bindings`나 `ci-test`의 recipe, target 하나를 빠뜨린 `CI_BINDINGS`를
+  실패시킨다. bay와 이미지는 job `test`에서처럼 주어진다. `make test-python`, `make test-node`,
   `make test-php`, `make test-go`가 case의 Redis 서비스를 시작하는 `scripts/test-run.mts`의 run 안에서 생성된 시험을
   실행하기 때문이다(SE-10.7).
 - workflow `ci`의 마지막 job은 `ci-passed`다. 이 job은 다른 모든 job 뒤에, 실패한 job 뒤에도 실행되고, 그 job을 모두
   `needs`에 둔다. `make ci-passed FAIL_SKIPPED=1`(kit의 ci-passed)은 각 job의 결과가 success일 때만 통과한다. 그래서
   job 하나가 run의 결과를 말한다. `make workflows-test`는 마지막 job이 다른 job이거나 `needs`가 job 하나를 빠뜨린
   workflow `ci`를 실패시킨다.
-- workflow `ci`의 job `test`는 `.php-version`의 PHP를 설치하고 `make ci-test BAY_SUDO=1`을 실행하며, 그 recipe는
-  `make install-rust`, `make install-bay`, `make setup-bay`, `make redis-image`, `make test`를 실행한다.
-  `config/toolchain.json`이 CI를 위해 고정한 bay가 시험의 Redis 서버를 runner의 Docker에서 `REDIS_IMAGE`의 image로
-  실행하고(SE-10.4), bay의 모든 명령은 그 상태를 가진 한 사용자인 root로 실행된다. 시험 process는 root로 실행되지
-  않아 root의 home 아래에 있는 authority 파일을 읽지 못하므로, TLS의 시험은 `bay install`이 authority를 더한 시스템의
-  certificate store로 그 authority를 신뢰한다. CI의 첫 run까지 미확인: run의 신호가 `sudo`가 시작한 bay에 닿는 것.
+- workflow `ci`의 job `test`는 `.php-version`의 PHP를 설치하고 action bay를 쓴 뒤 `make ci-test`를 실행하며, 그 recipe는
+  `make install-rust`, `make redis-image`, `make test`를 실행한다. `config/toolchain.json`이 CI를 위해 고정한 bay가
+  시험의 Redis 서버를 runner의 Docker에서 `REDIS_IMAGE`의 image로 실행한다(SE-10.4). bay, 그 장비 설정, 시험은 bay의
+  상태를 가진 한 사용자인 runner의 사용자로 실행되므로, TLS의 시험은 그 사용자의 authority를 읽는다. CI의 첫 run까지
+  미확인: `bay install`이 `sudo` 없이 runner에 장비 설정을 적용하는 것.
 - binding release-recipes는 계약의 릴리스 recipe를 `packages/release.mk`에 쓴다(binding GN-19h). 이 파일은 생성되며
   추적하지 않는다. `make release-recipes`가 쓰고, Makefile은 `BINDING_RUN`, `NODE`, `NPM`, `UV`와 빈 `BINDING_DEP`를
   정의한 뒤에 그것을 include한다. recipe는 Go module의 static library, abi3 wheel, PHP extension, platform package를

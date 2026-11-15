@@ -1,0 +1,18 @@
+# The bay of a runner of session-store: the jobs test and bindings of .github/workflows/ci.yml run it after their bootstrap
+# with `uses: ./.github/actions/bay`, before their one run step. A runner holds no bay, so the action installs the release
+# that config/toolchain.json pins into var/tools/bay by the sha256 of its archive, puts that directory on the PATH of the
+# later steps, and applies the machine setup of bay once with `bay install`, which no recipe of a job runs (SE-10.4).
+name: bay
+description: Installs the pinned bay into var/tools/bay, puts it on PATH and applies its machine setup with bay install.
+runs:
+  using: composite
+  steps:
+    - name: install the pinned bay
+      shell: bash
+      run: make install-bay
+    - name: put bay on PATH
+      shell: bash
+      run: make bay-path
+    - name: apply the machine setup of bay
+      shell: bash
+      run: make setup-bay

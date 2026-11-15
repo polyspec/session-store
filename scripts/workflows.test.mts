@@ -8,9 +8,9 @@
 //   - the workflow ci has the job bindings, which runs `make ci-bindings`, and CI_BINDINGS of the Makefile names the
 //     tests of every target of the contract (binding BD-27): lint-bindings, check-declarations, test-python, test-node,
 //     test-wasm, test-php and test-go, so that no binding package is released untested; the job starts the Redis
-//     service of the generated tests as the job test starts its servers (SE-10.7): its run step is
-//     `make ci-bindings BAY_SUDO=1`, whose recipe runs install-bay, setup-bay and redis-image, in that order, before the
-//     tests;
+//     service of the generated tests as the job test starts its servers (SE-10.7): it uses the action bay, which gives bay
+//     and its machine setup, before its run step `make ci-bindings`, whose recipe runs redis-image before the tests and
+//     applies no machine setup of bay: no recipe runs setup-bay or sudo;
 //   - every action is a local action of .github/actions or is pinned by its full commit, and a comment of the file names
 //     its release, `# <owner>/<repository> <release>`;
 //   - no job and no step sets timeout-minutes;
@@ -21,10 +21,12 @@
 //   - the last job of the workflow ci is ci-passed, which runs after every other job, also after a failed one
 //     (`if: ${{ always() }}`), needs each of them and runs `make ci-passed FAIL_SKIPPED=1 RESULTS='${{ toJSON(needs) }}'`,
 //     the JSON of its needs, so that it passes only when every other job succeeded;
-//   - every job of the workflows that CI runs, ci and assets, which it calls, has one run step, `make ci-<job>` with make
-//     variables alone, a matrix value as NAME=${{ matrix.<key> }} and an input of the called workflow as
-//     NAME=${{ inputs.<key> }}; its other steps are uses steps, only a uses step has a condition, and no job sets env, so
-//     that the recipe ci-<job> holds the order and the conditions of the job and a local run is the call that CI makes.
+//   - every job of the workflows ci, release and assets, which both call, has one run step, `make ci-<job>`,
+//     `make ci-release-<job>` or `make ci-assets-<job>`, with make variables alone, a matrix value as
+//     NAME=${{ matrix.<key> }}, an input of the called workflow as NAME=${{ inputs.<key> }}, an output of a needed job as
+//     NAME=${{ needs.<job>.outputs.<key> }} and a quoted expression of the event as NAME="${{ ... }}"; its other steps are
+//     uses steps, only a uses step has a condition, no step sets env and a job sets GH_TOKEN alone, so that the recipe
+//     holds the order and the conditions of the job and a local run is the call that the workflow makes.
 //
 // The test reads the files as text, line by line: the workflows hold one key on a line, and a run step whose command
 // continues on a later line is a finding.
@@ -48,11 +50,14 @@ const MATRIX_RUNNER = '${{ matrix.runner }}';
 const LAST = 'ci-passed';
 
 // A run step: make, one target, then arguments NAME=value, NAME="words" for a list such as the tools of a job, or
-// expressions ${{ ... }}.
-const RUN = /^make ([a-z][a-z0-9-]*)((?: (?:[A-Z][A-Z0-9_]*=(?:[A-Za-z0-9_.-]+|"[A-Za-z0-9_. -]+"|\$\{\{[^}]*\}\}|'\$\{\{[^}]*\}\}')|\$\{\{[^}]*\}\}))*)$/;
-// An argument of the run step of a job of CI: NAME=value, NAME="words", or a matrix value or an input of the called
-// workflow, NAME=${{ matrix.<key> }} or NAME=${{ inputs.<key> }}.
-const JOB_ARGUMENT = /^[A-Z][A-Z0-9_]*=(?:[A-Za-z0-9_.-]+|"[A-Za-z0-9_. -]+"|\$\{\{ (?:matrix|inputs)\.[a-z][a-z0-9_-]* \}\})$/;
+// expressions ${{ ... }}, bare or quoted.
+const RUN = /^make ([a-z][a-z0-9-]*)((?: (?:[A-Z][A-Z0-9_]*=(?:[A-Za-z0-9_.-]+|"[A-Za-z0-9_. -]+"|\$\{\{[^}]*\}\}|'\$\{\{[^}]*\}\}'|"\$\{\{[^}"]*\}\}")|\$\{\{[^}]*\}\}))*)$/;
+// An argument of the run step of a job: NAME=value, NAME="words", a matrix value or an input of the called workflow,
+// NAME=${{ matrix.<key> }} or NAME=${{ inputs.<key> }}, an output of a job that the job needs, NAME=${{ needs.<job>.outputs.<key> }},
+// or a quoted expression of the event, NAME="${{ ... }}", such as the run id and the AUTO of the job tag of release.yml.
+const JOB_ARGUMENT = /^[A-Z][A-Z0-9_]*=(?:[A-Za-z0-9_.-]+|"[A-Za-z0-9_. -]+"|\$\{\{ (?:matrix|inputs)\.[a-z][a-z0-9_-]* \}\}|\$\{\{ needs\.[a-z][a-z0-9_-]*\.outputs\.[a-z][a-z0-9_-]* \}\}|"\$\{\{ [^"}]* \}\}")$/;
+// The one environment that a job may set: the token of the run, which the release targets read with gh.
+const JOB_ENV = ['    env:', '      GH_TOKEN: ${{ github.token }}'];
 // The run step of the judgement job ci-passed, which reads the results of the other jobs.
 const LAST_RUN = `make ${LAST} FAIL_SKIPPED=1 RESULTS='\${{ toJSON(needs) }}'`;
 const PINNED = /^([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)@[0-9a-f]{40}$/;
@@ -215,14 +220,18 @@ function recipeName(file: string, job: string): string {
 /**
  * The findings of the steps of the jobs of a workflow that CI runs: each job that has steps runs one make target, recipeName,
  * or for ci-passed its judgement LAST_RUN, with arguments of JOB_ARGUMENT alone; every other step is a uses step, a
- * condition stands on a uses step alone, and no job sets env. A job that calls a workflow has no steps of its own.
+ * condition stands on a uses step alone, and no job or step sets env but a job that sets GH_TOKEN alone (JOB_ENV). A job
+ * that calls a workflow has no steps of its own.
  */
 function jobStepFindings(file: string, text: string): string[] {
   const found: string[] = [];
   for (const [name, lines] of jobsOf(text)) {
     if (lines.some((line) => /^ {4}uses: /.test(line))) continue;
     const at = `${file}: the job ${name}`;
-    if (lines.some((line) => /^ +(?:- )?env:/.test(line))) found.push(`${at} sets env`);
+    const env = lines.indexOf(JOB_ENV[0] ?? '');
+    const rest = env < 0 ? lines : [...lines.slice(0, env), ...lines.slice(env + 1).filter((line, index) => index !== 0 || line !== JOB_ENV[1])];
+    if (env >= 0 && (lines[env + 1] !== JOB_ENV[1] || /^ {6}\S/.test(lines[env + 2] ?? ''))) found.push(`${at} sets env other than GH_TOKEN`);
+    if (rest.some((line) => /^ +(?:- )?env:/.test(line))) found.push(`${at} sets env`);
     const steps = stepsOf(lines);
     const runs = steps.map((step) => step.map((line) => valueOf(line, 'run')).find((run) => run !== undefined)).filter((run) => run !== undefined);
     if (runs.length !== 1) found.push(`${at} has ${String(runs.length)} run steps, not one`);
@@ -362,21 +371,32 @@ function callFindings(file: string, text: string): string[] {
 
 // The targets that test the bindings of every target of the contract (binding BD-27), which the job bindings runs.
 const BINDING_TESTS = ['lint-bindings', 'check-declarations', 'test-python', 'test-node', 'test-wasm', 'test-php', 'test-go'];
-// The run step of the job bindings, and the targets that its recipe ci-bindings runs, in this order, before the tests: bay
-// and the Redis image of the service of the generated tests (SE-10.7), as the job test installs them.
-const BINDINGS_RUN = 'make ci-bindings BAY_SUDO=1';
-const BINDING_PREREQUISITES = ['install-bay', 'setup-bay', 'redis-image'];
+// The run step of the job bindings, the action that gives bay and its machine setup before it, and the target that its
+// recipe ci-bindings runs before the tests: the Redis image of the service of the generated tests (SE-10.7), as the job
+// test pulls it. The machine setup of bay is applied once per machine, so no recipe of a job applies it (MACHINE_SETUP).
+const BINDINGS_RUN = 'make ci-bindings';
+const BAY_ACTION = './.github/actions/bay';
+const BINDING_PREREQUISITES = ['redis-image'];
+const MACHINE_SETUP = /(?:^|\s)(?:setup-bay|install|sudo)(?:\s|$)/;
 
 /**
- * The findings of the job bindings of the workflow ci: it runs BINDINGS_RUN, its recipe ci-bindings runs the targets of
- * BINDING_PREREQUISITES in their order and then the tests of CI_BINDINGS, and CI_BINDINGS of the Makefile names each
- * target of BINDING_TESTS.
+ * The findings of the job bindings of the workflow ci: it uses BAY_ACTION before it runs BINDINGS_RUN, its recipe
+ * ci-bindings runs the targets of BINDING_PREREQUISITES in their order and then the tests of CI_BINDINGS, the recipes
+ * ci-bindings and ci-test apply no machine setup of bay, and CI_BINDINGS of the Makefile names each target of BINDING_TESTS.
  */
 function bindingsJobFindings(file: string, text: string, makefile: string): string[] {
   const found: string[] = [];
   const lines = jobsOf(text).get('bindings');
   if (lines === undefined) found.push(`${file}: has no job bindings`);
-  else if (!lines.some((line) => valueOf(line, 'run') === BINDINGS_RUN)) found.push(`${file}: the job bindings does not run ${BINDINGS_RUN}`);
+  else {
+    const run = lines.findIndex((line) => valueOf(line, 'run') === BINDINGS_RUN);
+    const bay = lines.findIndex((line) => valueOf(line, 'uses') === BAY_ACTION);
+    if (run < 0) found.push(`${file}: the job bindings does not run ${BINDINGS_RUN}`);
+    else if (bay < 0 || bay > run) found.push(`${file}: the job bindings does not use ${BAY_ACTION} before ${BINDINGS_RUN}`);
+  }
+  for (const target of ['ci-bindings', 'ci-test']) {
+    if (recipeOf(makefile, target).some((line) => MACHINE_SETUP.test(line))) found.push(`Makefile: the recipe ${target} applies the machine setup of bay`);
+  }
   const recipe = recipeOf(makefile, 'ci-bindings');
   const order = [...BINDING_PREREQUISITES, '$(CI_BINDINGS)'];
   const at = order.map((target) => recipe.findIndex((line) => line.split(' ').includes(target)));
@@ -655,19 +675,46 @@ test('every job of CI runs its recipe ci-<job> in one run step, and its other st
   assert.deepEqual(broken('      - name: shared checks\n', '      - name: shared checks\n        if: ${{ !cancelled() }}\n'), [`${CI}: the job shared has a condition on a run step`]);
   assert.deepEqual(broken('      - name: shared checks\n', '      - name: shared checks\n        env:\n          TOOLS: alint\n'), [`${CI}: the job shared sets env`]);
   assert.deepEqual(broken("RESULTS='${{ toJSON(needs) }}'", 'RESULTS=${{ toJSON(needs) }}'), [`${CI}: the job ci-passed runs make ci-passed FAIL_SKIPPED=1 RESULTS=\${{ toJSON(needs) }}, not ${LAST_RUN}`]);
+  // The jobs of release.yml run ci-release-<job>, with the outputs of the job tag and quoted expressions of the event, and
+  // set the token of the run alone.
+  const release = `jobs:
+  tag:
+    runs-on: ubuntu-26.04-arm
+    env:
+      GH_TOKEN: \${{ github.token }}
+    steps:
+      - id: tag
+        run: make ci-release-tag RUN="\${{ inputs.run || github.event.workflow_run.id }}" AUTO="\${{ github.event_name == 'workflow_run' && '1' || '' }}"
+  release:
+    runs-on: ubuntu-26.04-arm
+    env:
+      GH_TOKEN: \${{ github.token }}
+    steps:
+      - uses: ./.github/actions/bootstrap
+      - run: make ci-release-release TAG=\${{ needs.tag.outputs.tag }} VERSION=\${{ needs.tag.outputs.version }}
+`;
+  assert.deepEqual(jobStepFindings(RELEASE, release), []);
+  assert.deepEqual(jobStepFindings(RELEASE, release.replace('make ci-release-tag', 'make release-tag')), [`${RELEASE}: the job tag runs make release-tag RUN="\${{ inputs.run || github.event.workflow_run.id }}" AUTO="\${{ github.event_name == 'workflow_run' && '1' || '' }}", not make ci-release-tag`]);
+  assert.deepEqual(jobStepFindings(RELEASE, release.replace('      GH_TOKEN: ${{ github.token }}\n    steps:\n      - id', '      GH_TOKEN: ${{ github.token }}\n      TAG: v1\n    steps:\n      - id')), [`${RELEASE}: the job tag sets env other than GH_TOKEN`]);
+  assert.deepEqual(jobStepFindings(RELEASE, release.replace('      GH_TOKEN: ${{ github.token }}\n    steps:\n      - id', '      TAG: v1\n    steps:\n      - id')), [`${RELEASE}: the job tag sets env other than GH_TOKEN`]);
+  assert.deepEqual(jobStepFindings(RELEASE, release.replace('      - run: make ci-release-release', '      - run: make release-tools\n      - run: make ci-release-release')), [`${RELEASE}: the job release has 2 run steps, not one`]);
+  assert.deepEqual(jobStepFindings(RELEASE, release.replace('      - run: make ci-release-release', '      - env:\n          GIT_AUTHOR_NAME: x\n        run: make ci-release-release')), [`${RELEASE}: the job release sets env`]);
 });
 
-test('the job bindings runs make ci-bindings, which starts the Redis service before the tests of every target', () => {
-  const job = `${GOOD}  bindings:\n    runs-on: ubuntu-26.04-arm\n    steps:\n      - run: ${BINDINGS_RUN}\n`;
-  const recipe = 'ci-bindings: ## The job bindings\n\t$(MAKE) install-bay\n\t$(MAKE) setup-bay\n\t$(MAKE) redis-image\n\t$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_BINDINGS)\n';
-  const makefile = `CI_BINDINGS := ${BINDING_TESTS.join(' ')}\n${recipe}`;
-  const order = 'Makefile: the recipe ci-bindings does not run install-bay, setup-bay, redis-image, $(CI_BINDINGS) in this order';
+test('the job bindings runs make ci-bindings after the action bay, and no recipe applies the machine setup of bay', () => {
+  const job = `${GOOD}  bindings:\n    runs-on: ubuntu-26.04-arm\n    steps:\n      - uses: ${BAY_ACTION}\n      - run: ${BINDINGS_RUN}\n`;
+  const recipe = 'ci-bindings: ## The job bindings\n\t$(MAKE) install-rust\n\t$(MAKE) redis-image\n\t$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_BINDINGS)\n';
+  const makefile = `CI_BINDINGS := ${BINDING_TESTS.join(' ')}\n${recipe}ci-test:\n\t$(MAKE) redis-image\n\t$(MAKE) test\n`;
+  const order = 'Makefile: the recipe ci-bindings does not run redis-image, $(CI_BINDINGS) in this order';
   assert.deepEqual(bindingsJobFindings(CI, job, makefile), []);
   assert.deepEqual(bindingsJobFindings(CI, GOOD, makefile), [`${CI}: has no job bindings`]);
-  assert.deepEqual(bindingsJobFindings(CI, job.replace(BINDINGS_RUN, 'make ci-bindings'), makefile), [`${CI}: the job bindings does not run ${BINDINGS_RUN}`]);
-  assert.deepEqual(bindingsJobFindings(CI, job, makefile.replace('\t$(MAKE) redis-image\n', '')), [order]);
-  assert.deepEqual(bindingsJobFindings(CI, job, makefile.replace('install-bay\n\t$(MAKE) setup-bay', 'setup-bay\n\t$(MAKE) install-bay')), [order]);
-  assert.deepEqual(bindingsJobFindings(CI, job, makefile.replace('\t$(MAKE) redis-image\n', '').replace('$(CI_BINDINGS)\n', '$(CI_BINDINGS)\n\t$(MAKE) redis-image\n')), [order]);
+  assert.deepEqual(bindingsJobFindings(CI, job.replace(BINDINGS_RUN, 'make ci-bindings BAY_SUDO=1'), makefile), [`${CI}: the job bindings does not run ${BINDINGS_RUN}`]);
+  assert.deepEqual(bindingsJobFindings(CI, job.replace(`      - uses: ${BAY_ACTION}\n`, ''), makefile), [`${CI}: the job bindings does not use ${BAY_ACTION} before ${BINDINGS_RUN}`]);
+  assert.deepEqual(bindingsJobFindings(CI, job.replace(`      - uses: ${BAY_ACTION}\n      - run: ${BINDINGS_RUN}\n`, `      - run: ${BINDINGS_RUN}\n      - uses: ${BAY_ACTION}\n`), makefile), [`${CI}: the job bindings does not use ${BAY_ACTION} before ${BINDINGS_RUN}`]);
+  assert.deepEqual(bindingsJobFindings(CI, job, makefile.replace('\t$(MAKE) redis-image\n\t$(NODE)', '\t$(NODE)')), [order]);
+  assert.deepEqual(bindingsJobFindings(CI, job, makefile.replace('\t$(MAKE) redis-image\n\t$(NODE)', '\t$(NODE)').replace('$(CI_BINDINGS)\n', '$(CI_BINDINGS)\n\t$(MAKE) redis-image\n')), [order]);
+  assert.deepEqual(bindingsJobFindings(CI, job, makefile.replace('\t$(MAKE) install-rust\n', '\t$(MAKE) setup-bay\n')), ['Makefile: the recipe ci-bindings applies the machine setup of bay']);
+  assert.deepEqual(bindingsJobFindings(CI, job, makefile.replace('\t$(MAKE) test\n', '\t$(MAKE) test\n\tsudo -n bay install\n')), ['Makefile: the recipe ci-test applies the machine setup of bay']);
   assert.deepEqual(bindingsJobFindings(CI, job, makefile.replace(' test-php', '')), ['Makefile: CI_BINDINGS names no test-php']);
   assert.deepEqual(bindingsJobFindings(CI, job, recipe), [`Makefile: CI_BINDINGS names no ${BINDING_TESTS.join(', ')}`]);
 });
@@ -699,7 +746,7 @@ test('the workflows and the actions of the repository keep the rules', (t) => {
   found.push(...lastJobFindings(CI, readFileSync(join(root, CI), 'utf8')));
   found.push(...platformFindings(ASSETS, readFileSync(join(root, ASSETS), 'utf8')));
   found.push(...phpMinorFindings(ASSETS, readFileSync(join(root, ASSETS), 'utf8'), ['8.4', '8.5'], readFileSync(join(root, 'Makefile'), 'utf8')));
-  for (const file of [CI, ASSETS]) found.push(...jobStepFindings(file, readFileSync(join(root, file), 'utf8')));
+  for (const file of [CI, ASSETS, RELEASE]) found.push(...jobStepFindings(file, readFileSync(join(root, file), 'utf8')));
   for (const file of [CI, RELEASE]) found.push(...callFindings(file, readFileSync(join(root, file), 'utf8')));
   found.push(...bindingsJobFindings(CI, readFileSync(join(root, CI), 'utf8'), readFileSync(join(root, 'Makefile'), 'utf8')));
   assert.deepEqual(found, []);

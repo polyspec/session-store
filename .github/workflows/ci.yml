@@ -7,8 +7,9 @@
 # bindings as a release does, so that an asset that does not build stops the release before a tag exists.
 #
 # The job test runs make test: bay runs the Redis servers of its tests on Docker from the image that REDIS_IMAGE of the
-# Makefile pins by its digest, the same image that it runs on Apple container on a development machine (SE-10.4). Its
-# recipe ci-test installs the pinned release of bay and applies its machine setup first.
+# Makefile pins by its digest, the same image that it runs on Apple container on a development machine (SE-10.4). The
+# action .github/actions/bay installs the pinned release of bay and applies its machine setup, once per runner, before the
+# run step; no recipe applies it, and the run fails naming `bay install` on a machine without it.
 name: ci
 
 on:
@@ -75,17 +76,17 @@ jobs:
           tools: none
           coverage: none
       - uses: ./.github/actions/bootstrap
-      # The Rust toolchain, bay of the release that config/toolchain.json pins, into var/tools/bay by the sha256 of its
-      # archive, its machine setup and the pinned Redis image, then make test. BAY_SUDO=1: every command of bay runs as
-      # root, the one user that holds its state on the runner.
+      # bay of the release that config/toolchain.json pins, on PATH, with its machine setup.
+      - uses: ./.github/actions/bay
+      # The Rust toolchain and the pinned Redis image, then make test.
       - name: tests
-        run: make ci-test BAY_SUDO=1
+        run: make ci-test
 
   # The tests of the bindings of every target of the contract (binding BD-27): clippy on the workspace, the generated
   # declarations, and the tests that binding generates with the contract cases of each binding on the runner of its
   # language (make ci-bindings, CI_BINDINGS of the Makefile), so that no binding package is released untested. The job
-  # installs every tool of mise.toml, the PHP of .php-version and the PHPUnit of composer.lock, and, as the job test does,
-  # the pinned bay with its machine setup and the pinned Redis image, all in its recipe ci-bindings: the generated tests of
+  # installs every tool of mise.toml, the PHP of .php-version, the PHPUnit of composer.lock and, as the job test does, the
+  # pinned Redis image in its recipe ci-bindings, after the action bay: the generated tests of
   # PHP, Python, Node and Go run the cases of the Redis service against a server of the image that each test target
   # starts and removes (SE-10.7).
   bindings:
@@ -100,9 +101,10 @@ jobs:
           tools: none
           coverage: none
       - uses: ./.github/actions/bootstrap
-      # BAY_SUDO=1: every command of bay runs as root, the one user that holds its state on the runner.
+      # bay of the release that config/toolchain.json pins, on PATH, with its machine setup.
+      - uses: ./.github/actions/bay
       - name: tests of the bindings
-        run: make ci-bindings BAY_SUDO=1
+        run: make ci-bindings
       - name: report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

@@ -1,10 +1,10 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: e9caa38839a5516baf6bbddbd44ab530211b24cded9157189e1fbdb2a1e51dcd -->
+<!-- source-sha256: 8fd2b442dac36d288284ad271c46cedb7dc5aa8f00cda0715ca2da4a827fe933 -->
 
 ## Unreleased
 
 - core는 wasm32의 난수 원천을 getrandom의 feature `wasm_js`만으로 고른다. getrandom 0.3.4에는 필요 없는 `--cfg getrandom_backend="wasm_js"`를 `.cargo/config.toml`이 더는 두지 않고, core를 wasm32로 빌드하는 crate도 아무것도 설정하지 않는다(SR-1.5).
-- Redis 저장소의 연결은 저장소가 redis-rs에 주는 연결 제한 시간인 5초 안에 맺는다. redis-rs는 TLS 연결마다 그 안에서 기계의 신뢰 저장소를 읽는데, 부하가 있는 macOS에서는 그것이 기본값 1초를 넘었다(SR-6.1b).
+- TLS로 연결하는 Redis 저장소는 기계의 신뢰 저장소를 프로세스에서 한 번 읽고, 그 인증 기관들을 서버, Sentinel과 그 primary, Cluster의 client에 준다. redis-rs는 그것을 연결마다 1초의 연결 제한 시간 안에서 읽었고, macOS의 keychain을 읽는 시간이 그것을 넘길 수 있었다(SR-6.1a). `redis`는 tag `redis-1.8.2-p1`의 redis-rs 1.8.2 fork다(docs/operations/dependencies.md).
 - 호출을 이어 가는 memory 저장소의 case 7개가 바인딩이 실행하는 `memory_store.get.made`와 `memory_store.set.made`의 case다: 이후의 호출은 그 `after`이고, `renewals`는 거기서 property로 읽으며, 같은 호출이 레코드 세션에 쓰는 record인 `record`는 Rust 시험이 읽는 key다(`reads`). 어떤 member도 record를 주지 않기 때문이다(SE-10.1, SE-1.2). 객체와 reference를 함께 쓰는 값의 case는 group `store`에 남는다.
 - `Cargo.lock`이 Git에서 고정한 저장소를 `var/deps`에 clone하는 target(`scripts/deps.mts`)은 `make install-binding`이 아니라 `make install-deps`다. binding은 npm package로만 설치되고(T1.32), `make tool-pins-test`는 `install-binding`을 이름하는 Makefile을 실패시키는데, binding을 설치하지 않는 이 target이 그 이름을 썼다.
 - 부호 없는 정수 자리(`lifetime`, `lock_expire`)의 텍스트나 boolean은 음수나 소수처럼 category value의 kind `invalid_number`로 거부되고, `invalid_argument_type`으로 거부되지 않는다(SF-8.2, SR-8.2, binding 설계 B-2). 여섯 case는 어떤 바인딩도 내지 않는 type kind를 기대했다.

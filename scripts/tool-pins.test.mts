@@ -237,3 +237,19 @@ test('every cargo of the recipes runs through the cargo of the link of kit', () 
   const own = makefile.split('\n').filter((line) => line.startsWith('\t') && /(^|[\s;&|(])cargo /.test(line.replace(/\$\(CARGO\)/g, '')));
   assert.deepEqual(own, [], 'a recipe runs cargo itself');
 });
+
+test('packages/ts is a workspace of the root, whose php-serialization is the npm package of its release', () => {
+  // make install-packages installs the dependencies of packages/ts with the root lock, so that kit links them (K888); the
+  // release is the one that the manifests of Cargo name for php-serialization.
+  const root_ = JSON.parse(read('package.json')) as { workspaces?: string[] };
+  assert.deepEqual(root_.workspaces, ['packages/ts']);
+  const tag = /polyspec\/php-serialization\.git", tag = "v([0-9.]+)"/.exec(read('packages/redis/rust/Cargo.toml'))?.[1];
+  assert.ok(tag !== undefined, 'no tag of php-serialization in packages/redis/rust/Cargo.toml');
+  const url = `https://github.com/polyspec/php-serialization/releases/download/v${tag}/polyspec-php-serialization-${tag}.tgz`;
+  const ts = JSON.parse(read('packages/ts/package.json')) as { dependencies?: Record<string, string> };
+  assert.equal(ts.dependencies?.['@polyspec/php-serialization'], url);
+  const lock = JSON.parse(read('package-lock.json')) as { packages: Record<string, { resolved?: string; integrity?: string }> };
+  const locked = lock.packages['node_modules/@polyspec/php-serialization'];
+  assert.equal(locked?.resolved, url);
+  assert.match(locked?.integrity ?? '', /^sha512-/);
+});

@@ -13,7 +13,6 @@ use polyspec_session_store_core::Error;
 use polyspec_session_store_core::{Failure, Store};
 
 use crate::protocol::{Closing, Command, Opening, Options, Reply, Session, Step, StoreOptions};
-use crate::trust;
 use crate::turns::{Turn, Turns};
 
 /// The connection setting that the application gives (SR-6.1). An address is a URL of redis-rs: `redis://` or
@@ -109,9 +108,14 @@ fn reply_of(value: redis::Value) -> Reply {
     }
 }
 
-/// Whether an address of redis-rs connects with TLS (SR-6.1).
-fn tls(url: &str) -> bool {
-    url.starts_with("rediss://")
+/// SR-6.1b: the time in which a connection to a server, to the primary that Sentinel names or to a node of a Cluster is
+/// made. redis-rs reads the trust store of the machine for each connection of TLS within it, which takes about 1 second
+/// on macOS, the default timeout of redis-rs.
+const CONNECTION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// The configuration of a connection to a server or to the primary that Sentinel names (SR-6.1b).
+fn config() -> redis::AsyncConnectionConfig {
+    redis::AsyncConnectionConfig::new().set_connection_timeout(Some(CONNECTION_TIMEOUT))
 }
 
 fn invalid(detail: &str) -> Error {
@@ -121,26 +125,16 @@ fn invalid(detail: &str) -> Error {
 impl Link {
     fn new(setting: &Setting) -> Result<Self, Error> {
         match setting {
-            Setting::Server { url } => {
-                let client = if tls(url) {
-                    redis::Client::build_with_tls(url.as_str(), trust::certificates(&trust::authorities()?))
-                } else {
-                    redis::Client::open(url.as_str())
-                };
-                Ok(Self::Server { client: client.map_err(|error| invalid(error.category()))?, connection: None })
-            }
+            Setting::Server { url } => Ok(Self::Server {
+                client: redis::Client::open(url.as_str()).map_err(|error| invalid(error.category()))?,
+                connection: None,
+            }),
             Setting::Sentinel { urls, service, tls, user, password } => {
                 if urls.is_empty() {
                     return Err(invalid("the list of Sentinel addresses is empty"));
                 }
-                let addresses = urls.iter().map(String::as_str).collect();
-                // SR-6.1a: the Sentinel nodes and the primary that they name trust the authorities read once.
-                let sentinel = if *tls || urls.iter().any(|url| self::tls(url)) {
-                    Sentinel::build_with_tls(addresses, trust::certificates(&trust::authorities()?))
-                } else {
-                    Sentinel::build(addresses)
-                }
-                .map_err(|error| invalid(error.category()))?;
+                let sentinel = Sentinel::build(urls.iter().map(String::as_str).collect())
+                    .map_err(|error| invalid(error.category()))?;
                 let mut info = RedisConnectionInfo::default();
                 if let Some(user) = user {
                     info = info.set_username(user);
@@ -158,11 +152,10 @@ impl Link {
                 if urls.is_empty() {
                     return Err(invalid("the list of Cluster addresses is empty"));
                 }
-                let mut builder = redis::cluster::ClusterClientBuilder::new(urls.iter().map(String::as_str));
-                if urls.iter().any(|url| tls(url)) {
-                    builder = builder.certs(trust::certificates(&trust::authorities()?));
-                }
-                let client = builder.build().map_err(|error| invalid(error.category()))?;
+                let client = redis::cluster::ClusterClientBuilder::new(urls.iter().map(String::as_str))
+                    .connection_timeout(CONNECTION_TIMEOUT)
+                    .build()
+                    .map_err(|error| invalid(error.category()))?;
                 Ok(Self::Cluster { client, connection: None })
             }
         }
@@ -180,7 +173,10 @@ impl Link {
                 return Ok(());
             }
         }
-        let connection = client.get_multiplexed_async_connection().await.map_err(|error| connection_error(&error))?;
+        let connection = client
+            .get_multiplexed_async_connection_with_config(&config())
+            .await
+            .map_err(|error| connection_error(&error))?;
         *primary = Some((address, connection));
         Ok(())
     }
@@ -192,7 +188,10 @@ impl Link {
                 let connection = match connection {
                     Some(connection) => connection,
                     None => connection.insert(
-                        client.get_multiplexed_async_connection().await.map_err(|error| connection_error(&error))?,
+                        client
+                            .get_multiplexed_async_connection_with_config(&config())
+                            .await
+                            .map_err(|error| connection_error(&error))?,
                     ),
                 };
                 Ok(Connection::Server(connection.clone()))
@@ -349,34 +348,5 @@ impl Store for RedisSession {
 
     fn renew(&mut self) -> Result<(), Failure> {
         self.session.renew()
-    }
-}
-
-#[cfg(test)]
-mod trust_tests {
-    use super::{Link, Setting};
-
-    /// SR-6.1a: the links of TLS of a server, of Sentinel and of a Cluster take the authorities that this crate reads
-    /// once in the process (`trust::authorities`), however many links there are; it counts the reads of this crate.
-    /// It does not show that redis-rs reads no trust store of its own for a connection with those authorities, which
-    /// the test of TLS of `tests/server.rs` shows for a server, and no test shows yet for Sentinel and Cluster (T1.43).
-    #[test]
-    fn the_links_of_tls_read_the_trust_store_once() {
-        let settings = [
-            Setting::Server { url: "rediss://localhost:6379/".to_owned() },
-            Setting::Server { url: "rediss://localhost:6380/".to_owned() },
-            Setting::Sentinel {
-                urls: vec!["redis://localhost:26379/".to_owned()],
-                service: "main".to_owned(),
-                tls: true,
-                user: None,
-                password: None,
-            },
-            Setting::Cluster { urls: vec!["rediss://localhost:7000/".to_owned()] },
-        ];
-        for setting in &settings {
-            assert!(Link::new(setting).is_ok(), "the link of {setting:?} is not made");
-        }
-        assert_eq!(crate::trust::reads(), 1, "the reads of the trust store");
     }
 }

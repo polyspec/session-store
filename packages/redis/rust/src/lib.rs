@@ -6,7 +6,6 @@
 
 mod connection;
 pub mod protocol;
-mod trust;
 mod turns;
 
 pub use connection::{RedisSession, RedisSessions, Setting};

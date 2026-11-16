@@ -335,12 +335,10 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   bytes. <a id="SR-5.2"></a> An error reply of Redis fails with the kind `redis`, which names the command.
 - **SR-6** <a id="SR-6.1"></a> The connection uses the crate `redis` (redis-rs) on one tokio runtime of the process. The
   application gives a connection setting, not a client: a server, Sentinel or Cluster, each with its addresses, TLS and
-  an ACL user and password. <a id="SR-6.1a"></a> A store that connects with TLS (`rediss://`, or Sentinel with `tls`)
-  reads the trust store of the machine once in a process and gives its authorities to every client that it builds, of
-  a server, of the primary that Sentinel names and of a Cluster: redis-rs otherwise reads that trust store again for
-  each connection, inside its connection timeout, which is 1 second by default (redis-rs 1.8.1), and on macOS the read
-  of the keychain takes about that long, so a connection failed by its timeout. A trust store that cannot be read fails
-  the connection with the kind `connection` (SR-6.4) and is read again by the next connection. <a id="SR-6.2"></a> With Sentinel, a request that sends a command asks Sentinel for the
+  an ACL user and password. <a id="SR-6.1b"></a> A connection to a server, to the primary that Sentinel names and to a node of a
+  Cluster is made within 5 seconds: redis-rs reads the trust store of the machine for each connection of TLS within
+  its connection timeout, whose default of 1 second that read exceeds on macOS under load. A connection to a Sentinel
+  node takes the default of redis-rs, which gives no setting for it. <a id="SR-6.2"></a> With Sentinel, a request that sends a command asks Sentinel for the
   primary of its service before its first command, also when a connection to the former primary is open, because a
   former primary accepts writes for some seconds after a promotion. <a id="SR-6.3"></a> With Cluster every command of
   the protocol has one key, so a session and its lock may live on different primaries; the release script names its one

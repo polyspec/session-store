@@ -1481,7 +1481,6 @@ dependencies = [
  "polyspec-session-store-core",
  "redis",
  "rustls",
- "rustls-native-certs",
  "serde_json",
  "tempfile",
  "tokio",
@@ -1642,8 +1641,9 @@ checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
 
 [[package]]
 name = "redis"
-version = "1.8.2"
-source = "git+https://github.com/min-0-max/redis-rs?tag=redis-1.8.2-p1#c88328bf9cf16cbb78836396b8345b4a5a5401cc"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db7f3d75b5a3301746bff39a767bf4c5c42506b08513527308b3875bfb64a031"
 dependencies = [
  "arcstr",
  "async-lock",

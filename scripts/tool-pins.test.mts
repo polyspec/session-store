@@ -11,7 +11,7 @@
 //     manifests name for polyspec-binding-core, and the binding targets run Cargo offline.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
@@ -207,15 +207,21 @@ test('a php-serialization of .links is copied under var/link, where the targets 
   // the clone of the release in var/deps, and without it the clone stays.
   const make = process.env.MAKE ?? 'make';
   const print = (links: string): string => execFileSync(make, ['-s', '--no-print-directory', '-C', root, `LINKS_FILE=${links}`, '--eval', 'print-ps: ; @echo $(PHP_SERIALIZATION)', 'print-ps'], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '' } }).trim();
+  // A checkout is php-serialization by the crate of its packages/rust, whatever its folder is named, as the folder of a
+  // worktree of a lane is.
   const directory = mkdtempSync(join(tmpdir(), 'links-'));
+  const lane = join(directory, 'php-serialization-lane');
+  mkdirSync(join(lane, 'packages/rust'), { recursive: true });
+  writeFileSync(join(lane, 'packages/rust/Cargo.toml'), '[package]\nname = "polyspec-php-serialization"\n');
+  mkdirSync(join(directory, 'binding'));
   const links = join(directory, 'links');
-  writeFileSync(links, '../binding\n../php-serialization\n');
+  writeFileSync(links, `${join(directory, 'binding')}\n${lane}\n`);
   // The checkout of .links is a provider that the run never writes into: the targets build a copy of its files under
   // var/link, where binding generates.
   assert.equal(print(links), join(root, 'var/link/php-serialization'));
   const source = (file: string): string => execFileSync(make, ['-s', '--no-print-directory', '-C', root, `LINKS_FILE=${file}`, '--eval', 'print-src: ; @echo $(PHP_SERIALIZATION_LINK)', 'print-src'], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '' } }).trim();
-  assert.equal(source(links), join(root, '..', 'php-serialization'));
-  writeFileSync(links, '../binding\n');
+  assert.equal(source(links), lane);
+  writeFileSync(links, `${join(directory, 'binding')}\n`);
   assert.equal(print(links), join(root, 'var/deps/php-serialization'));
   rmSync(directory, { recursive: true });
 });

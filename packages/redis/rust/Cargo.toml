@@ -21,6 +21,8 @@ polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag =
 redis = { version = "=1.8.1", default-features = false, features = ["tokio-comp", "tokio-rustls-comp", "sentinel", "cluster-async"] }
 # The cryptography of rustls for TLS (SR-6.1): one provider, ring, so that rustls selects it for the process.
 rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
+# The trust store of the machine, read once in a process for every client of TLS (SR-6.1a).
+rustls-native-certs = "=0.8.5"
 # The wait between two tries of a lock and the queue of a process (SR-3.2, SR-8).
 tokio = { version = "1.54.1", default-features = false, features = ["sync", "time"] }
 

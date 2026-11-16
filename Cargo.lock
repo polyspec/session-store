@@ -1481,6 +1481,7 @@ dependencies = [
  "polyspec-session-store-core",
  "redis",
  "rustls",
+ "rustls-native-certs",
  "serde_json",
  "tempfile",
  "tokio",

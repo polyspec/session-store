@@ -332,3 +332,30 @@ impl Store for RedisSession {
         self.session.renew()
     }
 }
+
+#[cfg(test)]
+mod trust_tests {
+    use super::{Link, Setting};
+
+    /// SR-6.1a: the links of TLS of a server, of Sentinel and of a Cluster read the trust store of the machine once in
+    /// the process, however many there are.
+    #[test]
+    fn the_links_of_tls_read_the_trust_store_once() {
+        let settings = [
+            Setting::Server { url: "rediss://localhost:6379/".to_owned() },
+            Setting::Server { url: "rediss://localhost:6380/".to_owned() },
+            Setting::Sentinel {
+                urls: vec!["redis://localhost:26379/".to_owned()],
+                service: "main".to_owned(),
+                tls: true,
+                user: None,
+                password: None,
+            },
+            Setting::Cluster { urls: vec!["rediss://localhost:7000/".to_owned()] },
+        ];
+        for setting in &settings {
+            assert!(Link::new(setting).is_ok(), "the link of {setting:?} is not made");
+        }
+        assert_eq!(crate::trust::reads(), 1, "the reads of the trust store");
+    }
+}

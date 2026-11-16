@@ -13,6 +13,7 @@ use polyspec_session_store_core::Error;
 use polyspec_session_store_core::{Failure, Store};
 
 use crate::protocol::{Closing, Command, Opening, Options, Reply, Session, Step, StoreOptions};
+use crate::trust;
 use crate::turns::{Turn, Turns};
 
 /// The connection setting that the application gives (SR-6.1). An address is a URL of redis-rs: `redis://` or
@@ -108,6 +109,11 @@ fn reply_of(value: redis::Value) -> Reply {
     }
 }
 
+/// Whether an address of redis-rs connects with TLS (SR-6.1).
+fn tls(url: &str) -> bool {
+    url.starts_with("rediss://")
+}
+
 fn invalid(detail: &str) -> Error {
     Error::InvalidSetting { detail: detail.to_owned() }
 }
@@ -115,16 +121,26 @@ fn invalid(detail: &str) -> Error {
 impl Link {
     fn new(setting: &Setting) -> Result<Self, Error> {
         match setting {
-            Setting::Server { url } => Ok(Self::Server {
-                client: redis::Client::open(url.as_str()).map_err(|error| invalid(error.category()))?,
-                connection: None,
-            }),
+            Setting::Server { url } => {
+                let client = if tls(url) {
+                    redis::Client::build_with_tls(url.as_str(), trust::certificates(&trust::authorities()?))
+                } else {
+                    redis::Client::open(url.as_str())
+                };
+                Ok(Self::Server { client: client.map_err(|error| invalid(error.category()))?, connection: None })
+            }
             Setting::Sentinel { urls, service, tls, user, password } => {
                 if urls.is_empty() {
                     return Err(invalid("the list of Sentinel addresses is empty"));
                 }
-                let sentinel = Sentinel::build(urls.iter().map(String::as_str).collect())
-                    .map_err(|error| invalid(error.category()))?;
+                let addresses = urls.iter().map(String::as_str).collect();
+                // SR-6.1a: the Sentinel nodes and the primary that they name trust the authorities read once.
+                let sentinel = if *tls || urls.iter().any(|url| self::tls(url)) {
+                    Sentinel::build_with_tls(addresses, trust::certificates(&trust::authorities()?))
+                } else {
+                    Sentinel::build(addresses)
+                }
+                .map_err(|error| invalid(error.category()))?;
                 let mut info = RedisConnectionInfo::default();
                 if let Some(user) = user {
                     info = info.set_username(user);
@@ -142,8 +158,11 @@ impl Link {
                 if urls.is_empty() {
                     return Err(invalid("the list of Cluster addresses is empty"));
                 }
-                let client = redis::cluster::ClusterClient::new(urls.iter().map(String::as_str))
-                    .map_err(|error| invalid(error.category()))?;
+                let mut builder = redis::cluster::ClusterClientBuilder::new(urls.iter().map(String::as_str));
+                if urls.iter().any(|url| tls(url)) {
+                    builder = builder.certs(trust::certificates(&trust::authorities()?));
+                }
+                let client = builder.build().map_err(|error| invalid(error.category()))?;
                 Ok(Self::Cluster { client, connection: None })
             }
         }

@@ -1,6 +1,7 @@
 //! The authorities of the trust store of the machine, read once in a process (SR-6.1a).
 
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Mutex;
 
 use polyspec_session_store_core::Error;
 use redis::TlsCertificates;
@@ -9,9 +10,27 @@ use redis::TlsCertificates;
 static READS: AtomicUsize = AtomicUsize::new(0);
 
 /// The authorities that every client of TLS of the process trusts (SR-6.1a).
-#[allow(dead_code, reason = "SR-6.1a: no link takes the authorities yet")]
-pub(crate) fn certificates() -> Result<TlsCertificates, Error> {
-    Ok(TlsCertificates { client_tls: None, root_cert: Some(read()?) })
+/// The authorities of the trust store as PEM text, once they were read; a read that failed leaves nothing, so that the
+/// next connection reads again (SR-6.1a).
+static READ: Mutex<Option<Vec<u8>>> = Mutex::new(None);
+
+/// The authorities of the trust store of the machine as PEM text, read once in a process (SR-6.1a).
+pub(crate) fn authorities() -> Result<Vec<u8>, Error> {
+    let mut read_once = match READ.lock() {
+        Ok(held) => held,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+    if let Some(pem) = read_once.as_ref() {
+        return Ok(pem.clone());
+    }
+    let pem = read()?;
+    *read_once = Some(pem.clone());
+    Ok(pem)
+}
+
+/// The authorities that every client of TLS of the process trusts (SR-6.1a).
+pub(crate) fn certificates(authorities: &[u8]) -> TlsCertificates {
+    TlsCertificates { client_tls: None, root_cert: Some(authorities.to_vec()) }
 }
 
 /// Reads the trust store of the machine and gives its authorities as PEM text; a trust store that cannot be read fails
@@ -39,14 +58,16 @@ fn base64(bytes: &[u8]) -> String {
     const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut text = String::with_capacity(bytes.len().div_ceil(3) * 4);
     for chunk in bytes.chunks(3) {
-        let first = chunk.first().copied().unwrap_or_default();
-        let second = chunk.get(1).copied().unwrap_or_default();
-        let third = chunk.get(2).copied().unwrap_or_default();
-        let group = (u32::from(first) << 16) | (u32::from(second) << 8) | u32::from(third);
-        for (index, shift) in [18_u32, 12, 6, 0].into_iter().enumerate() {
+        // A short last group is filled with zero bytes, whose characters the padding replaces.
+        let mut group = [0_u8; 3];
+        for (slot, byte) in group.iter_mut().zip(chunk) {
+            *slot = *byte;
+        }
+        let [first, second, third] = group;
+        let sixes = [first >> 2, ((first & 3) << 4) | (second >> 4), ((second & 15) << 2) | (third >> 6), third & 63];
+        for (index, six) in sixes.into_iter().enumerate() {
             if index <= chunk.len() {
-                let at = usize::try_from((group >> shift) & 63).unwrap_or_default();
-                text.push(char::from(ALPHABET[at]));
+                text.push(char::from(ALPHABET[usize::from(six)]));
             } else {
                 text.push('=');
             }

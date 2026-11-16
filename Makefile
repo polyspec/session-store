@@ -342,10 +342,10 @@ install-deps:
 	$(ONLINE) $(CARGO) fetch --locked
 	$(ONLINE) $(NODE) scripts/deps.mts
 
-# The checkout of php-serialization: in linked development a copy of the one that .links names (kit K869), whose last part is
-# php-serialization, made absolute from this checkout; otherwise the clone of its release (make install-deps).
+# The checkout of php-serialization: in linked development a copy of the line of .links (kit K869) whose packages/rust
+# names the crate polyspec-php-serialization, made absolute from this checkout; otherwise the clone of its release (make install-deps).
 LINKS_FILE ?= .links
-PHP_SERIALIZATION_LINK := $(firstword $(foreach line,$(shell cat '$(LINKS_FILE)' 2>/dev/null),$(if $(filter php-serialization,$(notdir $(line))),$(abspath $(CURDIR)/$(line)))))
+PHP_SERIALIZATION_LINK := $(firstword $(foreach line,$(shell cat '$(LINKS_FILE)' 2>/dev/null),$(shell grep -qsx 'name = "polyspec-php-serialization"' '$(abspath $(if $(filter /%,$(line)),$(line),$(CURDIR)/$(line)))/packages/rust/Cargo.toml' && echo '$(abspath $(if $(filter /%,$(line)),$(line),$(CURDIR)/$(line)))')))
 # A run writes nothing into the checkout of .links: the targets build a copy of its files under var/link (T1.54).
 PHP_SERIALIZATION := $(if $(PHP_SERIALIZATION_LINK),$(VAR)/link/php-serialization,$(VAR)/deps/php-serialization)
 PHP_SERIALIZATION_WHEEL = $(wildcard $(VAR)/deps/wheels/*.whl)

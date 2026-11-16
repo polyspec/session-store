@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 36441b01ad1524c8fd1328a434bd9356e5a1037273c9880e188350e793ee7fd6 -->
+<!-- source-sha256: 1f5d6dc047145ac894bb6291c8e117693a908171c1687651b1d7348e3ac39a41 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -69,3 +69,4 @@
 | T1.50 | 개발의 로컬 연결은 모든 저장소와 같다(kit K869). target `link`, `unlink`, `link-check`가 kit의 `link.mjs`와 `link-check.mjs`를 부르고, `.gitignore`는 `/.links`를 무시한다. `/.links`는 package를 제공하는 checkout을 선언하는 파일이고, 어떤 커밋도 그것을 담지 않는다. | `Makefile`; `.gitignore`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
 | T1.51 | 연결 개발에서(kit K869) php-serialization 대상은 `.links`가 가리키는 php-serialization checkout을 빌드하고, 그런 줄이 없으면 `var/deps`의 release clone을 빌드한다. `PHP_SERIALIZATION`은 마지막 부분이 `php-serialization`인 `.links`의 줄을 checkout 기준 절대 경로로 바꾼 값이다. `php-serialization-checkout`은 `.git`이 파일인 worktree도 받는다. | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
 | T1.52 | recipe의 모든 cargo는 kit의 link cargo를 거친다(kit K869). 그래야 `.links`가 있는 run이 lock의 tag가 아니라 연결된 checkout을 빌드한다. `CARGO`는 `$(NODE) $(KIT)/link.mjs cargo $(CURDIR)`이고, `.links`가 없으면 cargo를 그대로 돌린다. maturin과 `binding go-link`는 cargo를 직접 돌려서, kit과 binding의 release가 link를 받을 때까지 lock의 tag를 빌드한다. | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
+| T1.53 | 시험은 Makefile의 `BINDING`처럼 binding을 node로 돌린다(`node node_modules/@polyspec/binding/dist/cli.js`). bin은 직접 실행하지 않는다. 연결된 binding checkout은 bin에 실행 권한을 주지 않기 때문이다. `make link` 뒤에 `workflows.test.mts`가 `node_modules/.bin/binding`에서 EACCES로 실패했다. | `scripts/workflows.test.mts` | make workflows-test | [o] |

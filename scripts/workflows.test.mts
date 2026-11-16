@@ -735,7 +735,8 @@ test('the job bindings runs make ci-bindings after the action bay, and no recipe
 function releaseRecipeTargets(t: { after: (fn: () => void) => void }): Set<string> {
   const out = mkdtempSync(join(tmpdir(), 'session-store-recipes-'));
   t.after(() => { rmSync(out, { recursive: true, force: true }); });
-  execFileSync(join(root, 'node_modules/.bin/binding'), ['release-recipes', '--root', root, '--out', out], { stdio: ['ignore', 'ignore', 'inherit'] });
+  // binding runs on node, as BINDING of the Makefile runs it: a linked checkout gives its bin no mode of execution.
+  execFileSync(process.execPath, [join(root, 'node_modules/@polyspec/binding/dist/cli.js'), 'release-recipes', '--root', root, '--out', out], { stdio: ['ignore', 'ignore', 'inherit'] });
   return makeTargets(readFileSync(join(out, 'packages/release.mk'), 'utf8'));
 }
 

@@ -198,15 +198,49 @@ fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
         };
         Failed::from(format!("{when}{message}\nthe server at {} wrote:\n{}", server.name, project.output("server")))
     };
-    runtime()?.block_on(round_trip(Setting::Server { url: url.clone() })).map_err(|error| wrote("", error))?;
-    // SR-6.1a: a store connects again with the authorities that the process read once and reads no trust store, which
-    // fails while SSL_CERT_FILE names a file that does not exist. No other trial of this process connects with TLS,
-    // and only they read the variable.
-    let missing = project.directory().join("no-such-authorities.pem");
-    std::env::set_var("SSL_CERT_FILE", &missing);
-    let again = runtime()?.block_on(round_trip(Setting::Server { url }));
-    std::env::remove_var("SSL_CERT_FILE");
-    again.map_err(|error| wrote("with SSL_CERT_FILE at a missing file: ", error))
+    // SR-6.1a: a process whose trust store is one file, the authority of bay (SSL_CERT_FILE), connects twice, and the
+    // file is removed between the two connections; the second connection succeeds only with the authorities that the
+    // process read once. The variable is set for that child process alone, before it starts, because a test process
+    // whose threads run sets no variable of its environment.
+    let authorities = project.directory().join("authorities.pem");
+    let authority = project.exec("server", &["cat", &certificate.server_authority]).map_err(Failed::from)?;
+    std::fs::write(&authorities, authority).map_err(failed)?;
+    let child = std::process::Command::new(std::env::current_exe().map_err(failed)?)
+        .args(["--exact", ONCE, "--ignored", "--test-threads=1"])
+        .env("SSL_CERT_FILE", &authorities)
+        .env(ONCE_URL, &url)
+        .env(ONCE_FILE, &authorities)
+        .output()
+        .map_err(failed)?;
+    if !child.status.success() {
+        let output = format!("{}{}", String::from_utf8_lossy(&child.stdout), String::from_utf8_lossy(&child.stderr));
+        return Err(wrote("the process whose trust store is the authority of bay fails: ", output.into()));
+    }
+    // SR-6.1: this process trusts the authority of bay through the trust store of the machine.
+    runtime()?.block_on(round_trip(Setting::Server { url })).map_err(|error| wrote("", error))
+}
+
+/// The trial that the test of TLS runs in a process of its own (SR-6.1a).
+const ONCE: &str = "the_authorities_read_once_serve_the_next_connection";
+/// The URL of the server of TLS and the file of its authority, which the test of TLS gives that process.
+const ONCE_URL: &str = "SESSION_STORE_TLS_URL";
+const ONCE_FILE: &str = "SESSION_STORE_TLS_AUTHORITIES";
+
+/// SR-6.1a: in a process whose trust store is the file of SSL_CERT_FILE, a store connects, the file is removed, and a
+/// second store connects with the authorities that the process read once, because a read of the trust store now fails.
+fn the_authorities_read_once_serve_the_next_connection() -> Result<(), Failed> {
+    let (Ok(url), Ok(file)) = (std::env::var(ONCE_URL), std::env::var(ONCE_FILE)) else {
+        return Err(format!("{ONCE} runs in the process that a_tls_connection_reads_and_writes starts").into());
+    };
+    runtime()?.block_on(round_trip(Setting::Server { url: url.clone() }))?;
+    std::fs::remove_file(&file).map_err(failed)?;
+    runtime()?.block_on(round_trip(Setting::Server { url })).map_err(|error| {
+        let message = match error.message() {
+            Some(message) => message.to_owned(),
+            None => String::new(),
+        };
+        Failed::from(format!("after the file of the trust store is removed: {message}"))
+    })
 }
 
 fn main() {
@@ -223,6 +257,7 @@ fn main() {
         Trial::test("sentinel_names_the_primary", sentinel_names_the_primary),
         Trial::test("a_cluster_keeps_sessions", a_cluster_keeps_sessions),
         Trial::test("a_tls_connection_reads_and_writes", a_tls_connection_reads_and_writes),
+        Trial::test(ONCE, the_authorities_read_once_serve_the_next_connection).with_ignored_flag(true),
     ];
     libtest_mimic::run(&arguments, trials).exit();
 }

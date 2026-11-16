@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 1280467bbe569c21fe4f1ba09f57f6b642d7126fa8dda6ebee3297440c1e4c55 -->
+<!-- source-sha256: 217cbcb4bbd9ed49b1a452215f9a37350b424b3c6c84b17f763817f381119d1b -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -64,3 +64,4 @@
 | T1.43 | Sentinel 노드로 가는 TLS 연결(`rediss://`인 Sentinel 주소)을 bay가 발급한 인증서로 TLS를 제공하는 실제 Sentinel에서 시험한다(SR-6.1a, SR-6.2). Sentinel 시험은 평문만 제공하므로, Sentinel 노드가 기계의 인증 기관을 신뢰한다는 것을 보이는 시험이 없다. | `packages/redis/rust/tests/server.rs`; `docs/spec/sessions.md`(.ko) | make test | [ ] |
 | T1.44 | wasm32의 난수 원천은 getrandom의 feature `wasm_js`만으로 고른다(SR-1.5). getrandom 0.3.4는 `--cfg getrandom_backend`가 필요 없으므로 `.cargo/config.toml`은 그것을 두지 않고, core를 wasm32로 빌드하는 crate도 아무것도 설정하지 않는다. | `.cargo/config.toml`; `packages/core/rust/Cargo.toml`; `CHANGELOG.md`(.ko) | cargo build -p polyspec-session-store-core --target wasm32-unknown-unknown | [o] |
 | T1.45 | `make test-go`는 Go 시험의 link flag를 `binding go-link`에서 받는다(binding GN-15k). 그것은 시험 feature로 host의 정적 라이브러리를 빌드하고 `CGO_LDFLAGS`를 출력한다. 자체 `cargo build`와 고정된 `-L`은 쓰지 않는다. 그리고 binding 0.0.15가 생성하는 build tag(`polyspec_session_store_panic_test`, `polyspec_session_store_codec_test`)를 쓴다. 이전 이름으로는 panic과 codec 시험이 빌드되지 않는다. manifest가 고정한 binding 0.0.13에는 `go-link`가 없으므로, 이 변경은 binding `v0.0.15`를 고정하는 커밋에 함께 들어간다. 그 Red와 Green은 binding 1e922a76의 고정 사본과 그 위의 php-serialization 고정 사본에서 돌린다. | `Makefile`; `CHANGELOG.md`(.ko) | make test-go | [ ] |
+| T1.46 | 한 번 읽은 인증 기관을 받은 TLS 연결이 신뢰 저장소를 읽지 않는다는 증명은, thread가 도는 시험 process의 환경 변수를 바꾸지 않는다(SR-6.1a). TLS 시험은 `SSL_CERT_FILE`이 bay의 인증 기관 파일인 별도 process를 띄운다. 그 process는 연결하고, 파일을 지우고, 다시 연결한다. fork `redis-1.8.2-p1`에서는 통과하고, `Sentinel::build_with_tls`만 더한 redis-rs 1.8.2에서는 파일을 지운 뒤 실패한다. | `packages/redis/rust/tests/server.rs` | make test | [o] |

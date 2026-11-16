@@ -1,5 +1,5 @@
 <!-- doc-id: operations-dependencies -->
-<!-- source-sha256: e24b1361a41c909e26ef8415bd4032d2a9f76782ad5f62bf34dce2ce959e92e9 -->
+<!-- source-sha256: 87549689d1d372b4fb7565d8efb5a6d4fa9f74f45134d1029f461d74c2a77fb8 -->
 # 고정한 의존성
 
 ## redis (redis-rs)
@@ -15,6 +15,6 @@
 
 저장소는 신뢰 저장소를 프로세스에서 한 번 읽고 그 인증 기관들을 모든 TLS client에 준다(SR-6.1a). 시험
 `a_tls_connection_reads_and_writes`(`packages/redis/rust/tests/server.rs`)는 그 인증 기관을 받은 연결이 신뢰 저장소를
-읽지 않는다는 것을 보인다. `SSL_CERT_FILE`이 없는 파일을 가리키는 동안 다시 연결한다.
+읽지 않는다는 것을 보인다. 신뢰 저장소가 `SSL_CERT_FILE`의 파일인 별도 process에서 연결하고, 그 파일을 지우고, 다시 연결한다.
 
 redis-rs의 release가 두 변경을 모두 담으면 이 pin을 지우고 `redis`를 다시 crates.io에서 가져온다.

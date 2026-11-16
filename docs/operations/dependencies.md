@@ -14,6 +14,6 @@ tag `redis-1.8.2-p1`, which is redis-rs 1.8.2 with two changes (its `FORK.md`):
 
 The store reads the trust store once in a process and gives its authorities to every client of TLS (SR-6.1a). The test
 `a_tls_connection_reads_and_writes` (`packages/redis/rust/tests/server.rs`) shows that a connection with those
-authorities reads no trust store: it connects again while `SSL_CERT_FILE` names a file that does not exist.
+authorities reads no trust store: in a process of its own whose trust store is the file of `SSL_CERT_FILE`, it connects, removes that file and connects again.
 
 The pin is removed, and `redis` is taken from crates.io again, when a release of redis-rs holds both changes.

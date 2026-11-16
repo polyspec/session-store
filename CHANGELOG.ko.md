@@ -3,6 +3,7 @@
 
 ## Unreleased
 
+- case는 자기가 검사하는 규칙 문장을 `rule`에, 보이는 것을 `note`에 적는다. 이 둘은 binding 0.0.13이 입력으로 읽지 않는 case의 key다(SE-10.2, CK-96). `rules`와 `label`은 각각 113개 case에서 보고되었다.
 - File store의 case가 binding의 case 형식을 따른다: case는 디렉터리의 파일을 `@files`에 둔다(GN-13i). 그래서 생성 시험이 손상된 레코드 case가 읽는 저장 레코드를 쓴다. case `the_default_lifetime_is_1440_seconds`는 `lifetime`을 생략한다. 명시한 null은 값이고(GN-6i, GN-13d) key가 없을 때만 기본값을 쓰기 때문이다.
 - `make redis-image`는 pull 뒤 local store에 image가 없으면 실패한다: `scripts/servers.sh pull`이 pull한 project의 image를 bay에 묻고 그 image를 이름으로 밝힌다. 이전에는 bay가 status 0으로 끝낸 pull이 store에 image가 없어도 통과했고, Redis를 시작하는 첫 시험 실행이 image 부재로 실패했다.
 - binding 시험이 생성 package가 요구하는 php-serialization을 받는다(T1.34-1~T1.34-3): `make install-binding`이 tag에 대해 `Cargo.lock`이 고정한 commit으로 php-serialization을 `var/deps`에 clone한다(`scripts/deps.mts`). `test-python`은 그 wheel을, `test-node`와 `test-wasm`은 npm package를 설치하고, `test-php`는 extension을 load하며, `test-go`는 `var/go.work`에 module을 둔다. 이전에는 시험이 package index에 공개되지 않은 release를 요청해 실패했다. WASM 시험 build는 fault case에 필요한 `fault-test`를 켠다.

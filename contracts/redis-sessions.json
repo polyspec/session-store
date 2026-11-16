@@ -2,8 +2,8 @@
  "requests": [
   {
    "id": "a_request_that_finds_the_lock_taken_fails_and_changes_nothing",
-   "label": "a request that finds the lock taken tries it again and fails, and sends no release",
-   "rules": [
+   "note": "a request that finds the lock taken tries it again and fails, and sends no release",
+   "rule": [
     "SR-3.3"
    ],
    "keys": [
@@ -78,8 +78,8 @@
   },
   {
    "id": "a_request_that_lost_its_lock_writes_nothing_and_fails",
-   "label": "a request whose lock another took writes nothing and fails after the release",
-   "rules": [
+   "note": "a request whose lock another took writes nothing and fails after the release",
+   "rule": [
     "SR-4.3",
     "SR-4.5"
    ],
@@ -162,8 +162,8 @@
   },
   {
    "id": "a_request_that_changed_nothing_sets_only_a_new_expiry",
-   "label": "a request that changed nothing sets a new expiry without comparing the lock",
-   "rules": [
+   "note": "a request that changed nothing sets a new expiry without comparing the lock",
+   "rule": [
     "SR-4.2",
     "SE-7.1"
    ],
@@ -239,8 +239,8 @@
   },
   {
    "id": "a_reply_that_is_not_bytes_fails_and_releases_the_lock",
-   "label": "a reply of GET that is no bulk string fails after the release",
-   "rules": [
+   "note": "a reply of GET that is no bulk string fails after the release",
+   "rule": [
     "SR-5.1",
     "SR-4.5"
    ],
@@ -302,8 +302,8 @@
   },
   {
    "id": "a_reply_of_another_type_to_the_expiry_fails_the_close_and_releases_the_lock",
-   "label": "the close of a session that changed nothing sends EXPIRE, whose reply is a status in place of an integer, fails with reply and releases the lock",
-   "rules": [
+   "note": "the close of a session that changed nothing sends EXPIRE, whose reply is a status in place of an integer, fails with reply and releases the lock",
+   "rule": [
     "SR-5.1",
     "SR-4.2",
     "SR-4.5"
@@ -380,8 +380,8 @@
   },
   {
    "id": "a_request_that_writes_compares_the_lock_first",
-   "label": "a request that changed a value compares the lock, writes the record and releases the lock",
-   "rules": [
+   "note": "a request that changed a value compares the lock, writes the record and releases the lock",
+   "rule": [
     "SR-4.3",
     "SR-4.4"
    ],
@@ -460,8 +460,8 @@
   },
   {
    "id": "a_new_session_is_written_without_a_lock",
-   "label": "a session that the request created is written without a lock",
-   "rules": [
+   "note": "a session that the request created is written without a lock",
+   "rule": [
     "SR-4.4",
     "SE-7.1"
    ],
@@ -511,8 +511,8 @@
   },
   {
    "id": "an_identifier_without_a_key_starts_a_new_session",
-   "label": "an identifier without a key names no session and takes no lock",
-   "rules": [
+   "note": "an identifier without a key names no session and takes no lock",
+   "rule": [
     "SR-3.2"
    ],
    "keys": [],
@@ -561,8 +561,8 @@
   },
   {
    "id": "a_session_that_is_not_used_releases_its_lock",
-   "label": "a found session that no call uses only releases its lock",
-   "rules": [
+   "note": "a found session that no call uses only releases its lock",
+   "rule": [
     "SR-4.1"
    ],
    "keys": [
@@ -620,8 +620,8 @@
   },
   {
    "id": "a_renewal_writes_the_new_key_before_it_deletes_the_old",
-   "label": "a renewal writes the new key, deletes the old one and releases the lock",
-   "rules": [
+   "note": "a renewal writes the new key, deletes the old one and releases the lock",
+   "rule": [
     "SR-4.4"
    ],
    "keys": [
@@ -700,8 +700,8 @@
   },
   {
    "id": "a_short_cookie_value_sends_nothing_at_opening",
-   "label": "bytes that are no identifier send nothing at the opening",
-   "rules": [
+   "note": "bytes that are no identifier send nothing at the opening",
+   "rule": [
     "SR-3.2"
    ],
    "keys": [],
@@ -725,8 +725,8 @@
   },
   {
    "id": "the_options_name_the_keys_and_times",
-   "label": "the prefix, the lifetime and the lock expiry are those of the options",
-   "rules": [
+   "note": "the prefix, the lifetime and the lock expiry are those of the options",
+   "rule": [
     "SR-1.2",
     "SR-2.1"
    ],
@@ -801,8 +801,8 @@
   },
   {
    "id": "a_key_that_holds_no_array_fails_the_call",
-   "label": "a key whose record holds no array fails the call; the close writes nothing and releases the lock",
-   "rules": [
+   "note": "a key whose record holds no array fails the call; the close writes nothing and releases the lock",
+   "rule": [
     "SE-6.4",
     "SE-7.1",
     "SE-7.2",
@@ -875,8 +875,8 @@
   },
   {
    "id": "a_key_that_cannot_be_decoded_fails_the_call",
-   "label": "a key whose record unserialize refuses fails the call; the close writes nothing and releases the lock",
-   "rules": [
+   "note": "a key whose record unserialize refuses fails the call; the close writes nothing and releases the lock",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SR-4.1"
@@ -945,8 +945,8 @@
   },
   {
    "id": "a_key_that_holds_no_array_fails_set",
-   "label": "a key whose record holds no array fails set; the close writes nothing and releases the lock",
-   "rules": [
+   "note": "a key whose record holds no array fails set; the close writes nothing and releases the lock",
+   "rule": [
     "SE-6.4",
     "SE-7.1",
     "SE-7.2",
@@ -1020,8 +1020,8 @@
   },
   {
    "id": "a_key_that_cannot_be_decoded_fails_set",
-   "label": "a key whose record unserialize refuses fails set; the close writes nothing and releases the lock",
-   "rules": [
+   "note": "a key whose record unserialize refuses fails set; the close writes nothing and releases the lock",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SR-4.1"
@@ -1091,8 +1091,8 @@
   },
   {
    "id": "a_key_that_holds_no_array_fails_remove",
-   "label": "a key whose record holds no array fails remove; the close writes nothing and releases the lock",
-   "rules": [
+   "note": "a key whose record holds no array fails remove; the close writes nothing and releases the lock",
+   "rule": [
     "SE-6.4",
     "SE-7.1",
     "SE-7.2",
@@ -1165,8 +1165,8 @@
   },
   {
    "id": "a_key_that_cannot_be_decoded_fails_remove",
-   "label": "a key whose record unserialize refuses fails remove; the close writes nothing and releases the lock",
-   "rules": [
+   "note": "a key whose record unserialize refuses fails remove; the close writes nothing and releases the lock",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SR-4.1"
@@ -1235,8 +1235,8 @@
   },
   {
    "id": "a_key_that_holds_no_array_fails_renew",
-   "label": "a key whose record holds no array fails renew; the close writes nothing and releases the lock",
-   "rules": [
+   "note": "a key whose record holds no array fails renew; the close writes nothing and releases the lock",
+   "rule": [
     "SE-6.4",
     "SE-7.1",
     "SE-7.2",
@@ -1307,8 +1307,8 @@
   },
   {
    "id": "a_key_that_cannot_be_decoded_fails_renew",
-   "label": "a key whose record unserialize refuses fails renew; the close writes nothing and releases the lock",
-   "rules": [
+   "note": "a key whose record unserialize refuses fails renew; the close writes nothing and releases the lock",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SR-4.1"
@@ -1375,8 +1375,8 @@
   },
   {
    "id": "a_value_too_deep_for_a_record_fails_the_close",
-   "label": "a value of 4096 nested arrays is set, and the close fails because its record, one array deeper, has no serialize form; nothing is sent",
-   "rules": [
+   "note": "a value of 4096 nested arrays is set, and the close fails because its record, one array deeper, has no serialize form; nothing is sent",
+   "rule": [
     "SE-6.8"
    ],
    "keys": [],
@@ -1415,8 +1415,8 @@
   },
   {
    "id": "an_error_reply_to_the_read_fails_and_releases_the_lock",
-   "label": "an error reply of GET fails the opening after the release",
-   "rules": [
+   "note": "an error reply of GET fails the opening after the release",
+   "rule": [
     "SR-5.2",
     "SR-4.5"
    ],
@@ -1480,8 +1480,8 @@
   },
   {
    "id": "an_error_reply_to_the_write_fails_and_releases_the_lock",
-   "label": "an error reply of SETEX fails the close after the release, and the key keeps its record",
-   "rules": [
+   "note": "an error reply of SETEX fails the close after the release, and the key keeps its record",
+   "rule": [
     "SR-5.2",
     "SR-4.5"
    ],
@@ -1565,8 +1565,8 @@
  "open": [
   {
    "id": "a_lifetime_of_zero_fails",
-   "label": "a lifetime of zero fails",
-   "rules": [
+   "note": "a lifetime of zero fails",
+   "rule": [
     "SR-1.2"
    ],
    "setting": {
@@ -1586,8 +1586,8 @@
   },
   {
    "id": "a_lock_expiry_of_zero_fails",
-   "label": "a lock expiry of zero fails",
-   "rules": [
+   "note": "a lock expiry of zero fails",
+   "rule": [
     "SR-1.2"
    ],
    "setting": {
@@ -1606,8 +1606,8 @@
   },
   {
    "id": "without_options_the_defaults_are_taken",
-   "label": "the options that the caller leaves out take their defaults; the lock expiry has none and is stated",
-   "rules": [
+   "note": "the options that the caller leaves out take their defaults; the lock expiry has none and is stated",
+   "rule": [
     "SR-1.2"
    ],
    "setting": {
@@ -1627,8 +1627,8 @@
   },
   {
    "id": "a_lifetime_that_is_negative_fails",
-   "label": "a lifetime of -1 is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lifetime of -1 is no uint and the binding refuses it",
+   "rule": [
     "SR-1.2",
     "SR-8.2"
    ],
@@ -1650,8 +1650,8 @@
   },
   {
    "id": "a_lifetime_that_is_no_integer_fails",
-   "label": "a lifetime of 1.5 is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lifetime of 1.5 is no uint and the binding refuses it",
+   "rule": [
     "SR-1.2",
     "SR-8.2"
    ],
@@ -1673,8 +1673,8 @@
   },
   {
    "id": "a_lifetime_that_is_a_text_fails",
-   "label": "a lifetime of \"60\" is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lifetime of \"60\" is no uint and the binding refuses it",
+   "rule": [
     "SR-1.2",
     "SR-8.2"
    ],
@@ -1696,8 +1696,8 @@
   },
   {
    "id": "a_lifetime_that_is_a_boolean_fails",
-   "label": "a lifetime of true is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lifetime of true is no uint and the binding refuses it",
+   "rule": [
     "SR-1.2",
     "SR-8.2"
    ],
@@ -1719,8 +1719,8 @@
   },
   {
    "id": "a_lock_expire_that_is_negative_fails",
-   "label": "a lock_expire of -1 is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lock_expire of -1 is no uint and the binding refuses it",
+   "rule": [
     "SR-1.2",
     "SR-8.2"
    ],
@@ -1741,8 +1741,8 @@
   },
   {
    "id": "a_lock_expire_that_is_no_integer_fails",
-   "label": "a lock_expire of 1.5 is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lock_expire of 1.5 is no uint and the binding refuses it",
+   "rule": [
     "SR-1.2",
     "SR-8.2"
    ],
@@ -1763,8 +1763,8 @@
   },
   {
    "id": "a_lock_expire_that_is_a_text_fails",
-   "label": "a lock_expire of \"60\" is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lock_expire of \"60\" is no uint and the binding refuses it",
+   "rule": [
     "SR-1.2",
     "SR-8.2"
    ],
@@ -1785,8 +1785,8 @@
   },
   {
    "id": "a_lock_expire_that_is_a_boolean_fails",
-   "label": "a lock_expire of true is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lock_expire of true is no uint and the binding refuses it",
+   "rule": [
     "SR-1.2",
     "SR-8.2"
    ],
@@ -1807,8 +1807,8 @@
   },
   {
    "id": "a_server_address_that_is_no_url_fails",
-   "label": "a server address that is no URL fails",
-   "rules": [
+   "note": "a server address that is no URL fails",
+   "rule": [
     "SR-6.1"
    ],
    "setting": {
@@ -1827,8 +1827,8 @@
   },
   {
    "id": "a_server_address_of_another_scheme_fails",
-   "label": "a server address whose scheme is not one of Redis fails",
-   "rules": [
+   "note": "a server address whose scheme is not one of Redis fails",
+   "rule": [
     "SR-6.1"
    ],
    "setting": {
@@ -1847,8 +1847,8 @@
   },
   {
    "id": "an_empty_list_of_sentinel_addresses_fails",
-   "label": "a Sentinel setting without an address fails",
-   "rules": [
+   "note": "a Sentinel setting without an address fails",
+   "rule": [
     "SR-6.1"
    ],
    "setting": {
@@ -1871,8 +1871,8 @@
   },
   {
    "id": "an_empty_list_of_cluster_addresses_fails",
-   "label": "a Cluster setting without an address fails",
-   "rules": [
+   "note": "a Cluster setting without an address fails",
+   "rule": [
     "SR-6.1"
    ],
    "setting": {
@@ -1893,8 +1893,8 @@
  "openMissing": [
   {
    "id": "a_missing_lock_expiry_fails",
-   "label": "a store whose options give no lock expiry is refused, because the expiry has no default (SR-1.2); a generated binding test takes no case without a required field (binding G-5), so the case runners of the bindings run the group openMissing",
-   "rules": [
+   "note": "a store whose options give no lock expiry is refused, because the expiry has no default (SR-1.2); a generated binding test takes no case without a required field (binding G-5), so the case runners of the bindings run the group openMissing",
+   "rule": [
     "SR-1.2"
    ],
    "setting": {
@@ -1914,8 +1914,8 @@
  "openFaults": [
   {
    "id": "a_failing_random_source_fails_the_opening_with_random",
-   "label": "the fault injection point session_store.random makes the random source fail when the opening of a found identifier makes the secret of its lock, before any command",
-   "rules": [
+   "note": "the fault injection point session_store.random makes the random source fail when the opening of a found identifier makes the secret of its lock, before any command",
+   "rule": [
     "SR-3.1",
     "SE-5.4",
     "SE-9.6"
@@ -1945,8 +1945,8 @@
  "opening": [
   {
    "id": "a_server_that_cannot_be_reached_fails_the_opening_with_connection",
-   "label": "the opening of a found identifier connects to a server address that names a socket under /dev/null, which no file can be, and fails with connection; no server is reached",
-   "rules": [
+   "note": "the opening of a found identifier connects to a server address that names a socket under /dev/null, which no file can be, and fails with connection; no server is reached",
+   "rule": [
     "SR-6.4"
    ],
    "setting": {
@@ -1968,8 +1968,8 @@
  "redis_session.get.made": [
   {
    "id": "a_new_session_whose_random_source_fails_fails_get_with_random",
-   "label": "get of a session that the store of Redis of a socket under /dev/null opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
-   "rules": [
+   "note": "get of a session that the store of Redis of a socket under /dev/null opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rule": [
     "SE-5.4",
     "SE-7.2",
     "SE-9.6"
@@ -2010,8 +2010,8 @@
  "redis_session.set.made": [
   {
    "id": "a_new_session_whose_random_source_fails_fails_set_with_random",
-   "label": "set of a session that the store of Redis of a socket under /dev/null opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
-   "rules": [
+   "note": "set of a session that the store of Redis of a socket under /dev/null opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rule": [
     "SE-5.4",
     "SE-7.2",
     "SE-9.6"
@@ -2056,8 +2056,8 @@
  "redis_session.remove.made": [
   {
    "id": "a_new_session_whose_random_source_fails_fails_remove_with_random",
-   "label": "remove of a session that the store of Redis of a socket under /dev/null opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
-   "rules": [
+   "note": "remove of a session that the store of Redis of a socket under /dev/null opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rule": [
     "SE-5.4",
     "SE-7.2",
     "SE-9.6"
@@ -2098,8 +2098,8 @@
  "redis_session.renew.made": [
   {
    "id": "a_new_session_whose_random_source_fails_fails_renew_with_random",
-   "label": "renew of a session that the store of Redis of a socket under /dev/null opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
-   "rules": [
+   "note": "renew of a session that the store of Redis of a socket under /dev/null opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rule": [
     "SE-5.4",
     "SE-7.2",
     "SE-9.6"
@@ -2139,8 +2139,8 @@
  "redis_session.close.made": [
   {
    "id": "a_close_that_reaches_no_server_fails_with_connection",
-   "label": "the close of a session that set a value connects to a server address that names a socket under /dev/null, which no file can be, and fails with connection (SR-6.4)",
-   "rules": [
+   "note": "the close of a session that set a value connects to a server address that names a socket under /dev/null, which no file can be, and fails with connection (SR-6.4)",
+   "rule": [
     "SR-6.4"
    ],
    "receiver": {
@@ -2184,8 +2184,8 @@
  "redis_session.found.made": [
   {
    "id": "a_session_opened_without_a_cookie_found_none",
-   "label": "a session that the store of Redis opened without a cookie found no identifier and connected to no server (SE-7.1, SR-3.1)",
-   "rules": [
+   "note": "a session that the store of Redis opened without a cookie found no identifier and connected to no server (SE-7.1, SR-3.1)",
+   "rule": [
     "SE-7.1",
     "SR-3.1"
    ],
@@ -2213,8 +2213,8 @@
  "redis_sessions.open.served": [
   {
    "id": "a_lock_that_another_holds_fails_the_opening_with_lock_timeout",
-   "label": "the opening of a stored session whose lock key holds the secret of another holder tries the lock once, fails with lock_timeout and changes nothing (SR-3.3)",
-   "rules": [
+   "note": "the opening of a stored session whose lock key holds the secret of another holder tries the lock once, fails with lock_timeout and changes nothing (SR-3.3)",
+   "rule": [
     "SR-3.3",
     "SE-10.7"
    ],
@@ -2258,8 +2258,8 @@
   },
   {
    "id": "a_session_key_of_another_type_fails_the_opening_with_redis",
-   "label": "the opening of a session whose key holds a list takes the lock, gets the error reply WRONGTYPE to GET, releases the lock and fails with redis (SR-5.2, SR-4.5)",
-   "rules": [
+   "note": "the opening of a session whose key holds a list takes the lock, gets the error reply WRONGTYPE to GET, releases the lock and fails with redis (SR-5.2, SR-4.5)",
+   "rule": [
     "SR-5.2",
     "SR-4.5",
     "SE-10.7"
@@ -2308,8 +2308,8 @@
   },
   {
    "id": "a_reply_of_another_type_to_the_read_fails_the_opening_with_reply",
-   "label": "the opening of a stored session takes the lock, and the point session_store.open_reply takes the reply of GET as one of another type, which no state of a Redis server gives; the opening releases the lock and fails with reply (SR-5.1, SR-4.5)",
-   "rules": [
+   "note": "the opening of a stored session takes the lock, and the point session_store.open_reply takes the reply of GET as one of another type, which no state of a Redis server gives; the opening releases the lock and fails with reply (SR-5.1, SR-4.5)",
+   "rule": [
     "SR-5.1",
     "SR-4.5",
     "SE-9.6",
@@ -2359,8 +2359,8 @@
  "redis_session.get.served": [
   {
    "id": "a_stored_key_that_holds_no_array_fails_get_with_record_not_array",
-   "label": "get of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
-   "rules": [
+   "note": "get of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
+   "rule": [
     "SE-6.4",
     "SE-7.2",
     "SE-10.7"
@@ -2404,8 +2404,8 @@
   },
   {
    "id": "a_stored_key_that_cannot_be_decoded_fails_get_with_record",
-   "label": "get of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
-   "rules": [
+   "note": "get of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SE-10.7"
@@ -2451,8 +2451,8 @@
  "redis_session.set.served": [
   {
    "id": "a_stored_key_that_holds_no_array_fails_set_with_record_not_array",
-   "label": "set of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
-   "rules": [
+   "note": "set of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
+   "rule": [
     "SE-6.4",
     "SE-7.2",
     "SE-10.7"
@@ -2500,8 +2500,8 @@
   },
   {
    "id": "a_stored_key_that_cannot_be_decoded_fails_set_with_record",
-   "label": "set of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
-   "rules": [
+   "note": "set of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SE-10.7"
@@ -2551,8 +2551,8 @@
  "redis_session.remove.served": [
   {
    "id": "a_stored_key_that_holds_no_array_fails_remove_with_record_not_array",
-   "label": "remove of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
-   "rules": [
+   "note": "remove of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
+   "rule": [
     "SE-6.4",
     "SE-7.2",
     "SE-10.7"
@@ -2596,8 +2596,8 @@
   },
   {
    "id": "a_stored_key_that_cannot_be_decoded_fails_remove_with_record",
-   "label": "remove of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
-   "rules": [
+   "note": "remove of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SE-10.7"
@@ -2643,8 +2643,8 @@
  "redis_session.renew.served": [
   {
    "id": "a_stored_key_that_holds_no_array_fails_renew_with_record_not_array",
-   "label": "renew of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
-   "rules": [
+   "note": "renew of a session whose stored key holds the record of an integer, no array fails with record_not_array (SE-6.4)",
+   "rule": [
     "SE-6.4",
     "SE-7.2",
     "SE-10.7"
@@ -2687,8 +2687,8 @@
   },
   {
    "id": "a_stored_key_that_cannot_be_decoded_fails_renew_with_record",
-   "label": "renew of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
-   "rules": [
+   "note": "renew of a session whose stored key holds bytes that unserialize refuses fails with record (SE-6.3)",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SE-10.7"
@@ -2733,8 +2733,8 @@
  "redis_session.close.served": [
   {
    "id": "a_lock_that_another_took_fails_the_close_with_lock_lost",
-   "label": "the close of a session that set a value, whose lock key another holder took after the set, writes nothing, sends the release and fails with lock_lost (SR-4.3, SR-4.5)",
-   "rules": [
+   "note": "the close of a session that set a value, whose lock key another holder took after the set, writes nothing, sends the release and fails with lock_lost (SR-4.3, SR-4.5)",
+   "rule": [
     "SR-4.3",
     "SR-4.5",
     "SE-10.7"
@@ -2796,8 +2796,8 @@
   },
   {
    "id": "a_lock_key_of_another_type_fails_the_close_with_redis",
-   "label": "the close of a session that set a value, whose lock key holds a list after the set, gets the error reply WRONGTYPE to the GET of the lock, writes nothing and fails with redis (SR-5.2, SR-4.5)",
-   "rules": [
+   "note": "the close of a session that set a value, whose lock key holds a list after the set, gets the error reply WRONGTYPE to the GET of the lock, writes nothing and fails with redis (SR-5.2, SR-4.5)",
+   "rule": [
     "SR-5.2",
     "SR-4.5",
     "SE-10.7"
@@ -2867,8 +2867,8 @@
   },
   {
    "id": "a_reply_of_another_type_to_the_expiry_fails_the_close_with_reply",
-   "label": "the close of a stored session that only read a value sends EXPIRE, and the point session_store.close_reply takes its reply as one of another type, which no state of a Redis server gives; the close releases the lock and fails with reply (SR-5.1, SR-4.2, SR-4.5)",
-   "rules": [
+   "note": "the close of a stored session that only read a value sends EXPIRE, and the point session_store.close_reply takes its reply as one of another type, which no state of a Redis server gives; the close releases the lock and fails with reply (SR-5.1, SR-4.2, SR-4.5)",
+   "rule": [
     "SR-5.1",
     "SR-4.2",
     "SR-4.5",
@@ -2930,8 +2930,8 @@
   },
   {
    "id": "a_value_too_deep_for_a_record_fails_the_close_with_record_write",
-   "label": "the close of a new session that set a value of 4096 nested lists, which the record nests one level deeper than php-serialization writes, connects to the server and fails with record_write before it writes a key (SE-6.8)",
-   "rules": [
+   "note": "the close of a new session that set a value of 4096 nested lists, which the record nests one level deeper than php-serialization writes, connects to the server and fails with record_write before it writes a key (SE-6.8)",
+   "rule": [
     "SE-6.8",
     "SR-4.1",
     "SE-10.7"

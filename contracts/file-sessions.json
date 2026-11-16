@@ -2,8 +2,8 @@
  "requests": [
   {
    "id": "a_request_that_does_not_use_the_session_creates_no_file",
-   "label": "a request that does not use the session creates no file",
-   "rules": [
+   "note": "a request that does not use the session creates no file",
+   "rule": [
     "SE-7.2",
     "SE-7.1"
    ],
@@ -29,8 +29,8 @@
   },
   {
    "id": "the_first_use_starts_the_session_and_writes_its_file",
-   "label": "the first use starts the session and writes its file with the mode 0600",
-   "rules": [
+   "note": "the first use starts the session and writes its file with the mode 0600",
+   "rule": [
     "SE-7.2",
     "SF-2.1",
     "SF-4.4"
@@ -69,8 +69,8 @@
   },
   {
    "id": "a_session_that_the_store_created_is_read",
-   "label": "a session that the store created is read by the next request, which sets no new identifier",
-   "rules": [
+   "note": "a session that the store created is read by the next request, which sets no new identifier",
+   "rule": [
     "SF-3.7",
     "SE-7.1"
    ],
@@ -133,8 +133,8 @@
   },
   {
    "id": "a_session_file_that_holds_no_array_fails_the_call",
-   "label": "a session file that holds no array fails the call and keeps the file",
-   "rules": [
+   "note": "a session file that holds no array fails the call and keeps the file",
+   "rule": [
     "SE-6.4"
    ],
    "@files": [
@@ -176,8 +176,8 @@
   },
   {
    "id": "a_session_file_that_cannot_be_decoded_fails_the_call",
-   "label": "a session file that cannot be decoded fails the call and starts no session",
-   "rules": [
+   "note": "a session file that cannot be decoded fails the call and starts no session",
+   "rule": [
     "SE-6.3"
    ],
    "@files": [
@@ -219,8 +219,8 @@
   },
   {
    "id": "an_identifier_without_a_file_creates_no_file_until_it_is_used",
-   "label": "an identifier without a file names no session and creates no file when unused",
-   "rules": [
+   "note": "an identifier without a file names no session and creates no file when unused",
+   "rule": [
     "SF-3.3",
     "SE-7.1"
    ],
@@ -246,8 +246,8 @@
   },
   {
    "id": "an_identifier_without_a_file_starts_a_new_session",
-   "label": "an identifier without a file starts a session under a new identifier",
-   "rules": [
+   "note": "an identifier without a file starts a session under a new identifier",
+   "rule": [
     "SF-3.3",
     "SE-7.2"
    ],
@@ -284,8 +284,8 @@
   },
   {
    "id": "a_session_file_without_bytes_is_a_session_without_values",
-   "label": "a session file without bytes is a session without values",
-   "rules": [
+   "note": "a session file without bytes is a session without values",
+   "rule": [
     "SF-2.2"
    ],
    "@files": [
@@ -327,8 +327,8 @@
   },
   {
    "id": "a_request_that_changes_nothing_keeps_the_bytes_and_sets_a_new_time",
-   "label": "a request that changes nothing keeps the bytes and sets the modification time to now",
-   "rules": [
+   "note": "a request that changes nothing keeps the bytes and sets the modification time to now",
+   "rule": [
     "SF-4.2"
    ],
    "@files": [
@@ -380,8 +380,8 @@
   },
   {
    "id": "a_shorter_record_leaves_no_bytes_of_the_longer_one",
-   "label": "a shorter record cuts the file to its length",
-   "rules": [
+   "note": "a shorter record cuts the file to its length",
+   "rule": [
     "SF-4.3"
    ],
    "@files": [
@@ -423,8 +423,8 @@
   },
   {
    "id": "a_short_cookie_value_starts_a_new_session",
-   "label": "a short cookie value starts a new session",
-   "rules": [
+   "note": "a short cookie value starts a new session",
+   "rule": [
     "SE-5.2",
     "SF-3.1"
    ],
@@ -461,8 +461,8 @@
   },
   {
    "id": "a_cookie_value_that_is_a_path_starts_a_new_session",
-   "label": "a cookie value that is a path starts a new session and opens no file outside the directory",
-   "rules": [
+   "note": "a cookie value that is a path starts a new session and opens no file outside the directory",
+   "rule": [
     "SE-5.2",
     "SF-3.1"
    ],
@@ -499,8 +499,8 @@
   },
   {
    "id": "a_session_older_than_its_lifetime_ends_and_its_file_is_collected",
-   "label": "a session older than its lifetime names no session, and collect removes its file",
-   "rules": [
+   "note": "a session older than its lifetime names no session, and collect removes its file",
+   "rule": [
     "SF-2.3",
     "SF-3.6",
     "SF-5.1"
@@ -559,8 +559,8 @@
   },
   {
    "id": "a_session_within_its_lifetime_is_not_collected",
-   "label": "collect keeps a session within its lifetime",
-   "rules": [
+   "note": "collect keeps a session within its lifetime",
+   "rule": [
     "SF-5.2"
    ],
    "@files": [
@@ -613,8 +613,8 @@
   },
   {
    "id": "collect_skips_files_that_are_not_sessions",
-   "label": "collect keeps a file whose name is no session file of an identifier",
-   "rules": [
+   "note": "collect keeps a file whose name is no session file of an identifier",
+   "rule": [
     "SF-5.2"
    ],
    "@files": [
@@ -655,8 +655,8 @@
   },
   {
    "id": "a_renewal_moves_the_values_to_a_new_identifier_and_removes_the_old_file",
-   "label": "a renewal writes the values under a new identifier and removes the old file",
-   "rules": [
+   "note": "a renewal writes the values under a new identifier and removes the old file",
+   "rule": [
     "SE-7.3",
     "SF-4.4"
    ],
@@ -759,8 +759,8 @@
   },
   {
    "id": "an_identifier_of_uppercase_digits_without_a_file_starts_a_new_session",
-   "label": "an identifier of uppercase hexadecimal digits without a file starts a new session",
-   "rules": [
+   "note": "an identifier of uppercase hexadecimal digits without a file starts a new session",
+   "rule": [
     "SE-5.1",
     "SF-3.1",
     "SF-3.3"
@@ -798,8 +798,8 @@
   },
   {
    "id": "an_identifier_of_lowercase_digits_without_a_file_starts_a_new_session",
-   "label": "an identifier of lowercase hexadecimal digits without a file starts a new session",
-   "rules": [
+   "note": "an identifier of lowercase hexadecimal digits without a file starts a new session",
+   "rule": [
     "SE-5.1",
     "SF-3.1",
     "SF-3.3"
@@ -837,8 +837,8 @@
   },
   {
    "id": "a_cookie_value_of_257_characters_starts_a_new_session",
-   "label": "a cookie value of 257 characters is no identifier and starts a new session",
-   "rules": [
+   "note": "a cookie value of 257 characters is no identifier and starts a new session",
+   "rule": [
     "SE-5.1",
     "SF-3.1"
    ],
@@ -875,8 +875,8 @@
   },
   {
    "id": "a_value_too_deep_for_a_record_fails_the_close",
-   "label": "a value of 4096 nested arrays is set, and the close fails because its record, one array deeper, has no serialize form; no file is created",
-   "rules": [
+   "note": "a value of 4096 nested arrays is set, and the close fails because its record, one array deeper, has no serialize form; no file is created",
+   "rule": [
     "SE-6.8",
     "SF-4.5"
    ],
@@ -913,8 +913,8 @@
  "open": [
   {
    "id": "a_missing_directory_fails",
-   "label": "a directory that does not exist fails",
-   "rules": [
+   "note": "a directory that does not exist fails",
+   "rule": [
     "SF-1.2"
    ],
    "directory": "missing",
@@ -927,8 +927,8 @@
   },
   {
    "id": "a_file_in_the_place_of_the_directory_fails",
-   "label": "a path of a file fails",
-   "rules": [
+   "note": "a path of a file fails",
+   "rule": [
     "SF-1.2"
    ],
    "directory": "file",
@@ -944,8 +944,8 @@
   },
   {
    "id": "a_lifetime_of_zero_fails",
-   "label": "a lifetime of zero fails",
-   "rules": [
+   "note": "a lifetime of zero fails",
+   "rule": [
     "SF-1.3"
    ],
    "directory": ".",
@@ -959,8 +959,8 @@
   },
   {
    "id": "the_default_lifetime_is_1440_seconds",
-   "label": "without a lifetime the store takes 1440 seconds",
-   "rules": [
+   "note": "without a lifetime the store takes 1440 seconds",
+   "rule": [
     "SF-1.3"
    ],
    "directory": ".",
@@ -969,8 +969,8 @@
   },
   {
    "id": "a_lifetime_is_taken",
-   "label": "a stated lifetime is taken",
-   "rules": [
+   "note": "a stated lifetime is taken",
+   "rule": [
     "SF-1.3"
    ],
    "directory": ".",
@@ -980,8 +980,8 @@
   },
   {
    "id": "a_lifetime_that_is_negative_fails",
-   "label": "a lifetime of -1 is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lifetime of -1 is no uint and the binding refuses it",
+   "rule": [
     "SF-1.3",
     "SF-8.2"
    ],
@@ -997,8 +997,8 @@
   },
   {
    "id": "a_lifetime_that_is_no_integer_fails",
-   "label": "a lifetime of 1.5 is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lifetime of 1.5 is no uint and the binding refuses it",
+   "rule": [
     "SF-1.3",
     "SF-8.2"
    ],
@@ -1014,8 +1014,8 @@
   },
   {
    "id": "a_lifetime_that_is_a_text_fails",
-   "label": "a lifetime of \"60\" is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lifetime of \"60\" is no uint and the binding refuses it",
+   "rule": [
     "SF-1.3",
     "SF-8.2"
    ],
@@ -1031,8 +1031,8 @@
   },
   {
    "id": "a_lifetime_that_is_a_boolean_fails",
-   "label": "a lifetime of true is no uint and the binding refuses it",
-   "rules": [
+   "note": "a lifetime of true is no uint and the binding refuses it",
+   "rule": [
     "SF-1.3",
     "SF-8.2"
    ],
@@ -1050,8 +1050,8 @@
  "openNotAbsolute": [
   {
    "id": "a_relative_directory_fails",
-   "label": "a relative session directory fails",
-   "rules": [
+   "note": "a relative session directory fails",
+   "rule": [
     "SF-1.2"
    ],
    "directory": "var/sessions",
@@ -1064,8 +1064,8 @@
   },
   {
    "id": "a_save_path_with_levels_fails",
-   "label": "a save path of PHP in the form N;/path is no absolute directory",
-   "rules": [
+   "note": "a save path of PHP in the form N;/path is no absolute directory",
+   "rule": [
     "SF-1.2"
    ],
    "directory": "2;/tmp",
@@ -1078,8 +1078,8 @@
   },
   {
    "id": "a_save_path_with_levels_and_a_mode_fails",
-   "label": "a save path of PHP in the form N;MODE;/path is no absolute directory",
-   "rules": [
+   "note": "a save path of PHP in the form N;MODE;/path is no absolute directory",
+   "rule": [
     "SF-1.2"
    ],
    "directory": "2;600;/tmp",
@@ -1094,8 +1094,8 @@
  "openFaults": [
   {
    "id": "a_failing_open_of_the_session_file_fails_with_io",
-   "label": "the fault injection point session_store.open makes the open of the session file fail with EIO, a failure of the file system that no input reaches",
-   "rules": [
+   "note": "the fault injection point session_store.open makes the open of the session file fail with EIO, a failure of the file system that no input reaches",
+   "rule": [
     "SF-3.1",
     "SF-9.2",
     "SE-9.6"
@@ -1121,8 +1121,8 @@
  "collectFaults": [
   {
    "id": "a_failing_read_of_the_directory_fails_with_io",
-   "label": "the fault injection point session_store.read_dir makes the read of the session directory fail with EIO, a failure of the file system that no input reaches",
-   "rules": [
+   "note": "the fault injection point session_store.read_dir makes the read of the session directory fail with EIO, a failure of the file system that no input reaches",
+   "rule": [
     "SF-5.1",
     "SF-9.2",
     "SE-9.6"
@@ -1147,8 +1147,8 @@
  "file_session.get.made": [
   {
    "id": "a_new_session_whose_random_source_fails_fails_get_with_random",
-   "label": "get of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
-   "rules": [
+   "note": "get of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rule": [
     "SE-5.4",
     "SE-7.2",
     "SE-9.6"
@@ -1187,8 +1187,8 @@
  "file_session.set.made": [
   {
    "id": "a_new_session_whose_random_source_fails_fails_set_with_random",
-   "label": "set of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
-   "rules": [
+   "note": "set of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rule": [
     "SE-5.4",
     "SE-7.2",
     "SE-9.6"
@@ -1231,8 +1231,8 @@
  "file_session.remove.made": [
   {
    "id": "a_new_session_whose_random_source_fails_fails_remove_with_random",
-   "label": "remove of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
-   "rules": [
+   "note": "remove of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rule": [
     "SE-5.4",
     "SE-7.2",
     "SE-9.6"
@@ -1271,8 +1271,8 @@
  "file_session.renew.made": [
   {
    "id": "a_new_session_whose_random_source_fails_fails_renew_with_random",
-   "label": "renew of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
-   "rules": [
+   "note": "renew of a session that the store of files of the directory / opened without a cookie starts a new session, whose identifier the failing random source of the point session_store.random does not make, and fails with random (SE-5.4, SE-7.2)",
+   "rule": [
     "SE-5.4",
     "SE-7.2",
     "SE-9.6"
@@ -1310,8 +1310,8 @@
  "file_sessions.open.cancel": [
   {
    "id": "an_opening_whose_cancellation_fired_fails_with_cancelled",
-   "label": "the opening of a found identifier whose cancellation fired before the call fails with cancelled and waits for nothing (SF-3.8)",
-   "rules": [
+   "note": "the opening of a found identifier whose cancellation fired before the call fails with cancelled and waits for nothing (SF-3.8)",
+   "rule": [
     "SF-3.8"
    ],
    "directory": ".",
@@ -1331,8 +1331,8 @@
  "file_session.close.made": [
   {
    "id": "a_new_session_file_that_the_system_does_not_create_fails_the_close_with_io",
-   "label": "the close of a new session that set a value creates its file, which the fault injection point session_store.create fails with EIO, a failure of the file system that no input reaches, and fails with io (SF-4.4, SF-9.2)",
-   "rules": [
+   "note": "the close of a new session that set a value creates its file, which the fault injection point session_store.create fails with EIO, a failure of the file system that no input reaches, and fails with io (SF-4.4, SF-9.2)",
+   "rule": [
     "SF-4.4",
     "SF-9.2",
     "SE-9.6"
@@ -1382,8 +1382,8 @@
   },
   {
    "id": "a_new_session_file_that_exists_fails_the_close_with_identifier_taken",
-   "label": "the close of a new session that set a value creates its file, which the fault injection point session_store.create finds existing (EEXIST), an identifier that another process took, and fails with identifier_taken (SF-4.4)",
-   "rules": [
+   "note": "the close of a new session that set a value creates its file, which the fault injection point session_store.create finds existing (EEXIST), an identifier that another process took, and fails with identifier_taken (SF-4.4)",
+   "rule": [
     "SF-4.4",
     "SE-9.6"
    ],
@@ -1431,8 +1431,8 @@
   },
   {
    "id": "a_value_too_deep_for_a_record_fails_the_close_with_record_write",
-   "label": "the close of a new session that set a value of 4096 nested lists, which the record nests one level deeper than php-serialization writes, fails with record_write before it creates a file (SE-6.8)",
-   "rules": [
+   "note": "the close of a new session that set a value of 4096 nested lists, which the record nests one level deeper than php-serialization writes, fails with record_write before it creates a file (SE-6.8)",
+   "rule": [
     "SE-6.8",
     "SF-4.1"
    ],
@@ -1478,8 +1478,8 @@
  "file_session.found.made": [
   {
    "id": "a_session_opened_without_a_cookie_found_none",
-   "label": "a session that the store of files opened without a cookie found no identifier (SE-7.1)",
-   "rules": [
+   "note": "a session that the store of files opened without a cookie found no identifier (SE-7.1)",
+   "rule": [
     "SE-7.1",
     "SF-3.1"
    ],
@@ -1505,8 +1505,8 @@
  "file_session.get.stored": [
   {
    "id": "a_stored_record_that_holds_no_array_fails_get_with_record_not_array",
-   "label": "get of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
-   "rules": [
+   "note": "get of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
+   "rule": [
     "SE-6.4",
     "SE-7.2",
     "SF-2.1"
@@ -1540,8 +1540,8 @@
   },
   {
    "id": "a_stored_record_that_cannot_be_decoded_fails_get_with_record",
-   "label": "get of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
-   "rules": [
+   "note": "get of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SF-2.1"
@@ -1577,8 +1577,8 @@
  "file_session.set.stored": [
   {
    "id": "a_stored_record_that_holds_no_array_fails_set_with_record_not_array",
-   "label": "set of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
-   "rules": [
+   "note": "set of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
+   "rule": [
     "SE-6.4",
     "SE-7.2",
     "SF-2.1"
@@ -1616,8 +1616,8 @@
   },
   {
    "id": "a_stored_record_that_cannot_be_decoded_fails_set_with_record",
-   "label": "set of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
-   "rules": [
+   "note": "set of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SF-2.1"
@@ -1657,8 +1657,8 @@
  "file_session.remove.stored": [
   {
    "id": "a_stored_record_that_holds_no_array_fails_remove_with_record_not_array",
-   "label": "remove of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
-   "rules": [
+   "note": "remove of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
+   "rule": [
     "SE-6.4",
     "SE-7.2",
     "SF-2.1"
@@ -1692,8 +1692,8 @@
   },
   {
    "id": "a_stored_record_that_cannot_be_decoded_fails_remove_with_record",
-   "label": "remove of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
-   "rules": [
+   "note": "remove of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SF-2.1"
@@ -1729,8 +1729,8 @@
  "file_session.renew.stored": [
   {
    "id": "a_stored_record_that_holds_no_array_fails_renew_with_record_not_array",
-   "label": "renew of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
-   "rules": [
+   "note": "renew of a session that the store of files of the directory of the test opened with the cookie of a session file whose record holds no array, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record_not_array (SE-6.4, SE-7.2)",
+   "rule": [
     "SE-6.4",
     "SE-7.2",
     "SF-2.1"
@@ -1763,8 +1763,8 @@
   },
   {
    "id": "a_stored_record_that_cannot_be_decoded_fails_renew_with_record",
-   "label": "renew of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
-   "rules": [
+   "note": "renew of a session that the store of files of the directory of the test opened with the cookie of a session file whose bytes unserialize refuses, which the case writes as the file sess_<id>, starts the session, decodes the record and fails with record (SE-6.3, SE-7.2)",
+   "rule": [
     "SE-6.3",
     "SE-7.2",
     "SF-2.1"

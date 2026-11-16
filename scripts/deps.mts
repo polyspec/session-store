@@ -1,5 +1,5 @@
 // Clones the checkout of each other polyspec repository whose crate Cargo.lock pins from Git, php-serialization, into
-// var/deps/<repository> at that commit (make install-binding), from which the binding test targets build the packages
+// var/deps/<repository> at that commit (make install-deps), from which the binding test targets build the packages
 // of that repository that the generated packages of session-store require: its wheel, its PHP extension, its npm
 // package and its Go module (T1.34-1 to T1.34-3). The commit is the one that Cargo.lock pins for the tag of the
 // manifests, so the clone is an input fixed by its tag and its commit hash. binding itself is a released npm package,

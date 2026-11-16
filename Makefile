@@ -72,7 +72,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-binding php-serialization-checkout php-serialization-python php-serialization-php php-serialization-go php-serialization-node install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-deps php-serialization-checkout php-serialization-python php-serialization-php php-serialization-go php-serialization-node install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
 	release-recipes
@@ -153,7 +153,7 @@ ci-bindings:
 	$(MAKE) --no-print-directory install-rust
 	$(MAKE) --no-print-directory install-tools
 	$(MAKE) --no-print-directory install-php-tools
-	$(MAKE) --no-print-directory install-binding
+	$(MAKE) --no-print-directory install-deps
 	$(MAKE) --no-print-directory redis-image
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_BINDINGS)
 
@@ -319,7 +319,7 @@ SERVICE_RUN = BAY='$(BAY)' REDIS_IMAGE='$(REDIS_IMAGE)' $(NODE) $(CURDIR)/script
 
 # The generated packages of session-store require those of php-serialization (php_value, SE-1.5): the wheel, the PHP
 # extension, the npm package and the Go module of the release that Cargo.lock pins by its tag and commit. make
-# install-binding fetches the crates of Cargo.lock and clones the checkout of php-serialization at that commit into
+# install-deps fetches the crates of Cargo.lock and clones the checkout of php-serialization at that commit into
 # PHP_SERIALIZATION (scripts/deps.mts); the targets php-serialization-python, -php, -go and -node generate its bindings
 # there with the binding of package-lock.json and build them: the wheel PHP_SERIALIZATION_WHEEL, which test-python
 # installs beside the wheel of this repository, the extension PHP_SERIALIZATION_EXTENSION, which test-php loads before
@@ -327,7 +327,7 @@ SERVICE_RUN = BAY='$(BAY)' REDIS_IMAGE='$(REDIS_IMAGE)' $(NODE) $(CURDIR)/script
 # package and its platform package in PHP_SERIALIZATION_NPM, which node-package installs beside this one (T1.34-1 to
 # T1.34-3). maturin runs in this checkout with the manifest of the clone, because the shim of mise refuses a folder whose
 # mise.toml mise does not trust.
-install-binding:
+install-deps:
 	$(ONLINE) $(CARGO) fetch --locked
 	$(ONLINE) $(NODE) scripts/deps.mts
 
@@ -338,7 +338,7 @@ PHP_SERIALIZATION_NPM := $(VAR)/deps/npm
 GO_WORK := $(VAR)/go.work
 
 php-serialization-checkout:
-	test -d "$(PHP_SERIALIZATION)/.git" || { echo 'the checkout of php-serialization is missing: run make install-binding'; exit 1; }
+	test -d "$(PHP_SERIALIZATION)/.git" || { echo 'the checkout of php-serialization is missing: run make install-deps'; exit 1; }
 
 php-serialization-python: php-serialization-checkout
 	$(BINDING) generate --root $(PHP_SERIALIZATION) --target python

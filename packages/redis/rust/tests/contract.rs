@@ -851,16 +851,31 @@ const DATABASES: usize = 16;
 /// first, so two trials must not hold one database at once.
 struct Claim {
     database: usize,
+    _held: std::sync::MutexGuard<'static, ()>,
 }
 
-/// Waits until the database of the trial of the index is free and holds it.
+/// One lock for each database of the server.
+static HELD: [std::sync::Mutex<()>; DATABASES] = [const { std::sync::Mutex::new(()) }; DATABASES];
+
+/// Waits until the database of the trial of the index is free and holds it. A trial that failed while it held the
+/// database left it flushed by the next trial, so a poisoned lock is held as well.
 fn claim(index: usize) -> Claim {
-    Claim { database: index % DATABASES }
+    let database = index % DATABASES;
+    let held = match HELD[database].lock() {
+        Ok(held) => held,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+    Claim { database, _held: held }
 }
 
 /// Holds the database of the trial of the index if it is free, and gives nothing if another trial holds it.
 fn try_claim(index: usize) -> Option<Claim> {
-    Some(Claim { database: index % DATABASES })
+    let database = index % DATABASES;
+    match HELD[database].try_lock() {
+        Ok(held) => Some(Claim { database, _held: held }),
+        Err(std::sync::TryLockError::Poisoned(poisoned)) => Some(Claim { database, _held: poisoned.into_inner() }),
+        Err(std::sync::TryLockError::WouldBlock) => None,
+    }
 }
 
 /// HR-87: while one trial holds a database, a trial of another index of the same database does not get it, and it gets

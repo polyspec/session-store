@@ -72,7 +72,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-deps php-serialization-checkout php-serialization-python php-serialization-php php-serialization-go php-serialization-node install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-deps php-serialization-checkout php-serialization-python php-serialization-php php-serialization-go php-serialization-node install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test link unlink link-check servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
 	release-recipes
@@ -222,6 +222,17 @@ workflows-test:
 
 # The pins of the tools of the checkout (AGENTS.md, "Tools"): mise.toml with mise.lock, devEngines of package.json,
 # config/toolchain.json, the bootstrap action and the node that the recipes start.
+# The local links of 0.0.x development (kit K869): the git-ignored .links of the checkout names the checkouts that
+# provide packages; a release and CI install the locked tags alone.
+link: ## Link the packages to the checkouts of .links; offline
+	$(NODE) $(KIT)/link.mjs link
+
+unlink: ## Remove the links; make install restores the locked installs; offline
+	$(NODE) $(KIT)/link.mjs unlink
+
+link-check: ## Fail while the links differ from .links; offline
+	$(NODE) $(KIT)/link-check.mjs
+
 tool-pins-test:
 	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/tool-pins.test.mts
 

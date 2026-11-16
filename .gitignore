@@ -13,3 +13,5 @@ __pycache__/
 /packages/release.mk
 /packages/ts/npm/
 /vendor/
+# The link declaration of kit (K869), which the local links read; never committed.
+/.links

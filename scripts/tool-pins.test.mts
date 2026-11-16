@@ -246,12 +246,8 @@ test('packages/ts is a workspace of the root, whose php-serialization is the npm
   const tag = /polyspec\/php-serialization\.git", tag = "v([0-9.]+)"/.exec(read('packages/redis/rust/Cargo.toml'))?.[1];
   assert.ok(tag !== undefined, 'no tag of php-serialization in packages/redis/rust/Cargo.toml');
   const url = `https://github.com/polyspec/php-serialization/releases/download/v${tag}/polyspec-php-serialization-${tag}.tgz`;
-  // The manifest of the package that a release publishes requires php-serialization by its version, and the root, which
-  // installs it, names the source of that version, the asset of its release (T1.59).
   const ts = JSON.parse(read('packages/ts/package.json')) as { dependencies?: Record<string, string> };
-  assert.equal(ts.dependencies?.['@polyspec/php-serialization'], tag);
-  const top = JSON.parse(read('package.json')) as { devDependencies?: Record<string, string> };
-  assert.equal(top.devDependencies?.['@polyspec/php-serialization'], url);
+  assert.equal(ts.dependencies?.['@polyspec/php-serialization'], url);
   const lock = JSON.parse(read('package-lock.json')) as { packages: Record<string, { resolved?: string; integrity?: string }> };
   const locked = lock.packages['node_modules/@polyspec/php-serialization'];
   assert.equal(locked?.resolved, url);

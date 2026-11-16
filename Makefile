@@ -206,6 +206,17 @@ ci-passed:
 docs-check:
 	$(NODE) $(KIT)/check-documents.mjs --checklist-place --private-path /Users/ --private-path /home/ --kit-rows
 
+# The changelogs and the checklists merge with the drivers of kit (K354), which run twin-merge of this checkout: the merge
+# of git keeps a task row twice when one side changes its state, and leaves the source-sha256 of a Korean twin stale.
+# make hooks declares the merges and their drivers; hooks-check fails a checkout without them.
+.PHONY: hooks hooks-check twin-merge
+TWIN_MERGE_DRIVER := make --no-print-directory twin-merge MERGE="%O %A %B %P"
+HOOK_DECLARATION := --merge 'CHANGELOG.md=kit-changelog' --merge 'CHANGELOG.ko.md=kit-twin' \
+	--merge 'docs/plans/*/checklist.md=kit-checklist' --merge 'docs/plans/*/checklist.ko.md=kit-twin' \
+	--driver 'kit-twin=$(TWIN_MERGE_DRIVER)' --driver 'kit-changelog=$(TWIN_MERGE_DRIVER)' --driver 'kit-checklist=$(TWIN_MERGE_DRIVER)'
+hooks-check:
+	$(NODE) $(KIT)/git-hooks.mjs check $(HOOK_DECLARATION)
+
 # Writes the source-sha256 of each English document into the Korean twins that PATHS names, after they are translated
 # again; with no PATHS it lists each twin whose source moved.
 documents-stamp:

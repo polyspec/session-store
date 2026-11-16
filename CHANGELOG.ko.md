@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 9b0c869b38c8f3df3f7cab6ee2fda23671536064aa697b85f879d318b08ddb61 -->
+<!-- source-sha256: 620db1bdebee4c79a164fd0fbc61d611bbe7b04b7e08ebc71d6a8b0911dde682 -->
 
 ## Unreleased
 
+- changelog와 `docs/plans`의 checklist는 kit의 driver `kit-changelog`, `kit-twin`, `kit-checklist`로 합친다. 이 driver들은 `make twin-merge`를 돌린다. `make hooks`가 그것을 선언하고, `make hooks-check`는 그것이 없는 checkout을 실패시킨다. 전에는 git이 자기 기본 merge로 합쳤고, 그 merge는 한쪽이 상태를 바꾼 task 행을 두 번 남긴다.
 - core는 wasm32의 난수 원천을 getrandom의 feature `wasm_js`만으로 고른다. getrandom 0.3.4에는 필요 없는 `--cfg getrandom_backend="wasm_js"`를 `.cargo/config.toml`이 더는 두지 않고, core를 wasm32로 빌드하는 crate도 아무것도 설정하지 않는다(SR-1.5).
 - TLS로 연결하는 Redis 저장소는 기계의 신뢰 저장소를 프로세스에서 한 번 읽고, 그 인증 기관들을 redis-rs의 공개 setter로 서버, Sentinel 노드와 그 primary, Cluster 노드의 client에 준다. redis-rs 1.8.1은 feature `tls-rustls-webpki-roots`로 빌드한다. 이것은 redis-rs가 연결마다 1초의 연결 제한 시간 안에서 신뢰 저장소를 읽지 않게 하는 유일한 공개 수단이고, macOS의 keychain을 읽는 시간은 그 1초를 넘길 수 있다(SR-6.1a, docs/operations/dependencies.md). Sentinel 주소는 모두 `redis://`이거나 모두 `rediss://`이고, 사용자와 비밀번호 하나를 함께 쓴다.
 - 호출을 이어 가는 memory 저장소의 case 7개가 바인딩이 실행하는 `memory_store.get.made`와 `memory_store.set.made`의 case다: 이후의 호출은 그 `after`이고, `renewals`는 거기서 property로 읽으며, 같은 호출이 레코드 세션에 쓰는 record인 `record`는 Rust 시험이 읽는 key다(`reads`). 어떤 member도 record를 주지 않기 때문이다(SE-10.1, SE-1.2). 객체와 reference를 함께 쓰는 값의 case는 group `store`에 남는다.

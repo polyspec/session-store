@@ -214,8 +214,15 @@ TWIN_MERGE_DRIVER := make --no-print-directory twin-merge MERGE="%O %A %B %P"
 HOOK_DECLARATION := --merge 'CHANGELOG.md=kit-changelog' --merge 'CHANGELOG.ko.md=kit-twin' \
 	--merge 'docs/plans/*/checklist.md=kit-checklist' --merge 'docs/plans/*/checklist.ko.md=kit-twin' \
 	--driver 'kit-twin=$(TWIN_MERGE_DRIVER)' --driver 'kit-changelog=$(TWIN_MERGE_DRIVER)' --driver 'kit-checklist=$(TWIN_MERGE_DRIVER)'
+hooks:
+	$(NODE) $(KIT)/git-hooks.mjs install $(HOOK_DECLARATION)
+
 hooks-check:
 	$(NODE) $(KIT)/git-hooks.mjs check $(HOOK_DECLARATION)
+
+# The merge driver of a Korean twin, a changelog and a checklist; git runs it with MERGE="<base> <ours> <theirs> <path>".
+twin-merge:
+	@$(NODE) $(KIT)/twin-merge.mjs $(MERGE)
 
 # Writes the source-sha256 of each English document into the Korean twins that PATHS names, after they are translated
 # again; with no PATHS it lists each twin whose source moved.

@@ -187,3 +187,13 @@ test('binding is the release that package.json pins by its asset and the manifes
   // which installs no binding (T1.34-1).
   assert.match(makefile, /^install-deps:$/m, 'no target install-deps fetches the clones of scripts/deps.mts');
 });
+
+test('the local links are the targets link, unlink and link-check of kit, and .links is ignored', () => {
+  // The local links of 0.0.x development (kit local-links.md, K869): .links names the checkouts that provide packages.
+  const makefile = read('Makefile');
+  assert.match(makefile, /^link:.*\n\t\$\(NODE\) \$\(KIT\)\/link\.mjs link\n/m, 'no target link runs link.mjs link');
+  assert.match(makefile, /^unlink:.*\n\t\$\(NODE\) \$\(KIT\)\/link\.mjs unlink\n/m, 'no target unlink runs link.mjs unlink');
+  assert.match(makefile, /^link-check:.*\n\t\$\(NODE\) \$\(KIT\)\/link-check\.mjs\n/m, 'no target link-check runs link-check.mjs');
+  assert.match(read('.gitignore'), /^\/\.links$/m, '.gitignore does not ignore /.links');
+  assert.ok(!tracked.has('.links'), '.links is tracked');
+});

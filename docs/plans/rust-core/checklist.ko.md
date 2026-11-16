@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 028a7a709cb3780aa8b6c02f596a032c7a28e04c76b767d30efddb2a2cfaf9a3 -->
+<!-- source-sha256: 3c23aba28b395ddccc9ac9999141e8b5fc2d65e04e9756058653c1c01d809068 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -66,3 +66,4 @@
 | T1.45 | `make test-go`는 Go 시험의 link flag를 `binding go-link`에서 받는다(binding GN-15k). 그것은 시험 feature로 host의 정적 라이브러리를 빌드하고 `CGO_LDFLAGS`를 출력한다. 자체 `cargo build`와 고정된 `-L`은 쓰지 않는다. 그리고 binding 0.0.15가 생성하는 build tag(`polyspec_session_store_panic_test`, `polyspec_session_store_codec_test`)를 쓴다. 이전 이름으로는 panic과 codec 시험이 빌드되지 않는다. manifest가 고정한 binding 0.0.13에는 `go-link`가 없으므로, 이 변경은 binding `v0.0.15`를 고정하는 커밋에 함께 들어간다. 그 Red와 Green은 binding 1e922a76의 고정 사본과 그 위의 php-serialization 고정 사본에서 돌린다. | `Makefile`; `CHANGELOG.md`(.ko) | make test-go | [ ] |
 | T1.46 | 한 번 읽은 인증 기관을 받은 TLS 연결이 신뢰 저장소를 읽지 않는다는 증명은, thread가 도는 시험 process의 환경 변수를 바꾸지 않는다(SR-6.1a). TLS 시험은 `SSL_CERT_FILE`이 bay의 인증 기관 파일인 별도 process를 띄운다. 그 process는 연결하고, 파일을 지우고, 다시 연결한다. redis-rs가 연결마다 신뢰 저장소를 읽는 동안에는 파일을 지운 뒤 실패한다(T1.49). | `packages/redis/rust/tests/server.rs` | make test | [o] |
 | T1.49 | redis-rs는 fork `redis-1.8.2-p1` 대신 공개 feature `tls-rustls-webpki-roots`를 켠 crates.io의 redis 1.8.1이다(SR-6.1a). 이 feature를 켜면 redis-rs는 연결마다 신뢰 저장소를 읽지 않는다(`connection.rs:1240`). 저장소는 한 번 읽은 인증 기관을 공개 setter만으로 TLS의 모든 client에 준다. `Client::build_with_tls`, `Sentinel`을 대신하는 `SentinelClientBuilder::set_client_to_sentinel_certificates`와 `set_client_to_redis_certificates`, `ClusterClientBuilder::certs`다. `SentinelClient::async_get_client`는 부를 때마다 Sentinel에게 primary를 묻는다. SR-6.2가 요구하는 대로다. 인증 기관의 PEM은 손으로 짠 base64 대신 lock에 있는 `pem-rfc7468`이 쓴다. webpki의 루트를 빌드에 넣는 이유는 `docs/operations/dependencies.md`에 있다. | `packages/redis/rust/`; `docs/spec/sessions.md`(.ko); `docs/operations/dependencies.md`(.ko) | make test | [o] |
+| T1.50 | 개발의 로컬 연결은 모든 저장소와 같다(kit K869). target `link`, `unlink`, `link-check`가 kit의 `link.mjs`와 `link-check.mjs`를 부르고, `.gitignore`는 `/.links`를 무시한다. `/.links`는 package를 제공하는 checkout을 선언하는 파일이고, 어떤 커밋도 그것을 담지 않는다. | `Makefile`; `.gitignore`; `scripts/tool-pins.test.mts` | make tool-pins-test | [ ] |

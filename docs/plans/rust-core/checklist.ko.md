@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 89d2c6a24d2356f95c6bba5c795ad161a04211e497b6694a1bad25bdc822403c -->
+<!-- source-sha256: ff1ad308f6ebb96f983cbc9b12ae215705506274a8a6ef868809881b931454c8 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -74,3 +74,4 @@
 | T1.55 | `.links`의 php-serialization checkout은 `packages/rust/Cargo.toml`이 crate `polyspec-php-serialization`을 선언하는 줄이다. folder 이름은 상관없고, lane worktree `php-serialization-b8n`도 그렇게 찾는다. 절대 경로 줄은 그대로 둔다. folder 이름으로 찾으면 lane worktree를 찾지 못했다(T1.51). | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
 | T1.56 | `packages/ts`는 루트의 workspace다(`package.json`의 `workspaces`, `package-lock.json` 하나). 그래서 `make install-packages`가 그 의존을 설치하고 kit이 그것을 연결한다(K888). 그 `@polyspec/php-serialization`은 Cargo manifest가 가리키는 release의 npm 패키지이고, asset URL과 integrity로 고정한다. `var/deps/npm`은 `node-package`가 쓰는 php-serialization platform addon의 원천으로 남는다. release의 platform 패키지는 `optionalDependencies`에 registry 버전으로 적혀 있는데, 그 registry에는 아무것도 없기 때문이다. | `package.json`; `package-lock.json`; `packages/ts/package.json`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
 | T1.57 | kit 0.0.115가 0.0.114를 대신하고, asset URL과 integrity로 고정한다. 0.0.114의 `make link`는 `.links`의 lane worktree를 거부했다("is not a main checkout"). 0.0.115는 그것을 연결한다(kit K1259). `make install-packages` 뒤에 binding, kit, php-serialization을 연결하고 `link-check`가 통과한다. | `package.json`; `package-lock.json`; `CHANGELOG.md`(.ko) | make link-check | [o] |
+| T1.59 | `packages/ts`의 배포 manifest는 `@polyspec/php-serialization`을 버전으로 요구하고, 그것을 설치하는 루트 `package.json`이 `devDependencies`에 그 release의 asset을 적는다(binding B2.405). 지금은 T1.56의 URL이 pack한 패키지에 실려서 `make test-node`가 EALLOWREMOTE로 실패하고, release도 그 URL을 실을 것이다. php-serialization의 release가 platform 패키지를 `optionalDependencies`에 registry 버전으로 적는 동안에는 `npm ci`가 그 asset을 요구하는 루트를 거부한다("Missing: @polyspec/php-serialization-darwin-arm64@ from lock file"), 그런데 그 registry에는 아무것도 없다. B2.405가 든 binding으로 낸 php-serialization release를 고정할 때 다시 시도한다. | `package.json`; `package-lock.json`; `packages/ts/package.json` | make install-packages; make test-node | [!] |

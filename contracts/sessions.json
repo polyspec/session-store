@@ -163,267 +163,6 @@
  ],
  "store": [
   {
-   "id": "a_value_that_is_set_is_read_and_a_removed_value_is_absent",
-   "note": "get gives nothing for a key without a value, the value that set stored, and nothing after remove",
-   "rule": [
-    "SE-2.1",
-    "SE-2.3"
-   ],
-   "calls": [
-    [
-     "get",
-     [
-      "a"
-     ]
-    ],
-    [
-     "set",
-     [
-      "a",
-      "i:1;"
-     ]
-    ],
-    [
-     "get",
-     [
-      "a"
-     ]
-    ],
-    [
-     "remove",
-     [
-      "a"
-     ]
-    ],
-    [
-     "get",
-     [
-      "a"
-     ]
-    ]
-   ],
-   "results": [
-    null,
-    null,
-    "i:1;",
-    null,
-    null
-   ],
-   "renewals": 0,
-   "record": "a:0:{}"
-  },
-  {
-   "id": "a_set_of_a_key_replaces_its_value_in_its_place",
-   "note": "set of a key that holds a value replaces it in its place, and remove of one key leaves the other",
-   "rule": [
-    "SE-2.2",
-    "SE-6.6"
-   ],
-   "calls": [
-    [
-     "set",
-     [
-      "a",
-      "s:1:\"x\";"
-     ]
-    ],
-    [
-     "set",
-     [
-      "b",
-      "a:2:{i:0;i:1;i:1;i:2;}"
-     ]
-    ],
-    [
-     "set",
-     [
-      "c",
-      "b:1;"
-     ]
-    ],
-    [
-     "set",
-     [
-      "a",
-      "s:1:\"y\";"
-     ]
-    ],
-    [
-     "remove",
-     [
-      "b"
-     ]
-    ],
-    [
-     "get",
-     [
-      "a"
-     ]
-    ],
-    [
-     "get",
-     [
-      "b"
-     ]
-    ]
-   ],
-   "results": [
-    null,
-    null,
-    null,
-    null,
-    null,
-    "s:1:\"y\";",
-    null
-   ],
-   "renewals": 0,
-   "record": "a:2:{s:1:\"a\";s:1:\"y\";s:1:\"c\";b:1;}"
-  },
-  {
-   "id": "a_remove_of_a_key_without_a_value_changes_nothing",
-   "note": "remove of a key that holds no value succeeds and changes nothing",
-   "rule": [
-    "SE-2.3"
-   ],
-   "calls": [
-    [
-     "set",
-     [
-      "a",
-      "b:1;"
-     ]
-    ],
-    [
-     "remove",
-     [
-      "b"
-     ]
-    ],
-    [
-     "get",
-     [
-      "a"
-     ]
-    ]
-   ],
-   "results": [
-    null,
-    null,
-    "b:1;"
-   ],
-   "renewals": 0,
-   "record": "a:1:{s:1:\"a\";b:1;}"
-  },
-  {
-   "id": "a_removed_key_that_is_set_again_goes_last",
-   "note": "a key that is removed and set again goes after the other keys",
-   "rule": [
-    "SE-2.2"
-   ],
-   "calls": [
-    [
-     "set",
-     [
-      "a",
-      "i:1;"
-     ]
-    ],
-    [
-     "set",
-     [
-      "b",
-      "i:2;"
-     ]
-    ],
-    [
-     "remove",
-     [
-      "a"
-     ]
-    ],
-    [
-     "set",
-     [
-      "a",
-      "i:3;"
-     ]
-    ]
-   ],
-   "results": [
-    null,
-    null,
-    null,
-    null
-   ],
-   "renewals": 0,
-   "record": "a:2:{s:1:\"b\";i:2;s:1:\"a\";i:3;}"
-  },
-  {
-   "id": "a_key_that_holds_null_holds_a_value",
-   "note": "a key set to null holds the value null",
-   "rule": [
-    "SE-2.1",
-    "SE-3.4"
-   ],
-   "calls": [
-    [
-     "set",
-     [
-      "a",
-      "N;"
-     ]
-    ],
-    [
-     "get",
-     [
-      "a"
-     ]
-    ]
-   ],
-   "results": [
-    null,
-    "N;"
-   ],
-   "renewals": 0,
-   "record": "a:1:{s:1:\"a\";N;}"
-  },
-  {
-   "id": "a_canonical_integer_text_names_the_integer_key",
-   "note": "the text 5 names the integer key 5 and the text 05 a string key",
-   "rule": [
-    "SE-2.5"
-   ],
-   "calls": [
-    [
-     "set",
-     [
-      "5",
-      "s:1:\"x\";"
-     ]
-    ],
-    [
-     "set",
-     [
-      "05",
-      "s:1:\"y\";"
-     ]
-    ],
-    [
-     "get",
-     [
-      "5"
-     ]
-    ]
-   ],
-   "results": [
-    null,
-    null,
-    "s:1:\"x\";"
-   ],
-   "renewals": 0,
-   "record": "a:2:{i:5;s:1:\"x\";s:2:\"05\";s:1:\"y\";}"
-  },
-  {
    "id": "a_value_with_an_object_and_a_reference_is_kept",
    "note": "a value that shares an object and holds a reference is read as it was set, and its slots count from its own top in the record",
    "rule": [
@@ -451,45 +190,6 @@
    ],
    "renewals": 0,
    "record": "a:1:{s:1:\"a\";a:3:{i:0;O:8:\"stdClass\":1:{s:1:\"p\";d:-0;}i:1;r:3;i:2;R:4;}}"
-  },
-  {
-   "id": "a_renewal_is_counted_and_keeps_the_values",
-   "note": "renew keeps the stored values; the memory store counts each renewal",
-   "rule": [
-    "SE-4.3",
-    "SE-7.3"
-   ],
-   "calls": [
-    [
-     "set",
-     [
-      "a",
-      "i:1;"
-     ]
-    ],
-    [
-     "renew",
-     []
-    ],
-    [
-     "renew",
-     []
-    ],
-    [
-     "get",
-     [
-      "a"
-     ]
-    ]
-   ],
-   "results": [
-    null,
-    null,
-    null,
-    "i:1;"
-   ],
-   "renewals": 2,
-   "record": "a:1:{s:1:\"a\";i:1;}"
   }
  ],
  "memory_store.new.made": [
@@ -574,6 +274,63 @@
     "kind": "bool",
     "value": true
    }
+  },
+  {
+   "id": "a_value_that_is_set_is_read_and_a_removed_value_is_absent",
+   "note": "get gives nothing for a key without a value, the value that set stored, and nothing after remove",
+   "rule": [
+    "SE-2.1",
+    "SE-2.3"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {}
+   },
+   "key": "a",
+   "result": null,
+   "after": [
+    {
+     "call": "memory_store.set",
+     "args": {
+      "key": "a",
+      "value": {
+       "kind": "int",
+       "value": 1
+      }
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "a"
+     },
+     "result": {
+      "kind": "int",
+      "value": 1
+     }
+    },
+    {
+     "call": "memory_store.remove",
+     "args": {
+      "key": "a"
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "a"
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.renewals",
+     "args": {},
+     "result": 0
+    }
+   ],
+   "record": "a:0:{}"
   }
  ],
  "memory_store.set.made": [
@@ -694,6 +451,336 @@
      }
     }
    ]
+  },
+  {
+   "id": "a_set_of_a_key_replaces_its_value_in_its_place",
+   "note": "set of a key that holds a value replaces it in its place, and remove of one key leaves the other",
+   "rule": [
+    "SE-2.2",
+    "SE-6.6"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {}
+   },
+   "key": "a",
+   "value": {
+    "kind": "bytes",
+    "value": {
+     "hex": "78"
+    }
+   },
+   "after": [
+    {
+     "call": "memory_store.set",
+     "args": {
+      "key": "b",
+      "value": {
+       "kind": "map",
+       "value": [
+        [
+         {
+          "int": 0
+         },
+         {
+          "kind": "int",
+          "value": 1
+         }
+        ],
+        [
+         {
+          "int": 1
+         },
+         {
+          "kind": "int",
+          "value": 2
+         }
+        ]
+       ]
+      }
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.set",
+     "args": {
+      "key": "c",
+      "value": {
+       "kind": "bool",
+       "value": true
+      }
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.set",
+     "args": {
+      "key": "a",
+      "value": {
+       "kind": "bytes",
+       "value": {
+        "hex": "79"
+       }
+      }
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.remove",
+     "args": {
+      "key": "b"
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "a"
+     },
+     "result": {
+      "kind": "bytes",
+      "value": {
+       "hex": "79"
+      }
+     }
+    },
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "b"
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.renewals",
+     "args": {},
+     "result": 0
+    }
+   ],
+   "record": "a:2:{s:1:\"a\";s:1:\"y\";s:1:\"c\";b:1;}"
+  },
+  {
+   "id": "a_remove_of_a_key_without_a_value_changes_nothing",
+   "note": "remove of a key that holds no value succeeds and changes nothing",
+   "rule": [
+    "SE-2.3"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {}
+   },
+   "key": "a",
+   "value": {
+    "kind": "bool",
+    "value": true
+   },
+   "after": [
+    {
+     "call": "memory_store.remove",
+     "args": {
+      "key": "b"
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "a"
+     },
+     "result": {
+      "kind": "bool",
+      "value": true
+     }
+    },
+    {
+     "call": "memory_store.renewals",
+     "args": {},
+     "result": 0
+    }
+   ],
+   "record": "a:1:{s:1:\"a\";b:1;}"
+  },
+  {
+   "id": "a_removed_key_that_is_set_again_goes_last",
+   "note": "a key that is removed and set again goes after the other keys",
+   "rule": [
+    "SE-2.2"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {}
+   },
+   "key": "a",
+   "value": {
+    "kind": "int",
+    "value": 1
+   },
+   "after": [
+    {
+     "call": "memory_store.set",
+     "args": {
+      "key": "b",
+      "value": {
+       "kind": "int",
+       "value": 2
+      }
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.remove",
+     "args": {
+      "key": "a"
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.set",
+     "args": {
+      "key": "a",
+      "value": {
+       "kind": "int",
+       "value": 3
+      }
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.renewals",
+     "args": {},
+     "result": 0
+    }
+   ],
+   "record": "a:2:{s:1:\"b\";i:2;s:1:\"a\";i:3;}"
+  },
+  {
+   "id": "a_key_that_holds_null_holds_a_value",
+   "note": "a key set to null holds the value null",
+   "rule": [
+    "SE-2.1",
+    "SE-3.4"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {}
+   },
+   "key": "a",
+   "value": {
+    "kind": "null"
+   },
+   "after": [
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "a"
+     },
+     "result": {
+      "kind": "null"
+     }
+    },
+    {
+     "call": "memory_store.renewals",
+     "args": {},
+     "result": 0
+    }
+   ],
+   "record": "a:1:{s:1:\"a\";N;}"
+  },
+  {
+   "id": "a_canonical_integer_text_names_the_integer_key",
+   "note": "the text 5 names the integer key 5 and the text 05 a string key",
+   "rule": [
+    "SE-2.5"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {}
+   },
+   "key": "5",
+   "value": {
+    "kind": "bytes",
+    "value": {
+     "hex": "78"
+    }
+   },
+   "after": [
+    {
+     "call": "memory_store.set",
+     "args": {
+      "key": "05",
+      "value": {
+       "kind": "bytes",
+       "value": {
+        "hex": "79"
+       }
+      }
+     },
+     "result": null
+    },
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "5"
+     },
+     "result": {
+      "kind": "bytes",
+      "value": {
+       "hex": "78"
+      }
+     }
+    },
+    {
+     "call": "memory_store.renewals",
+     "args": {},
+     "result": 0
+    }
+   ],
+   "record": "a:2:{i:5;s:1:\"x\";s:2:\"05\";s:1:\"y\";}"
+  },
+  {
+   "id": "a_renewal_is_counted_and_keeps_the_values",
+   "note": "renew keeps the stored values; the memory store counts each renewal",
+   "rule": [
+    "SE-4.3",
+    "SE-7.3"
+   ],
+   "receiver": {
+    "new": "memory_store.new",
+    "args": {}
+   },
+   "key": "a",
+   "value": {
+    "kind": "int",
+    "value": 1
+   },
+   "after": [
+    {
+     "call": "memory_store.renew",
+     "args": {},
+     "result": null
+    },
+    {
+     "call": "memory_store.renew",
+     "args": {},
+     "result": null
+    },
+    {
+     "call": "memory_store.get",
+     "args": {
+      "key": "a"
+     },
+     "result": {
+      "kind": "int",
+      "value": 1
+     }
+    },
+    {
+     "call": "memory_store.renewals",
+     "args": {},
+     "result": 2
+    }
+   ],
+   "record": "a:1:{s:1:\"a\";i:1;}"
   }
  ],
  "memory_store.remove.made": [

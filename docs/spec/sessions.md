@@ -374,10 +374,14 @@ the statement that it checks. A PHP value and its serialize form are those of ph
 
 - **SE-10** <a id="SE-10.1"></a> `contracts/sessions.json` holds the cases of the core: group `identifier` (SE-5.1,
   SE-5.2), group `created` (SE-5.3: the `length` and the `alphabet` of a new identifier, which is an identifier and
-  differs from the one made before it, and SE-5.4), group `store` (SE-2, SE-4, run on the memory store and on a record
-  session), whose cases hold several calls, so the Rust tests alone read it, the groups `memory_store.<member>.made`
+  differs from the one made before it, and SE-5.4), the groups `memory_store.<member>.made`
   (SE-2, SE-4), which the interface contract declares: a call of each member of the memory store on a store that
-  `memory_store.new` and the calls of `then` made, whose result and the calls of `after` show the store after it
+  `memory_store.new` and the calls of `then` made, whose result and the calls of `after`, in their order and with
+  `renewals` read as a property, show the store after it; a case that states `record`, the record that the same
+  calls write on a record session, is run on both stores by the Rust tests, which alone read `record`, because no
+  member gives the record (SE-1.2), group `store` (SE-2, SE-4, run on the memory store and on a record session), which
+  holds the case whose value shares an object and a reference: its record numbers them as the record session writes
+  them, which only the Rust tests compare
   (binding GN-13f), group `record` (SE-6, SE-7), group `internal` (SE-9.6) and group `recordFaults` (SE-9.6). `contracts/file-sessions.json` holds the requests of the store of files (SF-1 to SF-5),
   and `contracts/redis-sessions.json` the requests of the store of Redis with the commands that each sends (SR-1 to
   SR-5). <a id="SE-10.2"></a> A PHP value of a case is its serialize form, and a byte string of a case is JSON text

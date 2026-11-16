@@ -368,10 +368,13 @@
 
 - **SE-10** <a id="SE-10.1"></a> `contracts/sessions.json`은 코어의 case를 담는다: group `identifier`(SE-5.1,
   SE-5.2), group `created`(SE-5.3: 새 식별자의 `length`와 `alphabet`. 새 식별자는 식별자이고
-  그 앞에 만든 식별자와 다르다. 그리고 SE-5.4), group `store`(SE-2, SE-4, 메모리 저장소와 레코드 세션에서
-  실행한다. 그 case는 여러 호출을 담으므로 Rust 시험만 읽는다), 인터페이스 계약이 선언하는 group
+  그 앞에 만든 식별자와 다르다. 그리고 SE-5.4), 인터페이스 계약이 선언하는 group
   `memory_store.<member>.made`(SE-2, SE-4: `memory_store.new`와 `then`의 호출이 만든 저장소에서 메모리 저장소의 각
-  member를 한 번 호출하고, 그 결과와 `after`의 호출이 그 뒤의 저장소를 보인다, binding GN-13f), group `record`(SE-6, SE-7), group `internal`(SE-9.6), group `recordFaults`(SE-9.6). `contracts/file-sessions.json`은 파일 저장소의 요청을 담고(SF-1부터 SF-5),
+  member를 한 번 호출하고, 그 결과와 차례대로 부르는 `after`의 호출이 그 뒤의 저장소를 보인다. `renewals`는 property로
+  읽는다, binding GN-13f. 같은 호출이 레코드 세션에 쓰는 record를 `record`에 적은 case는 Rust 시험이 두 저장소에서
+  실행하고, `record`는 Rust 시험만 읽는다. 어떤 member도 record를 주지 않기 때문이다, SE-1.2), group `store`(SE-2,
+  SE-4, 메모리 저장소와 레코드 세션에서 실행한다. 객체와 reference를 함께 쓰는 값의 case를 담는다. 그 record는
+  레코드 세션이 쓰는 대로 번호를 매기고, 그것은 Rust 시험만 비교한다), group `record`(SE-6, SE-7), group `internal`(SE-9.6), group `recordFaults`(SE-9.6). `contracts/file-sessions.json`은 파일 저장소의 요청을 담고(SF-1부터 SF-5),
   `contracts/redis-sessions.json`은 Redis 저장소의 요청을 각 요청이 보내는 명령과 함께 담는다(SR-1부터
   SR-5). <a id="SE-10.2"></a> case의 PHP 값은 그 serialize 형식이고, case의 바이트 문자열은 문자 U+0000부터
   U+00FF가 그 바이트인 JSON 텍스트다. case는 자기가 검사하는 규칙 문장을 목록인 `rule`에 적고, 보이는 것을

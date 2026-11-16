@@ -1602,12 +1602,14 @@
     {
       "member": "memory_store.get",
       "file": "contracts/sessions.json",
-      "group": "memory_store.get.made"
+      "group": "memory_store.get.made",
+      "reads": ["record"]
     },
     {
       "member": "memory_store.set",
       "file": "contracts/sessions.json",
-      "group": "memory_store.set.made"
+      "group": "memory_store.set.made",
+      "reads": ["record"]
     },
     {
       "member": "memory_store.remove",

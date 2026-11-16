@@ -11,7 +11,8 @@
 //     manifests name for polyspec-binding-core, and the binding targets run Cargo offline.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -199,4 +200,18 @@ test('the local links are the targets link, unlink and link-check of kit, and .l
   // link writes a go.work beside each go.mod of the consumer, which Git must ignore there.
   assert.match(read('.gitignore'), /^go\.work$/m, '.gitignore does not ignore the go.work of link');
   assert.match(read('.gitignore'), /^go\.work\.sum$/m, '.gitignore does not ignore the go.work.sum of link');
+});
+
+test('a php-serialization of .links is the checkout that the targets of php-serialization build', () => {
+  // Linked development (kit K869): the checkout that .links names builds the packages of php-serialization in place of
+  // the clone of the release in var/deps, and without it the clone stays.
+  const make = process.env.MAKE ?? 'make';
+  const print = (links: string): string => execFileSync(make, ['-s', '--no-print-directory', '-C', root, `LINKS_FILE=${links}`, '--eval', 'print-ps: ; @echo $(PHP_SERIALIZATION)', 'print-ps'], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '' } }).trim();
+  const directory = mkdtempSync(join(tmpdir(), 'links-'));
+  const links = join(directory, 'links');
+  writeFileSync(links, '../binding\n../php-serialization\n');
+  assert.equal(print(links), join(root, '..', 'php-serialization'));
+  writeFileSync(links, '../binding\n');
+  assert.equal(print(links), join(root, 'var/deps/php-serialization'));
+  rmSync(directory, { recursive: true });
 });

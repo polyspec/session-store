@@ -234,7 +234,7 @@ link-check: ## Fail while the links differ from .links; offline
 	$(NODE) $(KIT)/link-check.mjs
 
 tool-pins-test:
-	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/tool-pins.test.mts
+	MAKE='$(MAKE)' $(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/tool-pins.test.mts
 
 # The commands of scripts/servers.sh and the run of scripts/test-run.mts (SE-10.4), against a stand-in of bay that the
 # test writes, so it needs neither bay nor a container runtime.

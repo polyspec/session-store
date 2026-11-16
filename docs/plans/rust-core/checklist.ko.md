@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 2b89b4a221d35d2fb00923d8ab03ab0983d532cf544474e1c1b7175b180200f1 -->
+<!-- source-sha256: 89d2c6a24d2356f95c6bba5c795ad161a04211e497b6694a1bad25bdc822403c -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -73,3 +73,4 @@
 | T1.54 | 연결 개발의 run은 provider checkout에 아무것도 쓰지 않는다. `.links`에 php-serialization이 있으면 php-serialization 대상은 거기서 `binding generate`를 돌리지 않는다. provider가 자기 checkout에서 binding을 생성하기 때문이다. Cargo는 이 checkout의 target 디렉터리에 빌드한다. `var/deps`의 release clone은 전처럼 생성한다. 한 run이 php-serialization checkout에 생성된 Go 파일 23개를 썼다. | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
 | T1.55 | `.links`의 php-serialization checkout은 `packages/rust/Cargo.toml`이 crate `polyspec-php-serialization`을 선언하는 줄이다. folder 이름은 상관없고, lane worktree `php-serialization-b8n`도 그렇게 찾는다. 절대 경로 줄은 그대로 둔다. folder 이름으로 찾으면 lane worktree를 찾지 못했다(T1.51). | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
 | T1.56 | `packages/ts`는 루트의 workspace다(`package.json`의 `workspaces`, `package-lock.json` 하나). 그래서 `make install-packages`가 그 의존을 설치하고 kit이 그것을 연결한다(K888). 그 `@polyspec/php-serialization`은 Cargo manifest가 가리키는 release의 npm 패키지이고, asset URL과 integrity로 고정한다. `var/deps/npm`은 `node-package`가 쓰는 php-serialization platform addon의 원천으로 남는다. release의 platform 패키지는 `optionalDependencies`에 registry 버전으로 적혀 있는데, 그 registry에는 아무것도 없기 때문이다. | `package.json`; `package-lock.json`; `packages/ts/package.json`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
+| T1.57 | kit 0.0.115가 0.0.114를 대신하고, asset URL과 integrity로 고정한다. 0.0.114의 `make link`는 `.links`의 lane worktree를 거부했다("is not a main checkout"). 0.0.115는 그것을 연결한다(kit K1259). `make install-packages` 뒤에 binding, kit, php-serialization을 연결하고 `link-check`가 통과한다. | `package.json`; `package-lock.json`; `CHANGELOG.md`(.ko) | make link-check | [o] |

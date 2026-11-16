@@ -167,7 +167,7 @@ fn expect_raises(kind: &str, status: Option<u16>, message: &str, raises: &Value)
 
 fn requests(case: &Value) -> Result<(), Failed> {
     let directory = tempfile::tempdir().map_err(failed)?;
-    for file in array_of(case, "files")? {
+    for file in array_of(case, "@files")? {
         let name = match file.get("identifier").and_then(Value::as_str) {
             Some(id) => format!("sess_{id}"),
             None => str_of(file, "name")?.to_owned(),
@@ -302,7 +302,7 @@ fn place(root: &Path, path: &str) -> PathBuf {
 /// with the mode 0600 after the directories of its path (SE-10.6, binding GN-13i).
 fn case_directory(case: &Value) -> Result<tempfile::TempDir, Failed> {
     let directory = tempfile::tempdir().map_err(failed)?;
-    if let Some(files) = case.get("files") {
+    if let Some(files) = case.get("@files") {
         let files = files.as_object().ok_or("files is no object")?;
         for (path, content) in files {
             let target = place(directory.path(), path);
@@ -665,7 +665,7 @@ fn the_cases_of_one_call_reach_their_members() -> Result<(), Failed> {
                 closes = true;
             }
             if let Some(kind @ ("record" | "record_not_array")) = kind {
-                if case.get("files").is_some() {
+                if case.get("@files").is_some() {
                     stored.push((member, kind));
                 }
             }

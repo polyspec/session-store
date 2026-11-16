@@ -342,14 +342,18 @@ install-deps:
 	$(ONLINE) $(CARGO) fetch --locked
 	$(ONLINE) $(NODE) scripts/deps.mts
 
-PHP_SERIALIZATION := $(VAR)/deps/php-serialization
+# The checkout of php-serialization: in linked development the one that .links names (kit K869), whose last part is
+# php-serialization, made absolute from this checkout; otherwise the clone of its release (make install-deps).
+LINKS_FILE ?= .links
+PHP_SERIALIZATION_LINK := $(firstword $(foreach line,$(shell cat '$(LINKS_FILE)' 2>/dev/null),$(if $(filter php-serialization,$(notdir $(line))),$(abspath $(CURDIR)/$(line)))))
+PHP_SERIALIZATION := $(or $(PHP_SERIALIZATION_LINK),$(VAR)/deps/php-serialization)
 PHP_SERIALIZATION_WHEEL = $(wildcard $(VAR)/deps/wheels/*.whl)
 PHP_SERIALIZATION_EXTENSION = $(CARGO_TARGET_DIR)/debug/libpolyspec_php_serialization.$(CDYLIB)
 PHP_SERIALIZATION_NPM := $(VAR)/deps/npm
 GO_WORK := $(VAR)/go.work
 
 php-serialization-checkout:
-	test -d "$(PHP_SERIALIZATION)/.git" || { echo 'the checkout of php-serialization is missing: run make install-deps'; exit 1; }
+	test -e "$(PHP_SERIALIZATION)/.git" || { echo 'the checkout of php-serialization is missing: run make install-deps or name it in .links'; exit 1; }
 
 php-serialization-python: php-serialization-checkout
 	$(BINDING) generate --root $(PHP_SERIALIZATION) --target python

@@ -190,13 +190,23 @@ fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
     project.start().map_err(Failed::from)?;
     let server = project.address("server").map_err(Failed::from)?;
     // A failure of the client tells nothing of its cause (SR-6.4), so the test adds what the server wrote.
-    runtime()?.block_on(round_trip(Setting::Server { url: format!("rediss://{}/", server.name) })).map_err(|error| {
+    let url = format!("rediss://{}/", server.name);
+    let wrote = |when: &str, error: Failed| {
         let message = match error.message() {
             Some(message) => message.to_owned(),
             None => String::new(),
         };
-        Failed::from(format!("{message}\nthe server at {} wrote:\n{}", server.name, project.output("server")))
-    })
+        Failed::from(format!("{when}{message}\nthe server at {} wrote:\n{}", server.name, project.output("server")))
+    };
+    runtime()?.block_on(round_trip(Setting::Server { url: url.clone() })).map_err(|error| wrote("", error))?;
+    // SR-6.1a: a store connects again with the authorities that the process read once and reads no trust store, which
+    // fails while SSL_CERT_FILE names a file that does not exist. No other trial of this process connects with TLS,
+    // and only they read the variable.
+    let missing = project.directory().join("no-such-authorities.pem");
+    std::env::set_var("SSL_CERT_FILE", &missing);
+    let again = runtime()?.block_on(round_trip(Setting::Server { url }));
+    std::env::remove_var("SSL_CERT_FILE");
+    again.map_err(|error| wrote("with SSL_CERT_FILE at a missing file: ", error))
 }
 
 fn main() {

@@ -342,18 +342,25 @@ install-deps:
 	$(ONLINE) $(CARGO) fetch --locked
 	$(ONLINE) $(NODE) scripts/deps.mts
 
-# The checkout of php-serialization: in linked development the one that .links names (kit K869), whose last part is
+# The checkout of php-serialization: in linked development a copy of the one that .links names (kit K869), whose last part is
 # php-serialization, made absolute from this checkout; otherwise the clone of its release (make install-deps).
 LINKS_FILE ?= .links
 PHP_SERIALIZATION_LINK := $(firstword $(foreach line,$(shell cat '$(LINKS_FILE)' 2>/dev/null),$(if $(filter php-serialization,$(notdir $(line))),$(abspath $(CURDIR)/$(line)))))
-PHP_SERIALIZATION := $(or $(PHP_SERIALIZATION_LINK),$(VAR)/deps/php-serialization)
+# A run writes nothing into the checkout of .links: the targets build a copy of its files under var/link (T1.54).
+PHP_SERIALIZATION := $(if $(PHP_SERIALIZATION_LINK),$(VAR)/link/php-serialization,$(VAR)/deps/php-serialization)
 PHP_SERIALIZATION_WHEEL = $(wildcard $(VAR)/deps/wheels/*.whl)
 PHP_SERIALIZATION_EXTENSION = $(CARGO_TARGET_DIR)/debug/libpolyspec_php_serialization.$(CDYLIB)
 PHP_SERIALIZATION_NPM := $(VAR)/deps/npm
 GO_WORK := $(VAR)/go.work
 
 php-serialization-checkout:
-	test -e "$(PHP_SERIALIZATION)/.git" || { echo 'the checkout of php-serialization is missing: run make install-deps or name it in .links'; exit 1; }
+ifneq ($(PHP_SERIALIZATION_LINK),)
+	test -e "$(PHP_SERIALIZATION_LINK)/.git" || { echo 'the checkout of php-serialization that .links names is missing: $(PHP_SERIALIZATION_LINK)'; exit 1; }
+	rm -rf "$(PHP_SERIALIZATION)" && mkdir -p "$(PHP_SERIALIZATION)"
+	cd "$(PHP_SERIALIZATION_LINK)" && git ls-files -z --cached --others --exclude-standard | perl -0ne 'chomp; print "$$_\0" if -e' | tar --null -T - -cf - | tar -xf - -C "$(PHP_SERIALIZATION)"
+else
+	test -d "$(PHP_SERIALIZATION)/.git" || { echo 'the checkout of php-serialization is missing: run make install-deps'; exit 1; }
+endif
 
 php-serialization-python: php-serialization-checkout
 	$(BINDING) generate --root $(PHP_SERIALIZATION) --target python

@@ -342,37 +342,32 @@ install-deps:
 	$(ONLINE) $(CARGO) fetch --locked
 	$(ONLINE) $(NODE) scripts/deps.mts
 
-# The checkout of php-serialization: in linked development a copy of the line of .links (kit K869) whose packages/rust
-# names the crate polyspec-php-serialization, made absolute from this checkout; otherwise the clone of its release (make install-deps).
+# The checkout of php-serialization: in linked development the line of .links (kit K869) whose packages/rust names
+# the crate polyspec-php-serialization, made absolute from this checkout; otherwise the clone of its release (make install-deps).
 LINKS_FILE ?= .links
 PHP_SERIALIZATION_LINK := $(firstword $(foreach line,$(shell cat '$(LINKS_FILE)' 2>/dev/null),$(shell grep -qsx 'name = "polyspec-php-serialization"' '$(abspath $(if $(filter /%,$(line)),$(line),$(CURDIR)/$(line)))/packages/rust/Cargo.toml' && echo '$(abspath $(if $(filter /%,$(line)),$(line),$(CURDIR)/$(line)))')))
-# A run writes nothing into the checkout of .links: the targets build a copy of its files under var/link (T1.54).
-PHP_SERIALIZATION := $(if $(PHP_SERIALIZATION_LINK),$(VAR)/link/php-serialization,$(VAR)/deps/php-serialization)
+PHP_SERIALIZATION := $(or $(PHP_SERIALIZATION_LINK),$(VAR)/deps/php-serialization)
+# A run writes nothing into the checkout of .links (T1.54): its provider generates its bindings there itself, so the
+# targets generate only the clone of the release.
 PHP_SERIALIZATION_WHEEL = $(wildcard $(VAR)/deps/wheels/*.whl)
 PHP_SERIALIZATION_EXTENSION = $(CARGO_TARGET_DIR)/debug/libpolyspec_php_serialization.$(CDYLIB)
 PHP_SERIALIZATION_NPM := $(VAR)/deps/npm
 GO_WORK := $(VAR)/go.work
 
 php-serialization-checkout:
-ifneq ($(PHP_SERIALIZATION_LINK),)
-	test -e "$(PHP_SERIALIZATION_LINK)/.git" || { echo 'the checkout of php-serialization that .links names is missing: $(PHP_SERIALIZATION_LINK)'; exit 1; }
-	rm -rf "$(PHP_SERIALIZATION)" && mkdir -p "$(PHP_SERIALIZATION)"
-	cd "$(PHP_SERIALIZATION_LINK)" && git ls-files -z --cached --others --exclude-standard | perl -0ne 'chomp; print "$$_\0" if -e' | tar --null -T - -cf - | tar -xf - -C "$(PHP_SERIALIZATION)"
-else
-	test -d "$(PHP_SERIALIZATION)/.git" || { echo 'the checkout of php-serialization is missing: run make install-deps'; exit 1; }
-endif
+	test -e "$(PHP_SERIALIZATION)/.git" || { echo 'the checkout of php-serialization is missing: run make install-deps or name it in .links'; exit 1; }
 
 php-serialization-python: php-serialization-checkout
-	$(BINDING) generate --root $(PHP_SERIALIZATION) --target python
+	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target python)
 	rm -rf $(VAR)/deps/wheels
 	$(MATURIN) build --locked --manifest-path $(PHP_SERIALIZATION)/packages/python/Cargo.toml --interpreter $(PYTHON) --features panic-test --out $(VAR)/deps/wheels $(CARGOFLAGS)
 
 php-serialization-php: php-serialization-checkout
-	$(BINDING) generate --root $(PHP_SERIALIZATION) --target php
+	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target php)
 	$(CARGO) build $(CARGOFLAGS) --manifest-path $(PHP_SERIALIZATION)/Cargo.toml -p polyspec-php-serialization-php-ext --locked --features panic-test
 
 php-serialization-go: php-serialization-checkout
-	$(BINDING) generate --root $(PHP_SERIALIZATION) --target go
+	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target go)
 	$(CARGO) build $(CARGOFLAGS) --manifest-path $(PHP_SERIALIZATION)/Cargo.toml -p polyspec-php-serialization-go --locked --features panic-test,codec-test
 	printf 'go $(GO_RELEASE)\n\nuse (\n\t$(CURDIR)/packages/go\n\t$(PHP_SERIALIZATION)/packages/go\n)\n' > $(GO_WORK)
 

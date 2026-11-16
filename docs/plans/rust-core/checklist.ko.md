@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 35f6efbdbcbbbdeb257b03bf0d375882133f9d874f557424e911390113f6eada -->
+<!-- source-sha256: 7b0cc6c3f821b62006413a0de5f3f47c0d5ddb95f3e95cc41a00a1c3c09da750 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -70,5 +70,5 @@
 | T1.51 | 연결 개발에서(kit K869) php-serialization 대상은 `.links`가 가리키는 php-serialization checkout을 빌드하고, 그런 줄이 없으면 `var/deps`의 release clone을 빌드한다. `PHP_SERIALIZATION`은 마지막 부분이 `php-serialization`인 `.links`의 줄을 checkout 기준 절대 경로로 바꾼 값이다. `php-serialization-checkout`은 `.git`이 파일인 worktree도 받는다. | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
 | T1.52 | recipe의 모든 cargo는 kit의 link cargo를 거친다(kit K869). 그래야 `.links`가 있는 run이 lock의 tag가 아니라 연결된 checkout을 빌드한다. `CARGO`는 `$(NODE) $(KIT)/link.mjs cargo $(CURDIR)`이고, `.links`가 없으면 cargo를 그대로 돌린다. maturin과 `binding go-link`는 cargo를 직접 돌려서, kit과 binding의 release가 link를 받을 때까지 lock의 tag를 빌드한다. | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
 | T1.53 | 시험은 Makefile의 `BINDING`처럼 binding을 node로 돌린다(`node node_modules/@polyspec/binding/dist/cli.js`). bin은 직접 실행하지 않는다. 연결된 binding checkout은 bin에 실행 권한을 주지 않기 때문이다. `make link` 뒤에 `workflows.test.mts`가 `node_modules/.bin/binding`에서 EACCES로 실패했다. | `scripts/workflows.test.mts` | make workflows-test | [o] |
-| T1.54 | 연결 개발의 run은 provider checkout에 아무것도 쓰지 않는다. php-serialization 대상은 `.links`가 가리키는 checkout의 파일 가운데 Git이 추적하거나 무시하지 않는 것을 `var/link/php-serialization`에 복사하고, binding은 거기서 생성하고 Cargo는 거기서 빌드한다. release clone은 그대로 `var/deps`에 있다(T1.51). 한 run이 php-serialization checkout에 생성된 Go 파일 23개를 썼다. | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
+| T1.54 | 연결 개발의 run은 provider checkout에 아무것도 쓰지 않는다. `.links`에 php-serialization이 있으면 php-serialization 대상은 거기서 `binding generate`를 돌리지 않는다. provider가 자기 checkout에서 binding을 생성하기 때문이다. Cargo는 이 checkout의 target 디렉터리에 빌드한다. `var/deps`의 release clone은 전처럼 생성한다. 한 run이 php-serialization checkout에 생성된 Go 파일 23개를 썼다. | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
 | T1.55 | `.links`의 php-serialization checkout은 `packages/rust/Cargo.toml`이 crate `polyspec-php-serialization`을 선언하는 줄이다. folder 이름은 상관없고, lane worktree `php-serialization-b8n`도 그렇게 찾는다. 절대 경로 줄은 그대로 둔다. folder 이름으로 찾으면 lane worktree를 찾지 못했다(T1.51). | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |

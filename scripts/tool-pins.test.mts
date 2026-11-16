@@ -202,7 +202,7 @@ test('the local links are the targets link, unlink and link-check of kit, and .l
   assert.match(read('.gitignore'), /^go\.work\.sum$/m, '.gitignore does not ignore the go.work.sum of link');
 });
 
-test('a php-serialization of .links is copied under var/link, where the targets of php-serialization build', () => {
+test('a php-serialization of .links is the checkout that the targets build, and none generates into it', () => {
   // Linked development (kit K869): the checkout that .links names builds the packages of php-serialization in place of
   // the clone of the release in var/deps, and without it the clone stays.
   const make = process.env.MAKE ?? 'make';
@@ -216,13 +216,16 @@ test('a php-serialization of .links is copied under var/link, where the targets 
   mkdirSync(join(directory, 'binding'));
   const links = join(directory, 'links');
   writeFileSync(links, `${join(directory, 'binding')}\n${lane}\n`);
-  // The checkout of .links is a provider that the run never writes into: the targets build a copy of its files under
-  // var/link, where binding generates.
-  assert.equal(print(links), join(root, 'var/link/php-serialization'));
-  const source = (file: string): string => execFileSync(make, ['-s', '--no-print-directory', '-C', root, `LINKS_FILE=${file}`, '--eval', 'print-src: ; @echo $(PHP_SERIALIZATION_LINK)', 'print-src'], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '' } }).trim();
-  assert.equal(source(links), lane);
+  assert.equal(print(links), lane);
+  // The checkout of .links is a provider that the run never writes into (T1.54): its provider generates its bindings in
+  // it, so no target of php-serialization runs binding generate there, and the clone of the release is generated.
+  const plan = (file: string, target: string): string => execFileSync(make, ['-n', '--no-print-directory', '-C', root, `LINKS_FILE=${file}`, target], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '' } });
+  for (const target of ['php-serialization-python', 'php-serialization-php', 'php-serialization-go']) {
+    assert.doesNotMatch(plan(links, target), /cli\.js generate/, `${target} generates into the checkout of .links`);
+  }
   writeFileSync(links, `${join(directory, 'binding')}\n`);
   assert.equal(print(links), join(root, 'var/deps/php-serialization'));
+  assert.match(plan(links, 'php-serialization-go'), /cli\.js generate --root \S*var\/deps\/php-serialization --target go/);
   rmSync(directory, { recursive: true });
 });
 

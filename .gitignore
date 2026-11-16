@@ -13,5 +13,8 @@ __pycache__/
 /packages/release.mk
 /packages/ts/npm/
 /vendor/
+# The go.work files that link writes into a consumer (kit local-links.md); they are never committed.
+go.work
+go.work.sum
 # The link declaration of kit (K869), which the local links read; never committed.
 /.links

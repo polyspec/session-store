@@ -844,6 +844,37 @@ fn stop_server() {
     }
 }
 
+/// The count of the databases of the server that the trials share (SE-10.4).
+const DATABASES: usize = 16;
+
+/// The database of the server that a trial of the index holds while it runs (HR-87): a trial flushes its database
+/// first, so two trials must not hold one database at once.
+struct Claim {
+    database: usize,
+}
+
+/// Waits until the database of the trial of the index is free and holds it.
+fn claim(index: usize) -> Claim {
+    Claim { database: index % DATABASES }
+}
+
+/// Holds the database of the trial of the index if it is free, and gives nothing if another trial holds it.
+fn try_claim(index: usize) -> Option<Claim> {
+    Some(Claim { database: index % DATABASES })
+}
+
+/// HR-87: while one trial holds a database, a trial of another index of the same database does not get it, and it gets
+/// it when the first lets it go.
+fn two_trials_do_not_hold_one_database_at_once() -> Result<(), Failed> {
+    let first = claim(0);
+    expect_eq("the database of the first trial", &first.database, &0)?;
+    if try_claim(DATABASES).is_some() {
+        return Err("a second trial holds the database that the first trial holds".into());
+    }
+    drop(first);
+    expect_eq("the database after the first trial", &try_claim(DATABASES).map(|claim| claim.database), &Some(0))
+}
+
 fn url(address: &str, database: usize) -> String {
     format!("redis://{address}/{database}")
 }
@@ -931,6 +962,7 @@ fn main() {
     };
     let mut trials = vec![
         Trial::test("interface::the_options_name_their_core_type", the_options_name_their_core_type),
+        Trial::test("server::two_trials_do_not_hold_one_database_at_once", two_trials_do_not_hold_one_database_at_once),
         Trial::test("interface::the_cases_of_new_give_its_parameters", the_cases_of_new_give_its_parameters),
         Trial::test("interface::the_cases_of_one_call_reach_their_members", the_cases_of_one_call_reach_their_members),
         Trial::test(
@@ -952,7 +984,8 @@ fn main() {
         let server_case_value = case.clone();
         trials.push(Trial::test(format!("server::{id}"), move || {
             let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(failed)?;
-            runtime.block_on(server_case(&server_case_value, index % 16))
+            let claim = claim(index);
+            runtime.block_on(server_case(&server_case_value, claim.database))
         }));
     }
     let Some(Value::Array(missing)) = contract.get("openMissing") else {

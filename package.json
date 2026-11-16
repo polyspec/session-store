@@ -3,6 +3,9 @@
   "private": true,
   "description": "The development tools of the repository: the shared tools of polyspec (@polyspec/kit), whose check-documents and documents-stamp read and stamp the documents, and binding (@polyspec/binding), which checks the contract and writes the bindings",
   "license": "MIT",
+  "workspaces": [
+    "packages/ts"
+  ],
   "devEngines": {
     "packageManager": {
       "name": "npm",

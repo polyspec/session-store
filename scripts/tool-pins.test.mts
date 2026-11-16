@@ -236,6 +236,10 @@ test('every cargo of the recipes runs through the cargo of the link of kit', () 
   assert.match(makefile, /^CARGO := \$\(NODE\) \$\(KIT\)\/link\.mjs cargo \$\(CURDIR\)$/m, 'CARGO is not the cargo of the link of kit');
   const own = makefile.split('\n').filter((line) => line.startsWith('\t') && /(^|[\s;&|(])cargo /.test(line.replace(/\$\(CARGO\)/g, '')));
   assert.deepEqual(own, [], 'a recipe runs cargo itself');
+  // maturin runs cargo itself, so it runs through `link.mjs maturin <dir>` of kit with the maturin of the checkout (K1266).
+  assert.match(makefile, /^MATURIN_LINK := MATURIN='\$\(MATURIN\)' \$\(NODE\) \$\(KIT\)\/link\.mjs maturin \$\(CURDIR\)$/m, 'no MATURIN_LINK runs maturin through the link of kit');
+  const maturin = makefile.split('\n').filter((line) => line.startsWith('\t') && /\$\(MATURIN\) /.test(line));
+  assert.deepEqual(maturin, [], 'a recipe runs maturin itself');
 });
 
 test('packages/ts is a workspace of the root, whose php-serialization is the npm package of its release', () => {

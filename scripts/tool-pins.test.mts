@@ -202,7 +202,7 @@ test('the local links are the targets link, unlink and link-check of kit, and .l
   assert.match(read('.gitignore'), /^go\.work\.sum$/m, '.gitignore does not ignore the go.work.sum of link');
 });
 
-test('a php-serialization of .links is the checkout that the targets of php-serialization build', () => {
+test('a php-serialization of .links is copied under var/link, where the targets of php-serialization build', () => {
   // Linked development (kit K869): the checkout that .links names builds the packages of php-serialization in place of
   // the clone of the release in var/deps, and without it the clone stays.
   const make = process.env.MAKE ?? 'make';
@@ -210,7 +210,11 @@ test('a php-serialization of .links is the checkout that the targets of php-seri
   const directory = mkdtempSync(join(tmpdir(), 'links-'));
   const links = join(directory, 'links');
   writeFileSync(links, '../binding\n../php-serialization\n');
-  assert.equal(print(links), join(root, '..', 'php-serialization'));
+  // The checkout of .links is a provider that the run never writes into: the targets build a copy of its files under
+  // var/link, where binding generates.
+  assert.equal(print(links), join(root, 'var/link/php-serialization'));
+  const source = (file: string): string => execFileSync(make, ['-s', '--no-print-directory', '-C', root, `LINKS_FILE=${file}`, '--eval', 'print-src: ; @echo $(PHP_SERIALIZATION_LINK)', 'print-src'], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '' } }).trim();
+  assert.equal(source(links), join(root, '..', 'php-serialization'));
   writeFileSync(links, '../binding\n');
   assert.equal(print(links), join(root, 'var/deps/php-serialization'));
   rmSync(directory, { recursive: true });

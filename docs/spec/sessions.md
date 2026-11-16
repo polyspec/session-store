@@ -250,9 +250,9 @@ the statement that it checks. A PHP value and its serialize form are those of ph
 - **SF-8** <a id="SF-8.1"></a> The waits (plan B-5): `open` waits on another process (`ProcessWait`), and `new`,
   `close` and `collect` do short blocking I/O (`Io`). A Rust function that blocks takes its token as its first argument.
   <a id="SF-8.2"></a> The lifetime is an unsigned integer of the interface contract (`uint`), so a binding refuses a
-  value that is no integer of 0 or more before the store runs, with the kind `invalid_number`: a negative or
-  fractional number, a text and a boolean alike, because a value that is no number in the place of an integer is
-  refused as a number that is out of range (binding design B-2, generator GN-13d). Such cases
+  value that is no integer of 0 or more before the store runs: a negative or fractional number breaks the rule of the
+  number and is refused with the kind `invalid_number`, and a text or a boolean is no number and is refused with the
+  kind `invalid_argument_type` (binding generator GN-12a, B2.412). Such cases
   of `contracts/file-sessions.json` carry `binding`, and the bindings run them; the Rust tests show them as ignored.
 - **SF-9** <a id="SF-9.1"></a> The kinds of `polyspec-session-store-file`:
 

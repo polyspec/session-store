@@ -321,7 +321,7 @@ binding-check $(addprefix bindings-,$(TARGETS)): export CARGO_NET_OFFLINE := tru
 
 # The contract check and the comparison of the tracked binding packages with what binding writes (CK-19).
 binding-check:
-	$(BINDING) check packages/rust/interface.json
+	$(BINDING) check packages/rust/interface.json --cargo "$(CARGO)"
 
 # Writes the generated sources into the directories generated/ of the binding packages, which are not tracked, and the
 # Go files zz_generated_*.go of packages/go, which are tracked (binding GN-3).
@@ -330,7 +330,7 @@ binding-check:
 bindings: $(addprefix bindings-,$(TARGETS))
 
 $(addprefix bindings-,$(TARGETS)): bindings-%:
-	$(BINDING) generate --root . --target $*
+	$(BINDING) generate --root . --target $* --cargo "$(CARGO)"
 
 # Every target of the contract (binding BD-27), each with the tests that binding generates and the contract cases of
 # the binding on the standard runner of its language.
@@ -379,23 +379,23 @@ php-serialization-checkout:
 	test -e "$(PHP_SERIALIZATION)/.git" || { echo 'the checkout of php-serialization is missing: run make install-deps or name it in .links'; exit 1; }
 
 php-serialization-python: php-serialization-checkout
-	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target python)
+	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target python --cargo "$(CARGO)")
 	rm -rf $(VAR)/deps/wheels
 	$(MATURIN_LINK) build --locked --manifest-path $(PHP_SERIALIZATION)/packages/python/Cargo.toml --interpreter $(PYTHON) --features panic-test --out $(VAR)/deps/wheels $(CARGOFLAGS)
 
 php-serialization-php: php-serialization-checkout
-	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target php)
+	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target php --cargo "$(CARGO)")
 	$(CARGO) build $(CARGOFLAGS) --manifest-path $(PHP_SERIALIZATION)/Cargo.toml -p polyspec-php-serialization-php-ext --locked --features panic-test
 
 php-serialization-go: php-serialization-checkout
-	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target go)
+	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target go --cargo "$(CARGO)")
 	$(CARGO) build $(CARGOFLAGS) --manifest-path $(PHP_SERIALIZATION)/Cargo.toml -p polyspec-php-serialization-go --locked --features panic-test,codec-test
 	printf 'go $(GO_RELEASE)\n\nuse (\n\t$(CURDIR)/packages/go\n\t$(PHP_SERIALIZATION)/packages/go\n)\n' > $(GO_WORK)
 
 PHP_SERIALIZATION_ADDON = php-serialization.$(PLATFORM).node
 php-serialization-node: php-serialization-checkout
-	$(BINDING) generate --root $(PHP_SERIALIZATION) --target node
-	$(BINDING) generate --root $(PHP_SERIALIZATION) --target wasm
+	$(BINDING) generate --root $(PHP_SERIALIZATION) --target node --cargo "$(CARGO)"
+	$(BINDING) generate --root $(PHP_SERIALIZATION) --target wasm --cargo "$(CARGO)"
 	$(CARGO) build $(CARGOFLAGS) --manifest-path $(PHP_SERIALIZATION)/Cargo.toml -p polyspec-php-serialization-wasm --locked --target wasm32-unknown-unknown
 	$(WASM_BINDGEN) --target web --out-dir $(PHP_SERIALIZATION)/packages/ts/wasm/generated --out-name php_serialization_wasm \
 		$(CARGO_TARGET_DIR)/wasm32-unknown-unknown/debug/polyspec_php_serialization_wasm.wasm
@@ -461,13 +461,15 @@ test-php: bindings-php php-serialization-php
 # then the generated tests, which run the contract cases, on go test. GOTOOLCHAIN=local: a go of another
 # release than the go directive fails instead of fetching that release.
 GO_RELEASE := $(shell sed -n 's/^go \(.*\)$$/\1/p' packages/go/go.mod)
-GO_ENV := GOTOOLCHAIN=local GOWORK=$(GO_WORK) CGO_LDFLAGS=-L$(CARGO_TARGET_DIR)/debug GOFLAGS=-tags=polyspec_panic_test,polyspec_codec_test
+GO_ENV := GOTOOLCHAIN=local GOWORK=$(GO_WORK) GOFLAGS=-tags=polyspec_session_store_panic_test,polyspec_session_store_codec_test,polyspec_session_store_fault_test
+# binding go-link builds the static library of the Go crate with the features of the tests and prints CGO_LDFLAGS: the
+# library and the native libraries that rustc names for it (binding GN-15k).
+GO_LINK = $(BINDING) go-link --cargo "$(CARGO)" --cargo-flags "$(CARGOFLAGS)" --manifest $(CURDIR)/packages/go/internal/ffi/Cargo.toml --target-dir $(CARGO_TARGET_DIR) --features panic-test,codec-test,fault-test
 test-go: bindings-go php-serialization-go
 	test "$$($(GO_ENV) $(GO) env GOVERSION)" = "go$(GO_RELEASE)"
-	$(CARGO) build $(CARGOFLAGS) -p $(LIBRARY)-go --locked --features panic-test,codec-test
 	test -z "$$(cd packages/go && $(GOFMT) -l .)"
-	cd packages/go && $(GO_ENV) $(GO) vet ./...
-	cd packages/go && $(SERVICE_RUN) env $(GO_ENV) $(GO) test -count=1 -v ./...
+	cd packages/go && CGO_LDFLAGS="$$($(GO_LINK))" $(GO_ENV) $(GO) vet ./...
+	cd packages/go && $(SERVICE_RUN) env CGO_LDFLAGS="$$($(GO_LINK))" $(GO_ENV) $(GO) test -count=1 -v ./...
 
 # ---- Release recipes of the bindings (binding GN-19h) ----
 # binding release-recipes writes the recipes that build the assets of each platform (the static library of the Go module,

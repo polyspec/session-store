@@ -1,14 +1,15 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 620db1bdebee4c79a164fd0fbc61d611bbe7b04b7e08ebc71d6a8b0911dde682 -->
+<!-- source-sha256: 6827802ebc22a105d6054468160818912aa2f5b3595cda0ac82b8f6560c0d801 -->
 
 ## Unreleased
 
+- 바인딩은 binding 0.0.17과, binding 0.0.17 위에서 빌드한 php-serialization 0.0.15를 쓴다. 그래서 `Cargo.lock`에는 `polyspec-binding-core`가 하나만 있다(CK-20). `make test-go`는 link flag를 `binding go-link`에서 받고, 생성 파일의 tag로 Go 시험을 빌드한다. Cargo를 읽는 모든 binding 명령은 `--cargo "$(CARGO)"`를 받는다. `packages/ts`는 php-serialization을 버전 `0.0.15`로 요구하고, 루트 `package.json`이 그 release의 asset을 적는다.
 - changelog와 `docs/plans`의 checklist는 kit의 driver `kit-changelog`, `kit-twin`, `kit-checklist`로 합친다. 이 driver들은 `make twin-merge`를 돌린다. `make hooks`가 그것을 선언하고, `make hooks-check`는 그것이 없는 checkout을 실패시킨다. 전에는 git이 자기 기본 merge로 합쳤고, 그 merge는 한쪽이 상태를 바꾼 task 행을 두 번 남긴다.
 - core는 wasm32의 난수 원천을 getrandom의 feature `wasm_js`만으로 고른다. getrandom 0.3.4에는 필요 없는 `--cfg getrandom_backend="wasm_js"`를 `.cargo/config.toml`이 더는 두지 않고, core를 wasm32로 빌드하는 crate도 아무것도 설정하지 않는다(SR-1.5).
 - TLS로 연결하는 Redis 저장소는 기계의 신뢰 저장소를 프로세스에서 한 번 읽고, 그 인증 기관들을 redis-rs의 공개 setter로 서버, Sentinel 노드와 그 primary, Cluster 노드의 client에 준다. redis-rs 1.8.1은 feature `tls-rustls-webpki-roots`로 빌드한다. 이것은 redis-rs가 연결마다 1초의 연결 제한 시간 안에서 신뢰 저장소를 읽지 않게 하는 유일한 공개 수단이고, macOS의 keychain을 읽는 시간은 그 1초를 넘길 수 있다(SR-6.1a, docs/operations/dependencies.md). Sentinel 주소는 모두 `redis://`이거나 모두 `rediss://`이고, 사용자와 비밀번호 하나를 함께 쓴다.
 - 호출을 이어 가는 memory 저장소의 case 7개가 바인딩이 실행하는 `memory_store.get.made`와 `memory_store.set.made`의 case다: 이후의 호출은 그 `after`이고, `renewals`는 거기서 property로 읽으며, 같은 호출이 레코드 세션에 쓰는 record인 `record`는 Rust 시험이 읽는 key다(`reads`). 어떤 member도 record를 주지 않기 때문이다(SE-10.1, SE-1.2). 객체와 reference를 함께 쓰는 값의 case는 group `store`에 남는다.
 - `Cargo.lock`이 Git에서 고정한 저장소를 `var/deps`에 clone하는 target(`scripts/deps.mts`)은 `make install-binding`이 아니라 `make install-deps`다. binding은 npm package로만 설치되고(T1.32), `make tool-pins-test`는 `install-binding`을 이름하는 Makefile을 실패시키는데, binding을 설치하지 않는 이 target이 그 이름을 썼다.
-- 부호 없는 정수 자리(`lifetime`, `lock_expire`)의 텍스트나 boolean은 음수나 소수처럼 category value의 kind `invalid_number`로 거부되고, `invalid_argument_type`으로 거부되지 않는다(SF-8.2, SR-8.2, binding 설계 B-2). 여섯 case는 어떤 바인딩도 내지 않는 type kind를 기대했다.
+- 부호 없는 정수 자리(`lifetime`, `lock_expire`)의 텍스트나 boolean은 수가 아니므로 category type의 kind `invalid_argument_type`으로 거부된다. 수의 규칙을 깨는 음수와 소수는 `invalid_number`로 거부된다(SF-8.2, SR-8.2, binding GN-12a). 전에는 텍스트와 boolean의 여섯 case가 `invalid_number`를 기대했다.
 - `cases`의 행은 Rust 시험이 읽고 어떤 생성기도 읽지 않는 case의 key(`identifier`, `alphabet`, `length`, `defaults`, `binding`, `store_lifetime`, `store_directory`)를 `reads`에 선언한다. `file_sessions.lifetime`과 `file_sessions.directory`는 실패를 `in_directory`가 내는 group `open` 대신, 저장소를 만들고 결과를 `store_lifetime`과 `store_directory`에 주는 group `file_sessions.lifetime`과 `file_sessions.directory`를 읽는다(SE-10.2, binding CK-22, CK-96).
 - 바인딩이 binding 0.0.13을 쓴다: 모든 Cargo manifest의 `polyspec-binding-core`는 `tag = "v0.0.13"`을 이름하고 `package.json`은 `@polyspec/binding` 0.0.13의 release asset을 이름한다.
 - case는 자기가 검사하는 규칙 문장을 `rule`에, 보이는 것을 `note`에 적는다. 이 둘은 binding 0.0.13이 입력으로 읽지 않는 case의 key다(SE-10.2, CK-96). `rules`와 `label`은 각각 113개 case에서 보고되었다.

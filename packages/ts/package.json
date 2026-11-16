@@ -39,6 +39,6 @@
     ]
   },
   "dependencies": {
-    "@polyspec/php-serialization": "https://github.com/polyspec/php-serialization/releases/download/v0.0.12/polyspec-php-serialization-0.0.12.tgz"
+    "@polyspec/php-serialization": "0.0.15"
   }
 }

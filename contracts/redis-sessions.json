@@ -1688,9 +1688,9 @@
    },
    "binding": true,
    "raises": {
-    "kind": "invalid_argument_type",
+    "kind": "invalid_number",
     "status": null,
-    "category": "type",
+    "category": "value",
     "message": null
    }
   },
@@ -1711,9 +1711,9 @@
    },
    "binding": true,
    "raises": {
-    "kind": "invalid_argument_type",
+    "kind": "invalid_number",
     "status": null,
-    "category": "type",
+    "category": "value",
     "message": null
    }
   },
@@ -1777,9 +1777,9 @@
    },
    "binding": true,
    "raises": {
-    "kind": "invalid_argument_type",
+    "kind": "invalid_number",
     "status": null,
-    "category": "type",
+    "category": "value",
     "message": null
    }
   },
@@ -1799,9 +1799,9 @@
    },
    "binding": true,
    "raises": {
-    "kind": "invalid_argument_type",
+    "kind": "invalid_number",
     "status": null,
-    "category": "type",
+    "category": "value",
     "message": null
    }
   },

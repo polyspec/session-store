@@ -1023,9 +1023,9 @@
    "lifetime": "60",
    "binding": true,
    "raises": {
-    "kind": "invalid_argument_type",
+    "kind": "invalid_number",
     "status": null,
-    "category": "type",
+    "category": "value",
     "message": null
    }
   },
@@ -1040,9 +1040,9 @@
    "lifetime": true,
    "binding": true,
    "raises": {
-    "kind": "invalid_argument_type",
+    "kind": "invalid_number",
     "status": null,
-    "category": "type",
+    "category": "value",
     "message": null
    }
   }

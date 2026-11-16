@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A text or a boolean in the place of an unsigned integer (`lifetime`, `lock_expire`) is refused with the kind `invalid_number` of the category value, as a negative or fractional number is, and not with `invalid_argument_type` (SF-8.2, SR-8.2, binding design B-2); the six cases expected the type kind, which no binding raises.
 - A row of `cases` declares in `reads` the keys of its cases that the Rust tests read and no generator reads (`identifier`, `alphabet`, `length`, `defaults`, `binding`, `store_lifetime`, `store_directory`), and `file_sessions.lifetime` and `file_sessions.directory` read the groups `file_sessions.lifetime` and `file_sessions.directory`, whose cases make a store and give the result in `store_lifetime` and `store_directory`, instead of the group `open`, whose failures `in_directory` raises (SE-10.2, binding CK-22, CK-96).
 - The bindings use binding 0.0.13: `polyspec-binding-core` of every Cargo manifest names `tag = "v0.0.13"` and `package.json` names the release asset of `@polyspec/binding` 0.0.13.
 - A case names the rule statements that it checks in `rule` and what it shows in `note`, the keys of a case that binding 0.0.13 reads as no input (SE-10.2, CK-96); `rules` and `label` were reported for 113 cases each.

@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 2cdc6c9c8e785a09692a71ccdcd29357609b813ee07295f007945e8e185f91ca -->
+<!-- source-sha256: 147da66f646e1bf040b5c929467735e9f46cd599bc2f39328ce05d93f51345e0 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -247,8 +247,8 @@
 - **SF-8** <a id="SF-8.1"></a> 기다림(계획 B-5): `open`은 다른 프로세스를 기다리고(`ProcessWait`), `new`,
   `close`, `collect`는 짧은 블로킹 I/O를 한다(`Io`). block하는 Rust 함수는 자신의 토큰을 첫 인자로 받는다.
   <a id="SF-8.2"></a> 수명은 인터페이스 계약의 부호 없는 정수(`uint`)이므로, 바인딩은 0 이상의 정수가 아닌
-  값을 저장소가 실행되기 전에 거부한다: 음수나 소수는 kind
-  `invalid_number`로, 텍스트나 boolean은 kind `invalid_argument_type`으로 거부한다(binding 설계 T-1, E-1a). `contracts/file-sessions.json`의
+  값을 저장소가 실행되기 전에 kind `invalid_number`로 거부한다: 음수, 소수, 텍스트, boolean이 모두
+  그렇다. 정수 자리에 온 숫자가 아닌 값은 범위를 벗어난 숫자처럼 거부되기 때문이다(binding 설계 B-2, 생성기 GN-13d). `contracts/file-sessions.json`의
   그런 case는 `binding`을 갖고, 바인딩이 그 case를 실행한다. Rust 시험은 그 case를 무시된 것으로 보여 준다.
 - **SF-9** <a id="SF-9.1"></a> `polyspec-session-store-file`의 kind:
 

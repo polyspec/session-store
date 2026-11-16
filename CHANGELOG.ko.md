@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 44f80c731a24d506e7cd82eb5238a8093e2cd6b9e45ef0aa59128af90023dc5b -->
+<!-- source-sha256: ab7d9385eeaeb03ae2536be23a468e49323ca1cacdf4517851c8d049f746e518 -->
 
 ## Unreleased
 
+- 부호 없는 정수 자리(`lifetime`, `lock_expire`)의 텍스트나 boolean은 음수나 소수처럼 category value의 kind `invalid_number`로 거부되고, `invalid_argument_type`으로 거부되지 않는다(SF-8.2, SR-8.2, binding 설계 B-2). 여섯 case는 어떤 바인딩도 내지 않는 type kind를 기대했다.
 - `cases`의 행은 Rust 시험이 읽고 어떤 생성기도 읽지 않는 case의 key(`identifier`, `alphabet`, `length`, `defaults`, `binding`, `store_lifetime`, `store_directory`)를 `reads`에 선언한다. `file_sessions.lifetime`과 `file_sessions.directory`는 실패를 `in_directory`가 내는 group `open` 대신, 저장소를 만들고 결과를 `store_lifetime`과 `store_directory`에 주는 group `file_sessions.lifetime`과 `file_sessions.directory`를 읽는다(SE-10.2, binding CK-22, CK-96).
 - 바인딩이 binding 0.0.13을 쓴다: 모든 Cargo manifest의 `polyspec-binding-core`는 `tag = "v0.0.13"`을 이름하고 `package.json`은 `@polyspec/binding` 0.0.13의 release asset을 이름한다.
 - case는 자기가 검사하는 규칙 문장을 `rule`에, 보이는 것을 `note`에 적는다. 이 둘은 binding 0.0.13이 입력으로 읽지 않는 case의 key다(SE-10.2, CK-96). `rules`와 `label`은 각각 113개 case에서 보고되었다.

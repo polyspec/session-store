@@ -183,4 +183,7 @@ test('binding is the release that package.json pins by its asset and the manifes
   assert.match(makefile, /^BINDING := \$\(NODE\) \$\(CURDIR\)\/node_modules\/@polyspec\/binding\/dist\/cli\.js$/m, 'BINDING of the Makefile is not the installed package');
   assert.match(makefile, /^binding-check \$\(addprefix bindings-,\$\(TARGETS\)\): export CARGO_NET_OFFLINE := true$/m, 'the binding targets do not run Cargo offline');
   assert.doesNotMatch(makefile + read('.github/workflows/ci.yml'), /install-binding/, 'a recipe or a job still installs binding apart from the packages');
+  // The clones of the other repositories that Cargo.lock pins from Git are fetched by install-deps (scripts/deps.mts),
+  // which installs no binding (T1.34-1).
+  assert.match(makefile, /^install-deps:$/m, 'no target install-deps fetches the clones of scripts/deps.mts');
 });

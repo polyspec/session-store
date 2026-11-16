@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: b6dfe81a3dbc6d72419815f513d9beb2e826668aef469fa9933e0a2450172a1d -->
+<!-- source-sha256: 36441b01ad1524c8fd1328a434bd9356e5a1037273c9880e188350e793ee7fd6 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -68,4 +68,4 @@
 | T1.49 | redis-rs는 fork `redis-1.8.2-p1` 대신 공개 feature `tls-rustls-webpki-roots`를 켠 crates.io의 redis 1.8.1이다(SR-6.1a). 이 feature를 켜면 redis-rs는 연결마다 신뢰 저장소를 읽지 않는다(`connection.rs:1240`). 저장소는 한 번 읽은 인증 기관을 공개 setter만으로 TLS의 모든 client에 준다. `Client::build_with_tls`, `Sentinel`을 대신하는 `SentinelClientBuilder::set_client_to_sentinel_certificates`와 `set_client_to_redis_certificates`, `ClusterClientBuilder::certs`다. `SentinelClient::async_get_client`는 부를 때마다 Sentinel에게 primary를 묻는다. SR-6.2가 요구하는 대로다. 인증 기관의 PEM은 손으로 짠 base64 대신 lock에 있는 `pem-rfc7468`이 쓴다. webpki의 루트를 빌드에 넣는 이유는 `docs/operations/dependencies.md`에 있다. | `packages/redis/rust/`; `docs/spec/sessions.md`(.ko); `docs/operations/dependencies.md`(.ko) | make test | [o] |
 | T1.50 | 개발의 로컬 연결은 모든 저장소와 같다(kit K869). target `link`, `unlink`, `link-check`가 kit의 `link.mjs`와 `link-check.mjs`를 부르고, `.gitignore`는 `/.links`를 무시한다. `/.links`는 package를 제공하는 checkout을 선언하는 파일이고, 어떤 커밋도 그것을 담지 않는다. | `Makefile`; `.gitignore`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
 | T1.51 | 연결 개발에서(kit K869) php-serialization 대상은 `.links`가 가리키는 php-serialization checkout을 빌드하고, 그런 줄이 없으면 `var/deps`의 release clone을 빌드한다. `PHP_SERIALIZATION`은 마지막 부분이 `php-serialization`인 `.links`의 줄을 checkout 기준 절대 경로로 바꾼 값이다. `php-serialization-checkout`은 `.git`이 파일인 worktree도 받는다. | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |
-| T1.52 | recipe의 모든 cargo는 kit의 link cargo를 거친다(kit K869). 그래야 `.links`가 있는 run이 lock의 tag가 아니라 연결된 checkout을 빌드한다. `CARGO`는 `$(NODE) $(KIT)/link.mjs cargo $(CURDIR)`이고, `.links`가 없으면 cargo를 그대로 돌린다. maturin과 `binding go-link`는 cargo를 직접 돌려서, kit과 binding의 release가 link를 받을 때까지 lock의 tag를 빌드한다. | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [ ] |
+| T1.52 | recipe의 모든 cargo는 kit의 link cargo를 거친다(kit K869). 그래야 `.links`가 있는 run이 lock의 tag가 아니라 연결된 checkout을 빌드한다. `CARGO`는 `$(NODE) $(KIT)/link.mjs cargo $(CURDIR)`이고, `.links`가 없으면 cargo를 그대로 돌린다. maturin과 `binding go-link`는 cargo를 직접 돌려서, kit과 binding의 release가 link를 받을 때까지 lock의 tag를 빌드한다. | `Makefile`; `scripts/tool-pins.test.mts` | make tool-pins-test | [o] |

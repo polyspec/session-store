@@ -18,7 +18,7 @@ export MISE_CONFIG_DIR := $(VAR_TOOLS)/mise/config
 export MISE_GLOBAL_CONFIG_FILE := $(CURDIR)/mise.toml
 export MISE_GLOBAL_CONFIG_ROOT := $(CURDIR)
 export PATH := $(VAR_TOOLS)/bin:$(VAR_TOOLS)/mise/shims:$(PATH)
-CARGO := cargo
+CARGO := $(NODE) $(KIT)/link.mjs cargo $(CURDIR)
 # Extra arguments of every cargo build, for example --ignore-rust-version on a machine without the pinned release.
 CARGOFLAGS ?=
 # The crates of the library; the binding crates of the workspace need make bindings first (binding design L-2).

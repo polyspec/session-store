@@ -687,7 +687,7 @@
    "record": "a:1:{s:1:\"a\";N;}"
   },
   {
-   "id": "a_canonical_integer_text_names_the_integer_key",
+   "id": "a_canonical_integer_text_and_its_padded_text_are_two_keys",
    "note": "the text 5 names the integer key 5 and the text 05 a string key",
    "rule": [
     "SE-2.5"

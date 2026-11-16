@@ -394,10 +394,51 @@ fn record_faults(case: &Value) -> Result<(), Failed> {
     }
 }
 
+/// The bytes of a hex text of a case value of the alias `php_value` (`{"hex": ...}`) as the characters U+0000 to U+00FF
+/// that the serialize form of a case holds (SE-10.2).
+fn hex_text(value: &Value) -> Result<String, Failed> {
+    let hex = str_of(value, "hex")?;
+    if hex.len() % 2 != 0 {
+        return Err(format!("{hex} is no hex text of bytes").into());
+    }
+    (0..hex.len())
+        .step_by(2)
+        .map(|at| {
+            let pair = hex.get(at..at + 2).ok_or("a hex text ends inside a byte")?;
+            u8::from_str_radix(pair, 16).map(char::from).map_err(|error| Failed::from(error.to_string()))
+        })
+        .collect()
+}
+
 /// The serialize form of a value of the alias `php_value` in the form of a generated binding test (binding G-5): `null`,
-/// `bool` and `int`.
+/// `bool`, `int`, `bytes` and a `map` whose keys are `{"int": n}` or `{"hex": ...}`.
 fn php_text(value: &Value) -> Result<String, Failed> {
     match str_of(value, "kind")? {
+        "bytes" => {
+            let text = hex_text(value.get("value").ok_or("a bytes value holds no bytes")?)?;
+            Ok(format!("s:{}:\"{text}\";", text.chars().count()))
+        }
+        "map" => {
+            let Some(Value::Array(entries)) = value.get("value") else {
+                return Err("a map value holds no entries".into());
+            };
+            let mut text = format!("a:{}:{{", entries.len());
+            for entry in entries {
+                let (Some(key), Some(item)) = (entry.get(0), entry.get(1)) else {
+                    return Err("an entry of a map is no pair".into());
+                };
+                match key.get("int").and_then(Value::as_i64) {
+                    Some(number) => text.push_str(&format!("i:{number};")),
+                    None => {
+                        let name = hex_text(key)?;
+                        text.push_str(&format!("s:{}:\"{name}\";", name.chars().count()));
+                    }
+                }
+                text.push_str(&php_text(item)?);
+            }
+            text.push('}');
+            Ok(text)
+        }
         "null" => Ok("N;".to_owned()),
         "bool" => {
             let flag = value.get("value").and_then(Value::as_bool).ok_or("a bool value holds no bool")?;
@@ -454,13 +495,49 @@ fn memory_made(case: &Value, member: &str) -> Result<(), Failed> {
     if let Some(expected) = case.get("result") {
         expect_eq("result", &result, &memory_expected(member, expected)?)?;
     }
+    let mut calls = vec![(member, case)];
     for after in case.get("after").and_then(Value::as_array).into_iter().flatten() {
         let called = str_of(after, "call")?;
-        let result = memory_call(&mut store, called, after.get("args").ok_or("a call of after has no args")?)?;
+        let args = after.get("args").ok_or("a call of after has no args")?;
+        let result = memory_call(&mut store, called, args)?;
         let expected = after.get("result").ok_or("a call of after has no result")?;
         expect_eq(&format!("{called} after the call"), &result, &memory_expected(called, expected)?)?;
+        calls.push((called, args));
     }
-    Ok(())
+    match case.get("record").and_then(Value::as_str) {
+        Some(record) => record_made(&calls, record),
+        None => Ok(()),
+    }
+}
+
+/// SE-2, SE-6: the calls of a case of a group `memory_store.<member>.made` that states `record`, run again on a record
+/// session without a found record, which writes that record as a new session; PHP reads it again. The calls of
+/// `renewals` read the memory store alone and are left out.
+fn record_made(calls: &[(&str, &Value)], record: &str) -> Result<(), Failed> {
+    let mut session = RecordSession::new(None);
+    for (member, args) in calls {
+        let name =
+            member.strip_prefix("memory_store.").ok_or_else(|| format!("{member} is no member of memory_store"))?;
+        if name == "renewals" {
+            continue;
+        }
+        let mut arguments = Vec::new();
+        if let Some(key) = args.get("key") {
+            arguments.push(key.as_str().ok_or("a key is no text")?.to_owned());
+        }
+        if let Some(value) = args.get("value") {
+            arguments.push(php_text(value)?);
+        }
+        run(&mut session, name, &arguments)?.map_err(|error| Failed::from(error.to_string()))?;
+    }
+    let expected = latin1(record)?;
+    match session.finish() {
+        Ok(Outcome::Write { record: actual, new: true, removes: None, .. }) => {
+            expect_eq("record", &text_of(&actual), &text_of(&expected))?;
+            php_agrees(&actual)
+        }
+        other => Err(format!("the record session gives {other:?}").into()),
+    }
 }
 
 /// A runner of the cases of one group.

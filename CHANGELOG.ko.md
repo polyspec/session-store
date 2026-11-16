@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 5cc5282dc875d46e7546ee369b512f7486f72d9541e66c3bd6ff4eb7f05820c1 -->
+<!-- source-sha256: ca7dbcc933a7f768f397bfdc519ab6ea9c2a91b08b1fc82f99dd5c03c96b4347 -->
 
 ## Unreleased
 
+- 호출을 이어 가는 memory 저장소의 case 7개가 바인딩이 실행하는 `memory_store.get.made`와 `memory_store.set.made`의 case다: 이후의 호출은 그 `after`이고, `renewals`는 거기서 property로 읽으며, 같은 호출이 레코드 세션에 쓰는 record인 `record`는 Rust 시험이 읽는 key다(`reads`). 어떤 member도 record를 주지 않기 때문이다(SE-10.1, SE-1.2). 객체와 reference를 함께 쓰는 값의 case는 group `store`에 남는다.
 - `Cargo.lock`이 Git에서 고정한 저장소를 `var/deps`에 clone하는 target(`scripts/deps.mts`)은 `make install-binding`이 아니라 `make install-deps`다. binding은 npm package로만 설치되고(T1.32), `make tool-pins-test`는 `install-binding`을 이름하는 Makefile을 실패시키는데, binding을 설치하지 않는 이 target이 그 이름을 썼다.
 - 부호 없는 정수 자리(`lifetime`, `lock_expire`)의 텍스트나 boolean은 음수나 소수처럼 category value의 kind `invalid_number`로 거부되고, `invalid_argument_type`으로 거부되지 않는다(SF-8.2, SR-8.2, binding 설계 B-2). 여섯 case는 어떤 바인딩도 내지 않는 type kind를 기대했다.
 - `cases`의 행은 Rust 시험이 읽고 어떤 생성기도 읽지 않는 case의 key(`identifier`, `alphabet`, `length`, `defaults`, `binding`, `store_lifetime`, `store_directory`)를 `reads`에 선언한다. `file_sessions.lifetime`과 `file_sessions.directory`는 실패를 `in_directory`가 내는 group `open` 대신, 저장소를 만들고 결과를 `store_lifetime`과 `store_directory`에 주는 group `file_sessions.lifetime`과 `file_sessions.directory`를 읽는다(SE-10.2, binding CK-22, CK-96).

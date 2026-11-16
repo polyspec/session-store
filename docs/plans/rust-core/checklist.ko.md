@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 1516519c897ef10d1bb78bf2db4e18e79753335ee3656c98785379b8a1f51475 -->
+<!-- source-sha256: 61b37ae4a84a67027dbbf27442f2f01a6d1c189c55bff40347dcd018c28389d8 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -66,3 +66,4 @@
 | T1.45 | `make test-go`는 Go 시험의 link flag를 `binding go-link`에서 받는다(binding GN-15k). 그것은 시험 feature로 host의 정적 라이브러리를 빌드하고 `CGO_LDFLAGS`를 출력한다. 자체 `cargo build`와 고정된 `-L`은 쓰지 않는다. 그리고 binding 0.0.15가 생성하는 build tag(`polyspec_session_store_panic_test`, `polyspec_session_store_codec_test`)를 쓴다. 이전 이름으로는 panic과 codec 시험이 빌드되지 않는다. manifest가 고정한 binding 0.0.13에는 `go-link`가 없으므로, 이 변경은 binding `v0.0.15`를 고정하는 커밋에 함께 들어간다. 그 Red와 Green은 binding 1e922a76의 고정 사본과 그 위의 php-serialization 고정 사본에서 돌린다. | `Makefile`; `CHANGELOG.md`(.ko) | make test-go | [ ] |
 | T1.46 | 한 번 읽은 인증 기관을 받은 TLS 연결이 신뢰 저장소를 읽지 않는다는 증명은, thread가 도는 시험 process의 환경 변수를 바꾸지 않는다(SR-6.1a). TLS 시험은 `SSL_CERT_FILE`이 bay의 인증 기관 파일인 별도 process를 띄운다. 그 process는 연결하고, 파일을 지우고, 다시 연결한다. fork `redis-1.8.2-p1`에서는 통과하고, `Sentinel::build_with_tls`만 더한 redis-rs 1.8.2에서는 파일을 지운 뒤 실패한다. | `packages/redis/rust/tests/server.rs` | make test | [o] |
 | T1.47 | `Cargo.lock`은 manifest의 변경이 필요로 하는 것만 바꾼다. redis를 fork로 고정할 때 bindgen의 edge(syn 2에서 3)와 errno, rustix, tempfile, winapi-util의 edge(windows-sys 0.52에서 0.61)가 함께 바뀌었다. 이전 lock에서 다시 풀면 그 edge는 그대로 남는다. lock은 그 결과다. | `Cargo.lock` | make test | [o] |
+| T1.48 | trial `the_links_of_tls_read_the_trust_store_once`는 자기가 보이는 것을 적는다. TLS의 모든 link가 crate가 한 번 읽은 인증 기관을 받는다는 것이고, redis-rs가 자기 신뢰 저장소를 읽지 않는다는 것은 아니다. 그것은 TLS 시험이 서버에 대해서만 보인다(SR-6.1a, T1.43). | `packages/redis/rust/src/connection.rs` | make test | [o] |

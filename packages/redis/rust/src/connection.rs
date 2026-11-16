@@ -356,8 +356,10 @@ impl Store for RedisSession {
 mod trust_tests {
     use super::{Link, Setting};
 
-    /// SR-6.1a: the links of TLS of a server, of Sentinel and of a Cluster read the trust store of the machine once in
-    /// the process, however many there are.
+    /// SR-6.1a: the links of TLS of a server, of Sentinel and of a Cluster take the authorities that this crate reads
+    /// once in the process (`trust::authorities`), however many links there are; it counts the reads of this crate.
+    /// It does not show that redis-rs reads no trust store of its own for a connection with those authorities, which
+    /// the test of TLS of `tests/server.rs` shows for a server, and no test shows yet for Sentinel and Cluster (T1.43).
     #[test]
     fn the_links_of_tls_read_the_trust_store_once() {
         let settings = [

@@ -380,7 +380,8 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   (binding GN-13f), group `record` (SE-6, SE-7), group `internal` (SE-9.6) and group `recordFaults` (SE-9.6). `contracts/file-sessions.json` holds the requests of the store of files (SF-1 to SF-5),
   and `contracts/redis-sessions.json` the requests of the store of Redis with the commands that each sends (SR-1 to
   SR-5). <a id="SE-10.2"></a> A PHP value of a case is its serialize form, and a byte string of a case is JSON text
-  whose characters U+0000 to U+00FF are its bytes. A failure is the key `raises` with `kind`, `status`, `category` and
+  whose characters U+0000 to U+00FF are its bytes. A case names the rule statements that it checks in `rule`, a
+  list, and states what it shows in `note`, the keys of a case that the generator reads as no input (binding CK-96). A failure is the key `raises` with `kind`, `status`, `category` and
   `message`, and such a case has no result key. A case of several requests (`steps`) that fails names in `raises` the
   step and the operation that fail (`step`, `at`: `open`, `call` or `close`); it has no results, and its `records` or
   `stored` hold what the store keeps after the failure. A created identifier of a case is `#n`, the n-th identifier that

@@ -374,7 +374,8 @@
   member를 한 번 호출하고, 그 결과와 `after`의 호출이 그 뒤의 저장소를 보인다, binding GN-13f), group `record`(SE-6, SE-7), group `internal`(SE-9.6), group `recordFaults`(SE-9.6). `contracts/file-sessions.json`은 파일 저장소의 요청을 담고(SF-1부터 SF-5),
   `contracts/redis-sessions.json`은 Redis 저장소의 요청을 각 요청이 보내는 명령과 함께 담는다(SR-1부터
   SR-5). <a id="SE-10.2"></a> case의 PHP 값은 그 serialize 형식이고, case의 바이트 문자열은 문자 U+0000부터
-  U+00FF가 그 바이트인 JSON 텍스트다. 실패는 `kind`, `status`, `category`,
+  U+00FF가 그 바이트인 JSON 텍스트다. case는 자기가 검사하는 규칙 문장을 목록인 `rule`에 적고, 보이는 것을
+  `note`에 적는다. 이 둘은 생성기가 입력으로 읽지 않는 case의 key다(binding CK-96). 실패는 `kind`, `status`, `category`,
   `message`를 가진 key `raises`이고, 그런 case에는 결과 key가 없다. 실패하는 여러 요청의 case(`steps`)는 실패하는
   step과 연산을 `raises`에 적는다(`step`, `at`: `open`, `call` 또는 `close`). 그런 case에는 결과가 없고, 그 `records`나
   `stored`는 실패 뒤에 저장소가 가진 것을 담는다. case가 만든 식별자는 `#n`이고, 이것은 case가 만드는 n번째

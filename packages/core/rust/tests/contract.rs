@@ -27,7 +27,8 @@ const CASE_FILES: [(&str, &str); 3] = [
 ];
 
 /// SE-10, binding G-5: every key of a case of a group that the `cases` of the interface contract name is in snake_case,
-/// because the generated tests read a parameter of a member by its name in snake_case.
+/// because the generated tests read a parameter of a member by its name in snake_case. SE-10.2: a case names its rule
+/// statements in `rule` and its description in `note`, the keys of a case that binding CK-96 gives a meaning.
 fn case_keys() -> Result<(), Failed> {
     let interface: Value = serde_json::from_str(INTERFACE).map_err(|error| Failed::from(error.to_string()))?;
     let Some(Value::Array(rows)) = interface.get("cases") else {
@@ -54,6 +55,9 @@ fn case_keys() -> Result<(), Failed> {
             for key in keys.keys() {
                 if key.chars().any(|character| character.is_ascii_uppercase()) {
                     found.push(format!("{file}#{group}: {key} of {} is not in snake_case", case["id"]));
+                }
+                if key == "rules" || key == "label" {
+                    found.push(format!("{file}#{group}: {} names {key}, not rule and note (SE-10.2)", case["id"]));
                 }
             }
         }

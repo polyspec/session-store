@@ -215,3 +215,12 @@ test('a php-serialization of .links is the checkout that the targets of php-seri
   assert.equal(print(links), join(root, 'var/deps/php-serialization'));
   rmSync(directory, { recursive: true });
 });
+
+test('every cargo of the recipes runs through the cargo of the link of kit', () => {
+  // Linked development (kit K869): `link.mjs cargo <dir>` patches the checkouts of .links into one cargo command, and
+  // without .links runs cargo as given; a recipe that ran cargo itself would build the tags of the lock.
+  const makefile = read('Makefile');
+  assert.match(makefile, /^CARGO := \$\(NODE\) \$\(KIT\)\/link\.mjs cargo \$\(CURDIR\)$/m, 'CARGO is not the cargo of the link of kit');
+  const own = makefile.split('\n').filter((line) => line.startsWith('\t') && /(^|[\s;&|(])cargo /.test(line.replace(/\$\(CARGO\)/g, '')));
+  assert.deepEqual(own, [], 'a recipe runs cargo itself');
+});

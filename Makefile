@@ -56,6 +56,9 @@ PHP_CONFIG ?= $(shell command -v php-config)
 PHPUNIT ?= $(CURDIR)/vendor/bin/phpunit
 TSC ?= $(CURDIR)/node_modules/.bin/tsc
 MATURIN ?= $(VAR_TOOLS)/mise/shims/maturin
+# maturin runs cargo itself: MATURIN_LINK gives that cargo the patches of .links (kit K1266), and without .links runs
+# maturin as given.
+MATURIN_LINK := MATURIN='$(MATURIN)' $(NODE) $(KIT)/link.mjs maturin $(CURDIR)
 # The Composer of mise.toml, with its home and cache under var/tools, which installs the PHPUnit of composer.lock.
 COMPOSER := $(VAR_TOOLS)/mise/shims/composer
 export COMPOSER_HOME := $(VAR_TOOLS)/composer
@@ -360,7 +363,7 @@ php-serialization-checkout:
 php-serialization-python: php-serialization-checkout
 	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target python)
 	rm -rf $(VAR)/deps/wheels
-	$(MATURIN) build --locked --manifest-path $(PHP_SERIALIZATION)/packages/python/Cargo.toml --interpreter $(PYTHON) --features panic-test --out $(VAR)/deps/wheels $(CARGOFLAGS)
+	$(MATURIN_LINK) build --locked --manifest-path $(PHP_SERIALIZATION)/packages/python/Cargo.toml --interpreter $(PYTHON) --features panic-test --out $(VAR)/deps/wheels $(CARGOFLAGS)
 
 php-serialization-php: php-serialization-checkout
 	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target php)
@@ -391,7 +394,7 @@ test-python: bindings-python php-serialization-python
 	test -f "$(PHP_SERIALIZATION_WHEEL)"
 	$(PYTHON) -m venv --clear $(VAR)/venv
 	rm -rf $(VAR)/wheels
-	cd packages/python && $(MATURIN) build --locked --interpreter $(VAR)/venv/bin/python --features panic-test,fault-test --out $(VAR)/wheels $(CARGOFLAGS)
+	$(MATURIN_LINK) build --locked --manifest-path packages/python/Cargo.toml --interpreter $(VAR)/venv/bin/python --features panic-test,fault-test --out $(VAR)/wheels $(CARGOFLAGS)
 	$(VAR)/venv/bin/pip install -q --no-index --force-reinstall $(VAR)/deps/wheels/*.whl $(VAR)/wheels/*.whl
 	cd $(VAR) && $(SERVICE_RUN) venv/bin/python -m unittest discover -s $(CURDIR)/packages/python/generated/tests -t $(CURDIR)/packages/python/generated/tests
 

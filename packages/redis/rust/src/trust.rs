@@ -41,39 +41,20 @@ fn read() -> Result<Vec<u8>, Error> {
     if let Some(error) = found.errors.first() {
         return Err(Error::Connection { detail: format!("the trust store of the machine is not read: {error}") });
     }
-    let mut pem = Vec::new();
-    for certificate in &found.certs {
-        pem.extend_from_slice(b"-----BEGIN CERTIFICATE-----\n");
-        for line in base64(certificate.as_ref()).as_bytes().chunks(64) {
-            pem.extend_from_slice(line);
-            pem.push(b'\n');
-        }
-        pem.extend_from_slice(b"-----END CERTIFICATE-----\n");
-    }
-    Ok(pem)
+    pem(found.certs.iter().map(AsRef::as_ref))
 }
 
-/// The standard base64 text of bytes, with padding (RFC 4648 section 4), which PEM holds (RFC 7468).
-fn base64(bytes: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut text = String::with_capacity(bytes.len().div_ceil(3) * 4);
-    for chunk in bytes.chunks(3) {
-        // A short last group is filled with zero bytes, whose characters the padding replaces.
-        let mut group = [0_u8; 3];
-        for (slot, byte) in group.iter_mut().zip(chunk) {
-            *slot = *byte;
-        }
-        let [first, second, third] = group;
-        let sixes = [first >> 2, ((first & 3) << 4) | (second >> 4), ((second & 15) << 2) | (third >> 6), third & 63];
-        for (index, six) in sixes.into_iter().enumerate() {
-            if index <= chunk.len() {
-                text.push(char::from(ALPHABET[usize::from(six)]));
-            } else {
-                text.push('=');
-            }
-        }
+/// The PEM text of certificates of DER, one block `CERTIFICATE` each (RFC 7468), which `TlsCertificates` takes.
+fn pem<'a>(certificates: impl Iterator<Item = &'a [u8]>) -> Result<Vec<u8>, Error> {
+    let mut text = String::new();
+    for certificate in certificates {
+        let block =
+            pem_rfc7468::encode_string("CERTIFICATE", pem_rfc7468::LineEnding::LF, certificate).map_err(|error| {
+                Error::Connection { detail: format!("an authority of the trust store is not PEM: {error}") }
+            })?;
+        text.push_str(&block);
     }
-    text
+    Ok(text.into_bytes())
 }
 
 #[cfg(test)]
@@ -83,14 +64,18 @@ pub(crate) fn reads() -> usize {
 
 #[cfg(test)]
 mod tests {
-    use super::base64;
+    use rustls::pki_types::pem::PemObject;
+    use rustls::pki_types::CertificateDer;
+
+    use super::pem;
 
     #[test]
-    fn base64_pads_the_last_group() {
-        assert_eq!(base64(b""), "");
-        assert_eq!(base64(b"f"), "Zg==");
-        assert_eq!(base64(b"fo"), "Zm8=");
-        assert_eq!(base64(b"foo"), "Zm9v");
-        assert_eq!(base64(b"foobar"), "Zm9vYmFy");
+    fn the_pem_of_the_authorities_reads_back_as_their_der() -> Result<(), Box<dyn std::error::Error>> {
+        let ders: [&[u8]; 3] = [b"f", b"fo", &[0_u8; 100]];
+        let text = pem(ders.iter().copied())?;
+        let read = CertificateDer::pem_slice_iter(&text).collect::<Result<Vec<_>, _>>()?;
+        assert_eq!(read.iter().map(AsRef::as_ref).collect::<Vec<&[u8]>>(), ders);
+        assert!(pem(std::iter::empty())?.is_empty());
+        Ok(())
     }
 }

@@ -27,6 +27,32 @@ fn plain(arguments: &[&str]) -> Result<(Project, Address), Failed> {
     Ok((project, address))
 }
 
+/// Makes the service `service` of `project` accept TLS alone at `port`, with the certificate that bay issues for its
+/// name, at the paths in the container that the plan of the project gives (SR-6.1). `replication` makes its own
+/// connections to other servers, of Sentinel to a primary and between the nodes of a Cluster, use TLS too.
+fn tls_only(project: &mut Project, service: &str, port: u16, replication: bool) -> Result<(), Failed> {
+    let certificate = project.planned(service).map_err(Failed::from)?.certificate.clone();
+    let port = port.to_string();
+    let mut arguments = vec![
+        "--port",
+        "0",
+        "--tls-port",
+        &port,
+        "--tls-cert-file",
+        &certificate.server_certificate,
+        "--tls-key-file",
+        &certificate.server_key,
+        "--tls-ca-cert-file",
+        &certificate.server_authority,
+        "--tls-auth-clients",
+        "no",
+    ];
+    if replication {
+        arguments.extend_from_slice(&["--tls-replication", "yes", "--tls-cluster", "yes"]);
+    }
+    project.extend(service, &arguments).map_err(Failed::from)
+}
+
 fn the_requests_of_one_session_in_one_process_lose_no_write() -> Result<(), Failed> {
     // SE-8.1, SR-3.2: sixteen requests of one session on four threads add one each.
     let (_project, server) = plain(&[])?;
@@ -166,27 +192,8 @@ fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
     // store of its process, which holds the authority of bay because `bay install` adds it to the trust store of the
     // machine (SE-10.4).
     let mut project = Project::new(vec![Service::new("server", PORT, &PLAIN)]).map_err(Failed::from)?;
+    tls_only(&mut project, "server", PORT, false)?;
     let certificate = project.planned("server").map_err(Failed::from)?.certificate.clone();
-    let port = PORT.to_string();
-    project
-        .extend(
-            "server",
-            &[
-                "--port",
-                "0",
-                "--tls-port",
-                &port,
-                "--tls-cert-file",
-                &certificate.server_certificate,
-                "--tls-key-file",
-                &certificate.server_key,
-                "--tls-ca-cert-file",
-                &certificate.server_authority,
-                "--tls-auth-clients",
-                "no",
-            ],
-        )
-        .map_err(Failed::from)?;
     project.start().map_err(Failed::from)?;
     let server = project.address("server").map_err(Failed::from)?;
     // A failure of the client tells nothing of its cause (SR-6.4), so the test adds what the server wrote.
@@ -218,6 +225,86 @@ fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
     }
     // SR-6.1: this process trusts the authority of bay through the trust store of the machine.
     runtime()?.block_on(round_trip(Setting::Server { url })).map_err(|error| wrote("", error))
+}
+
+fn sentinel_of_tls_names_a_primary_of_tls() -> Result<(), Failed> {
+    // SR-6.1a, SR-6.2: the Sentinel node and the primary accept TLS alone with the certificates that bay issues, whose
+    // authority the roots of webpki do not hold: the store connects to both only with the authorities that it read.
+    let configuration = format!("{MOUNT}/sentinel.conf");
+    let mut project = Project::new(vec![
+        Service::new("primary", PORT, &PLAIN),
+        Service::new("sentinel", 26379, &[&configuration, "--sentinel"]).mount("sentinel", false).after("primary"),
+    ])
+    .map_err(Failed::from)?;
+    tls_only(&mut project, "primary", PORT, false)?;
+    tls_only(&mut project, "sentinel", 26379, true)?;
+    let primary = project.planned("primary").map_err(Failed::from)?.host.clone();
+    std::fs::write(
+        project.directory().join("sentinel").join("sentinel.conf"),
+        format!(
+            "protected-mode no\nsentinel resolve-hostnames yes\nsentinel announce-hostnames yes\nsentinel monitor service {primary} {PORT} 1\n"
+        ),
+    )
+    .map_err(failed)?;
+    project.start().map_err(Failed::from)?;
+    let sentinel = project.address("sentinel").map_err(Failed::from)?;
+    let setting = Setting::Sentinel {
+        urls: vec![format!("rediss://{}/", sentinel.name)],
+        service: "service".to_owned(),
+        tls: true,
+        user: None,
+        password: None,
+    };
+    runtime()?.block_on(round_trip(setting)).map_err(|error| {
+        let message = match error.message() {
+            Some(message) => message.to_owned(),
+            None => String::new(),
+        };
+        Failed::from(format!(
+            "{message}\nsentinel wrote:\n{}\nprimary wrote:\n{}",
+            project.output("sentinel"),
+            project.output("primary")
+        ))
+    })
+}
+
+fn a_cluster_of_tls_keeps_sessions() -> Result<(), Failed> {
+    // SR-6.1a, SR-6.3: the nodes accept TLS alone, also between themselves, and name each other by the names of their
+    // certificates, whose authority the roots of webpki do not hold.
+    let names = ["node-0", "node-1", "node-2"];
+    let mut services = Vec::new();
+    for name in names {
+        let mut arguments = PLAIN.to_vec();
+        arguments.extend_from_slice(&["--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf"]);
+        services.push(Service::new(name, PORT, &arguments));
+    }
+    let mut project = Project::new(services).map_err(Failed::from)?;
+    for name in names {
+        tls_only(&mut project, name, PORT, true)?;
+        let host = project.planned(name).map_err(Failed::from)?.host.clone();
+        project
+            .extend(name, &["--cluster-announce-hostname", &host, "--cluster-preferred-endpoint-type", "hostname"])
+            .map_err(Failed::from)?;
+    }
+    let authority = project.planned("node-0").map_err(Failed::from)?.certificate.server_authority.clone();
+    project.start().map_err(Failed::from)?;
+    let mut reports = Vec::new();
+    let mut nodes = Vec::new();
+    let mut addresses = Vec::new();
+    for name in names {
+        reports.push(project.follow(name).map_err(Failed::from)?);
+        let node = project.address(name).map_err(Failed::from)?;
+        nodes.push(format!("rediss://{}/", node.name));
+        addresses.push(format!("{}:{PORT}", node.ipv4));
+    }
+    let mut create = vec!["redis-cli", "--tls", "--cacert", &authority, "--insecure", "--cluster", "create"];
+    create.extend(addresses.iter().map(String::as_str));
+    create.extend(["--cluster-replicas", "0", "--cluster-yes"]);
+    project.exec("node-0", &create).map_err(Failed::from)?;
+    for report in &mut reports {
+        report.wait_for("Cluster state changed: ok").map_err(Failed::from)?;
+    }
+    runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes }))
 }
 
 /// The trial that the test of TLS runs in a process of its own (SR-6.1a).
@@ -257,6 +344,8 @@ fn main() {
         Trial::test("sentinel_names_the_primary", sentinel_names_the_primary),
         Trial::test("a_cluster_keeps_sessions", a_cluster_keeps_sessions),
         Trial::test("a_tls_connection_reads_and_writes", a_tls_connection_reads_and_writes),
+        Trial::test("sentinel_of_tls_names_a_primary_of_tls", sentinel_of_tls_names_a_primary_of_tls),
+        Trial::test("a_cluster_of_tls_keeps_sessions", a_cluster_of_tls_keeps_sessions),
         Trial::test(ONCE, the_authorities_read_once_serve_the_next_connection).with_ignored_flag(true),
     ];
     libtest_mimic::run(&arguments, trials).exit();

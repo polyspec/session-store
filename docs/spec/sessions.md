@@ -336,11 +336,14 @@ the statement that it checks. A PHP value and its serialize form are those of ph
 - **SR-6** <a id="SR-6.1"></a> The connection uses the crate `redis` (redis-rs) on one tokio runtime of the process. The
   application gives a connection setting, not a client: a server, Sentinel or Cluster, each with its addresses, TLS and
   an ACL user and password. <a id="SR-6.1a"></a> A store that connects with TLS (`rediss://`, or Sentinel with `tls`)
-  reads the trust store of the machine once in a process and gives its authorities to every client that it builds, of
-  a server, of the primary that Sentinel names and of a Cluster: redis-rs otherwise reads that trust store again for
-  each connection, inside its connection timeout, which is 1 second by default (redis-rs 1.8.1), and on macOS the read
-  of the keychain takes about that long, so a connection failed by its timeout. A trust store that cannot be read fails
-  the connection with the kind `connection` (SR-6.4) and is read again by the next connection. <a id="SR-6.2"></a> With Sentinel, a request that sends a command asks Sentinel for the
+  reads the trust store of the machine once in a process and gives its authorities to every client of TLS that it
+  builds: of a server, of the Sentinel nodes and of the primary that they name, and of the nodes of a Cluster. redis-rs
+  is built with its feature `tls-rustls-webpki-roots`, the one public means by which redis-rs 1.8.1 reads no trust
+  store for each connection (`connection.rs:1240`), inside a connection timeout of 1 second that the read of the
+  keychain of macOS can exceed; the roots of webpki that the feature compiles in serve no connection, because every
+  client of TLS takes the authorities. A trust store that cannot be read fails the connection with the kind
+  `connection` (SR-6.4) and is read again by the next connection. The Sentinel addresses are all `rediss://` or all
+  `redis://` and share one user and password; another list fails with the kind `invalid_setting`. <a id="SR-6.2"></a> With Sentinel, a request that sends a command asks Sentinel for the
   primary of its service before its first command, also when a connection to the former primary is open, because a
   former primary accepts writes for some seconds after a promotion. <a id="SR-6.3"></a> With Cluster every command of
   the protocol has one key, so a session and its lock may live on different primaries; the release script names its one

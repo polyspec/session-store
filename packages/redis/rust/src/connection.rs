@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use redis::aio::MultiplexedConnection;
 use redis::cluster_async::ClusterConnection;
-use redis::sentinel::{Sentinel, SentinelNodeConnectionInfo};
-use redis::{RedisConnectionInfo, TlsMode};
+use redis::sentinel::{SentinelClient, SentinelClientBuilder, SentinelServerType};
+use redis::{IntoConnectionInfo, TlsMode};
 use tokio::sync::Mutex;
 
 use polyspec_php_serialization::PhpValue;
@@ -30,20 +30,9 @@ pub enum Setting {
 
 /// The connections of one process (SR-6.5).
 enum Link {
-    Server {
-        client: redis::Client,
-        connection: Option<MultiplexedConnection>,
-    },
-    Sentinel {
-        sentinel: Box<Sentinel>,
-        service: String,
-        node: SentinelNodeConnectionInfo,
-        primary: Option<(String, MultiplexedConnection)>,
-    },
-    Cluster {
-        client: redis::cluster::ClusterClient,
-        connection: Option<ClusterConnection>,
-    },
+    Server { client: redis::Client, connection: Option<MultiplexedConnection> },
+    Sentinel { sentinel: Box<SentinelClient>, primary: Option<(String, MultiplexedConnection)> },
+    Cluster { client: redis::cluster::ClusterClient, connection: Option<ClusterConnection> },
 }
 
 /// The links and the process that made them (SR-6.5).
@@ -118,6 +107,60 @@ fn invalid(detail: &str) -> Error {
     Error::InvalidSetting { detail: detail.to_owned() }
 }
 
+/// The client of Sentinel (SR-6.1a, SR-6.2): the Sentinel nodes share one scheme, one user and one password, and every
+/// connection of TLS, to a node or to the primary that it names, trusts the authorities read once.
+fn sentinel(
+    urls: &[String],
+    service: &str,
+    tls: bool,
+    user: &Option<String>,
+    password: &Option<String>,
+) -> Result<SentinelClient, Error> {
+    let nodes = urls
+        .iter()
+        .map(|url| url.as_str().into_connection_info().map_err(|error| invalid(error.category())))
+        .collect::<Result<Vec<_>, Error>>()?;
+    let Some(first) = nodes.first() else {
+        return Err(invalid("the list of Sentinel addresses is empty"));
+    };
+    let nodes_tls = self::tls(&urls[0]);
+    if urls.iter().any(|url| self::tls(url) != nodes_tls) {
+        return Err(invalid("the Sentinel addresses are not all redis:// or all rediss://"));
+    }
+    let (node_user, node_password) = (first.redis_settings().username(), first.redis_settings().password());
+    if nodes
+        .iter()
+        .any(|node| node.redis_settings().username() != node_user || node.redis_settings().password() != node_password)
+    {
+        return Err(invalid("the Sentinel addresses do not share one user and password"));
+    }
+    let (node_user, node_password) = (node_user.map(str::to_owned), node_password.map(str::to_owned));
+    let addresses = nodes.into_iter().map(|node| node.addr().clone());
+    let mut builder = SentinelClientBuilder::new(addresses, service, SentinelServerType::Master)
+        .map_err(|error| invalid(error.category()))?;
+    if let Some(name) = node_user {
+        builder = builder.set_client_to_sentinel_username(name);
+    }
+    if let Some(secret) = node_password {
+        builder = builder.set_client_to_sentinel_password(secret);
+    }
+    if let Some(name) = user {
+        builder = builder.set_client_to_redis_username(name);
+    }
+    if let Some(secret) = password {
+        builder = builder.set_client_to_redis_password(secret);
+    }
+    if nodes_tls {
+        builder = builder.set_client_to_sentinel_certificates(trust::certificates(&trust::authorities()?));
+    }
+    if tls {
+        builder = builder
+            .set_client_to_redis_tls_mode(TlsMode::Secure)
+            .set_client_to_redis_certificates(trust::certificates(&trust::authorities()?));
+    }
+    builder.build().map_err(|error| invalid(error.category()))
+}
+
 impl Link {
     fn new(setting: &Setting) -> Result<Self, Error> {
         match setting {
@@ -133,26 +176,7 @@ impl Link {
                 if urls.is_empty() {
                     return Err(invalid("the list of Sentinel addresses is empty"));
                 }
-                let addresses = urls.iter().map(String::as_str).collect();
-                // SR-6.1a: the Sentinel nodes and the primary that they name trust the authorities read once.
-                let sentinel = if *tls || urls.iter().any(|url| self::tls(url)) {
-                    Sentinel::build_with_tls(addresses, trust::certificates(&trust::authorities()?))
-                } else {
-                    Sentinel::build(addresses)
-                }
-                .map_err(|error| invalid(error.category()))?;
-                let mut info = RedisConnectionInfo::default();
-                if let Some(user) = user {
-                    info = info.set_username(user);
-                }
-                if let Some(password) = password {
-                    info = info.set_password(password);
-                }
-                let mut node = SentinelNodeConnectionInfo::default().set_redis_connection_info(info);
-                if *tls {
-                    node = node.set_tls_mode(TlsMode::Secure);
-                }
-                Ok(Self::Sentinel { sentinel: Box::new(sentinel), service: service.clone(), node, primary: None })
+                Ok(Self::Sentinel { sentinel: Box::new(sentinel(urls, service, *tls, user, password)?), primary: None })
             }
             Setting::Cluster { urls } => {
                 if urls.is_empty() {
@@ -170,10 +194,11 @@ impl Link {
 
     /// Prepares the request: with Sentinel it asks for the primary before the first command (SR-6.2).
     async fn prepare(&mut self) -> Result<(), Error> {
-        let Self::Sentinel { sentinel, service, node, primary } = self else {
+        let Self::Sentinel { sentinel, primary } = self else {
             return Ok(());
         };
-        let client = sentinel.async_master_for(service, Some(node)).await.map_err(|error| connection_error(&error))?;
+        // SR-6.2: async_get_client asks Sentinel for the primary at each call.
+        let client = sentinel.async_get_client().await.map_err(|error| connection_error(&error))?;
         let address = client.get_connection_info().addr().to_string();
         if let Some((current, _)) = primary {
             if *current == address {

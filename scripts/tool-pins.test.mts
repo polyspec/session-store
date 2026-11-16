@@ -196,4 +196,7 @@ test('the local links are the targets link, unlink and link-check of kit, and .l
   assert.match(makefile, /^link-check:.*\n\t\$\(NODE\) \$\(KIT\)\/link-check\.mjs\n/m, 'no target link-check runs link-check.mjs');
   assert.match(read('.gitignore'), /^\/\.links$/m, '.gitignore does not ignore /.links');
   assert.ok(!tracked.has('.links'), '.links is tracked');
+  // link writes a go.work beside each go.mod of the consumer, which Git must ignore there.
+  assert.match(read('.gitignore'), /^go\.work$/m, '.gitignore does not ignore the go.work of link');
+  assert.match(read('.gitignore'), /^go\.work\.sum$/m, '.gitignore does not ignore the go.work.sum of link');
 });

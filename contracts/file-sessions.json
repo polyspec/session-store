@@ -1795,5 +1795,47 @@
     "message": null
    }
   }
+ ],
+ "file_sessions.lifetime": [
+  {
+   "id": "the_default_lifetime_is_1440_seconds",
+   "note": "without a lifetime the store takes 1440 seconds (the lifetime of the made store)",
+   "rule": [
+    "SF-1.3"
+   ],
+   "directory": ".",
+   "store_lifetime": 1440
+  },
+  {
+   "id": "a_lifetime_is_taken",
+   "note": "a stated lifetime is taken (the lifetime of the made store)",
+   "rule": [
+    "SF-1.3"
+   ],
+   "directory": ".",
+   "lifetime": 1,
+   "store_lifetime": 1
+  }
+ ],
+ "file_sessions.directory": [
+  {
+   "id": "the_default_lifetime_is_1440_seconds",
+   "note": "without a lifetime the store takes 1440 seconds (the directory of the made store)",
+   "rule": [
+    "SF-1.3"
+   ],
+   "directory": ".",
+   "store_directory": "."
+  },
+  {
+   "id": "a_lifetime_is_taken",
+   "note": "a stated lifetime is taken (the directory of the made store)",
+   "rule": [
+    "SF-1.3"
+   ],
+   "directory": ".",
+   "lifetime": 1,
+   "store_directory": "."
+  }
  ]
 }

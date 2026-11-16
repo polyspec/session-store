@@ -325,6 +325,27 @@ fn open(case: &Value) -> Result<(), Failed> {
     made(case, &directory, temporary.path())
 }
 
+/// SF-1.3: the lifetime of a store of a case of the group `file_sessions.lifetime`, the result of that member.
+fn lifetime(case: &Value) -> Result<(), Failed> {
+    let temporary = case_directory(case)?;
+    let directory = place(temporary.path(), str_of(case, "directory")?);
+    let store =
+        FileSessions::in_directory(Io::for_generated_call(), &directory, case.get("lifetime").and_then(Value::as_u64))
+            .map_err(|error| Failed::from(format!("the store is not made: {error}")))?;
+    expect_eq("lifetime", &Some(store.lifetime()), &case.get("store_lifetime").and_then(Value::as_u64))
+}
+
+/// SF-1.2: the directory of a store of a case of the group `file_sessions.directory`, the result of that member.
+fn directory(case: &Value) -> Result<(), Failed> {
+    let temporary = case_directory(case)?;
+    let directory = place(temporary.path(), str_of(case, "directory")?);
+    let store =
+        FileSessions::in_directory(Io::for_generated_call(), &directory, case.get("lifetime").and_then(Value::as_u64))
+            .map_err(|error| Failed::from(format!("the store is not made: {error}")))?;
+    let expected = place(temporary.path(), str_of(case, "store_directory")?);
+    expect_eq("directory", &store.directory(), &expected.as_path())
+}
+
 /// SF-1.2: the making of the store of a case of the group `openNotAbsolute`, whose directory is given as it is: a path
 /// that is not absolute, which no case value of the type `path` of a generated binding test gives (binding GN-6y).
 fn open_not_absolute(case: &Value) -> Result<(), Failed> {
@@ -712,9 +733,11 @@ fn main() {
         Ok(contract) => contract,
         Err(error) => panic!("contracts/file-sessions.json is no JSON: {error}"),
     };
-    let groups: [(&str, Group); 16] = [
+    let groups: [(&str, Group); 18] = [
         ("requests", requests),
         ("open", open),
+        ("file_sessions.lifetime", lifetime),
+        ("file_sessions.directory", directory),
         ("openNotAbsolute", open_not_absolute),
         ("openFaults", open_faults),
         ("collectFaults", collect_faults),

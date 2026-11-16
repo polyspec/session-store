@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A row of `cases` declares in `reads` the keys of its cases that the Rust tests read and no generator reads (`identifier`, `alphabet`, `length`, `defaults`, `binding`, `store_lifetime`, `store_directory`), and `file_sessions.lifetime` and `file_sessions.directory` read the groups `file_sessions.lifetime` and `file_sessions.directory`, whose cases make a store and give the result in `store_lifetime` and `store_directory`, instead of the group `open`, whose failures `in_directory` raises (SE-10.2, binding CK-22, CK-96).
 - A case names the rule statements that it checks in `rule` and what it shows in `note`, the keys of a case that binding 0.0.13 reads as no input (SE-10.2, CK-96); `rules` and `label` were reported for 113 cases each.
 - The cases of the file store follow the case format of binding: a case gives the files of its directory under `@files` (GN-13i), so the generated tests write the stored records that the cases of a broken record read; the case `the_default_lifetime_is_1440_seconds` leaves out `lifetime`, because a given null is a value (GN-6i, GN-13d) and only an absent key takes the default.
 - `make redis-image` fails when the local store does not hold the image after the pull: `scripts/servers.sh pull` asks bay for the images of the project that it pulled and names the image. Before, a pull that bay ended with status 0 passed although the store did not hold the image, and the first test run that started Redis failed with a missing image.

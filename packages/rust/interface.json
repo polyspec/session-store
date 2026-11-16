@@ -1632,17 +1632,20 @@
     {
       "member": "accept",
       "file": "contracts/sessions.json",
-      "group": "identifier"
+      "group": "identifier",
+      "reads": ["identifier"]
     },
     {
       "member": "new_identifier",
       "file": "contracts/sessions.json",
-      "group": "created"
+      "group": "created",
+      "reads": ["alphabet", "length"]
     },
     {
       "member": "file_sessions.in_directory",
       "file": "contracts/file-sessions.json",
-      "group": "open"
+      "group": "open",
+      "reads": ["binding", "store_directory", "store_lifetime"]
     },
     {
       "member": "file_sessions.open",
@@ -1657,17 +1660,20 @@
     {
       "member": "file_sessions.lifetime",
       "file": "contracts/file-sessions.json",
-      "group": "open"
+      "group": "file_sessions.lifetime",
+      "result": "store_lifetime"
     },
     {
       "member": "file_sessions.directory",
       "file": "contracts/file-sessions.json",
-      "group": "open"
+      "group": "file_sessions.directory",
+      "result": "store_directory"
     },
     {
       "member": "redis_sessions.new",
       "file": "contracts/redis-sessions.json",
-      "group": "open"
+      "group": "open",
+      "reads": ["binding", "defaults"]
     },
     {
       "member": "redis_sessions.open",

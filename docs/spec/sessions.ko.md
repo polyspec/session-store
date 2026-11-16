@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 8ed81936df90edda62665764dc7ef09fe0905e4c06c2c963c8d4b9d91a70f76d -->
+<!-- source-sha256: 2cdc6c9c8e785a09692a71ccdcd29357609b813ee07295f007945e8e185f91ca -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -394,8 +394,11 @@
   `identifier`(또는 `name`), `bytes`, `age`의 list로 주고, Rust 시험만 그것을 읽는다. 절대 경로가 아닌
   디렉터리(SF-1.2: 상대 경로와 단계가 있는 `session.save_path`)에는 타입 `path`의 case 값이 없다. 그래서 그 case들은
   group `openNotAbsolute`에 있고, 인터페이스 계약은 이 group을 선언하지 않으며 Rust 시험이 그것을 실행한다. 파일
-  저장소의 group `open`의 case는 만든 저장소의 디렉터리를
-  `store_directory`에 적고, Redis 저장소의 group `open`의 모든 case는 `redis_sessions.new`의 두 parameter인
+  저장소의 group `open`은 `file_sessions.in_directory`가 읽고, 그중 저장소를 만드는 case는 그 디렉터리를
+  `store_directory`에, 수명을 `store_lifetime`에 적는다. group `file_sessions.lifetime`과
+  `file_sessions.directory`는 저장소를 만드는 case를 두고, 그 member의 결과를 `store_lifetime`과
+  `store_directory`에 적는다. 만들기의 실패는 property가 아니라 `in_directory`가 내기 때문이다(binding CK-22,
+  CK-96). 그리고 Redis 저장소의 group `open`의 모든 case는 `redis_sessions.new`의 두 parameter인
   `setting`과 `options`를 주며 그 연결 설정의 저장소를 만들고, 그 저장소는 어디에도 연결하지 않는다. case의 설정은
   어느 자리에서나 variant `setting`의 값이다. 그 tag `kind`가 `server`, `sentinel`, `cluster` 중 하나를 적고, 그
   case의 field가 그 옆에 있다(`{"kind": "server", "url": "..."}`, SR-6.1, binding G-5). 옵션만 시험하는 case는 `/dev/null` 아래 socket의 서버를 적는다.

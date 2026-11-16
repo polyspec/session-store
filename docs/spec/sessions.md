@@ -400,8 +400,12 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   (binding GN-13i); the group `requests` gives its files as a list of `identifier` (or `name`), `bytes` and `age`
   instead, which the Rust tests alone read. A directory that is not absolute (SF-1.2: a relative path and a
   `session.save_path` with levels) has no case value of the type `path`, so those cases are the group
-  `openNotAbsolute`, which the interface contract does not declare and the Rust tests run. A case of the group `open`
-  of the store of files states the directory of the made store in `store_directory`, and every case of the group `open` of the store of Redis gives `setting` and `options`, the two
+  `openNotAbsolute`, which the interface contract does not declare and the Rust tests run. The group `open` of the store
+  of files is read by `file_sessions.in_directory`, and a case of it that makes a store states its directory in
+  `store_directory` and its lifetime in `store_lifetime`; the groups `file_sessions.lifetime` and
+  `file_sessions.directory` hold the cases that make a store, with the result of that member in `store_lifetime` and
+  `store_directory`, because a failure of the making is raised by `in_directory` and not by a property (binding
+  CK-22, CK-96); and every case of the group `open` of the store of Redis gives `setting` and `options`, the two
   parameters of `redis_sessions.new`, and makes the store of that connection setting, which connects to nothing. A
   setting of a case, at any place, is a value of the variant `setting`: its tag `kind` names `server`, `sentinel` or
   `cluster`, and the fields of that case are beside it (`{"kind": "server", "url": "..."}`, SR-6.1, binding G-5); a case that tests the options alone names the server

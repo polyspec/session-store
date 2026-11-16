@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: a96b765a5b609ec64c0ae7f4c7e034e195f704626c3f16a77b6bd0ed7a02b9e1 -->
+<!-- source-sha256: 44f80c731a24d506e7cd82eb5238a8093e2cd6b9e45ef0aa59128af90023dc5b -->
 
 ## Unreleased
 
+- `cases`의 행은 Rust 시험이 읽고 어떤 생성기도 읽지 않는 case의 key(`identifier`, `alphabet`, `length`, `defaults`, `binding`, `store_lifetime`, `store_directory`)를 `reads`에 선언한다. `file_sessions.lifetime`과 `file_sessions.directory`는 실패를 `in_directory`가 내는 group `open` 대신, 저장소를 만들고 결과를 `store_lifetime`과 `store_directory`에 주는 group `file_sessions.lifetime`과 `file_sessions.directory`를 읽는다(SE-10.2, binding CK-22, CK-96).
 - case는 자기가 검사하는 규칙 문장을 `rule`에, 보이는 것을 `note`에 적는다. 이 둘은 binding 0.0.13이 입력으로 읽지 않는 case의 key다(SE-10.2, CK-96). `rules`와 `label`은 각각 113개 case에서 보고되었다.
 - File store의 case가 binding의 case 형식을 따른다: case는 디렉터리의 파일을 `@files`에 둔다(GN-13i). 그래서 생성 시험이 손상된 레코드 case가 읽는 저장 레코드를 쓴다. case `the_default_lifetime_is_1440_seconds`는 `lifetime`을 생략한다. 명시한 null은 값이고(GN-6i, GN-13d) key가 없을 때만 기본값을 쓰기 때문이다.
 - `make redis-image`는 pull 뒤 local store에 image가 없으면 실패한다: `scripts/servers.sh pull`이 pull한 project의 image를 bay에 묻고 그 image를 이름으로 밝힌다. 이전에는 bay가 status 0으로 끝낸 pull이 store에 image가 없어도 통과했고, Redis를 시작하는 첫 시험 실행이 image 부재로 실패했다.

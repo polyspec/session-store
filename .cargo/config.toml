@@ -2,8 +2,3 @@
 # linker must leave those symbols undefined.
 [target.'cfg(target_os = "macos")']
 rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]
-
-# SR-1.5: getrandom 0.3 takes the random bytes of a new identifier from crypto.getRandomValues of the host on wasm32, a
-# backend that it selects only by this cfg beside its feature wasm_js.
-[target.wasm32-unknown-unknown]
-rustflags = ["--cfg", 'getrandom_backend="wasm_js"']

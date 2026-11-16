@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The core selects the random source of wasm32 by the feature `wasm_js` of getrandom alone: `.cargo/config.toml` no longer sets `--cfg getrandom_backend="wasm_js"`, which getrandom 0.3.4 does not need, and a crate that builds the core for wasm32 sets nothing (SR-1.5).
 - A store of Redis that connects with TLS reads the trust store of the machine once in a process and gives its authorities to the clients of a server, of Sentinel and its primary, and of a Cluster; redis-rs read it for each connection inside its connection timeout of 1 second, which the read of the keychain of macOS could exceed (SR-6.1a). `redis` is the fork of redis-rs 1.8.2 at the tag `redis-1.8.2-p1` (docs/operations/dependencies.md).
 - Seven cases of the memory store that chain calls are cases of `memory_store.get.made` and `memory_store.set.made`, which the bindings run: the later calls are their `after`, `renewals` is read there as a property, and `record`, the record that the same calls write on a record session, is a key that the Rust tests read (`reads`), because no member gives the record (SE-10.1, SE-1.2). The case whose value shares an object and a reference stays in the group `store`.
 - The target that clones the repositories that `Cargo.lock` pins from Git into `var/deps` (`scripts/deps.mts`) is `make install-deps`, not `make install-binding`: binding is installed only as the npm package (T1.32), and `make tool-pins-test` fails a Makefile that names `install-binding`, which this target, which installs no binding, did.

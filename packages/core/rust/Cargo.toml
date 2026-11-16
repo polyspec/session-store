@@ -26,8 +26,8 @@ polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag =
 # PHP values and their serialize form (SE-1.5, SE-6).
 polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.12" }
 
-# SR-1.5: on wasm32 the random source is crypto.getRandomValues of the host, through the backend wasm_js, which
-# .cargo/config.toml selects with --cfg getrandom_backend="wasm_js".
+# SR-1.5: on wasm32 the random source is crypto.getRandomValues of the host: getrandom 0.3.4 selects the backend wasm_js
+# by this feature alone, so a crate that builds this one for wasm32 sets no cfg.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
 

@@ -154,7 +154,8 @@
         "packages/ts/package.json"
       ],
       "targets": [
-        "release-coverage"
+        "release-coverage",
+        "release-candidate-assets"
       ]
     },
     {

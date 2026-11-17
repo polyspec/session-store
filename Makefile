@@ -77,12 +77,12 @@ CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
 .PHONY: bootstrap install-deps php-serialization-checkout php-serialization-python php-serialization-php php-serialization-go install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test link unlink link-check servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
-	release-coverage release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
+	release-coverage release-candidate-assets release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
 	release-recipes
 
 # The targets of each job of .github/workflows/ci.yml, which ci-targets of kit runs past failures into CI_REPORT. The
 # job test runs make test after its prerequisites (ci-test).
-CI_SHARED := docs-check owner-validate workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test release-coverage
+CI_SHARED := docs-check owner-validate workflows-test tool-pins-test servers-test redis-state-test install-bay-test commit-names-check commit-names-test release-coverage release-candidate-assets
 CI_RUST := lint-rust fmt-check binding-check
 # The tests of the bindings of every target of the contract (binding BD-27), which the job bindings runs, so that no
 # binding package is released untested.
@@ -137,6 +137,7 @@ install-rust:
 # a job only provision the runner (checkout, setup-php, the bootstrap action) or carry a result (upload-artifact). The
 # servers of a test run are started and removed by scripts/test-run.mts inside the test target, also when it fails.
 ci-shared:
+	$(MAKE) --no-print-directory install-tools TOOLS=uv
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_SHARED)
 
 ci-rust:
@@ -494,6 +495,14 @@ release-recipes:
 # Every manifest of the checkout is classified in config/release.json: released by a tag or not released, with its reason.
 release-coverage:
 	$(NODE) $(KIT)/release.mjs coverage
+
+# The archive of every package of a release, built from the committed HEAD with no tag, for the version of the first
+# section ## X.Y.Z of the change log (kit K1286): the release makes and pushes its tag before it builds the archives, so
+# without this target a failure of those steps first shows after the tag. kit refuses a checkout with a changed or an
+# untracked path, and reads the environment of the Python project with the uv of mise.toml. The job shared of ci runs it;
+# the steps that need the tag and GitHub (release-tag, release-publish, release-undraft) are not run.
+release-candidate-assets:
+	RELEASE_ASSETS=var/release-candidate/assets $(NODE) $(KIT)/release.mjs candidate-assets
 
 # Tags the commit of the successful run RUN of the workflow ci on main with the version of the first section ## X.Y.Z of
 # its change log and writes TAG and VERSION for the steps that follow; AUTO for a run that the workflow ci started.

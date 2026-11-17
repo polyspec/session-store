@@ -26,7 +26,7 @@ CORE := -p polyspec-session-store -p polyspec-session-store-core -p polyspec-ses
 # The library crate, whose name the binding crates take with the suffix of their target.
 LIBRARY := polyspec-session-store
 # The five targets of the contract (binding BD-27).
-TARGETS := php python node go wasm
+BINDING_TARGETS := php python node go wasm
 # binding, the npm package @polyspec/binding of the release that package.json pins by the URL of its asset and
 # package-lock.json by its integrity; make install-packages installs it with the other packages. Its release and the tag
 # of polyspec-binding-core in the manifests are one release (binding CK-20).
@@ -75,7 +75,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-deps php-serialization-checkout php-serialization-php php-serialization-go install-tools install-packages install-php-tools install-python-packages toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test link unlink link-check servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-deps php-serialization-checkout php-serialization-php php-serialization-go install-tools install-packages install-php-tools install-python-packages toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test link unlink link-check servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(BINDING_TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-candidate-assets release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
 	release-recipes
@@ -352,7 +352,7 @@ fmt-check:
 
 # binding reads the crates with cargo metadata, which Cargo runs offline here, after make install-rust fetched them, so
 # that no check depends on the network.
-binding-check $(addprefix bindings-,$(TARGETS)): export CARGO_NET_OFFLINE := true
+binding-check $(addprefix bindings-,$(BINDING_TARGETS)): export CARGO_NET_OFFLINE := true
 
 # The contract check and the comparison of the tracked binding packages with what binding writes (CK-19).
 binding-check:
@@ -362,9 +362,9 @@ binding-check:
 # Go files zz_generated_*.go of packages/go, which are tracked (binding GN-3).
 # Each target of the contract is generated apart (binding GN-1b), so that a target that the generator refuses fails
 # its own make targets alone, with status 1, and the others build and test.
-bindings: $(addprefix bindings-,$(TARGETS))
+bindings: $(addprefix bindings-,$(BINDING_TARGETS))
 
-$(addprefix bindings-,$(TARGETS)): bindings-%:
+$(addprefix bindings-,$(BINDING_TARGETS)): bindings-%:
 	$(BINDING) generate --root . --target $* --cargo "$(CARGO)"
 
 # Every target of the contract (binding BD-27), each with the tests that binding generates and the contract cases of

@@ -510,7 +510,12 @@ the statement that it checks. A PHP value and its serialize form are those of ph
     and Ubuntu, where the command then stays in the group of the run and ignores SIGINT, and macOS has no `setsid`
     program. When the run ends, fails or is stopped by SIGINT or SIGTERM, the script waits for the tests, runs `down` for every Compose file that the directory still
     holds and removes the directory. An `up` that the signal stops removes what it created. A project that `down`
-    does not remove fails the run, which then keeps the directory and names the file.
+    does not remove fails the run, which then keeps the directory and names the file. A run and its command that
+    SIGKILL ends remove nothing, so a run writes its mark, the id and the start of its process, into its directory,
+    and a run that starts removes the run whose mark names a process that is gone: no process has that id, or the
+    process that has it started at another time, because a process id is used again. It runs `down` for every Compose
+    file of that directory, removes the directory and writes which run and how many projects it removed. A run whose
+    process lives and a directory without a mark are left as they are.
 
   A case with `text_replies` (the model gives each record as a status reply, SR-5.1), with `status_replies` (the model
   gives the status reply `OK` to every command of a name that it lists, SR-5.1) or with `error_replies` (the model gives

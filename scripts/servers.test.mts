@@ -387,3 +387,51 @@ test('the test of TLS trusts bay through the trust store of the machine and chan
   assert.match(readFileSync(join(tests, 'server.rs'), 'utf8'), /Trial::test\("a_tls_connection_reads_and_writes"/);
   assert.equal(files.includes('tls.rs'), false, 'tests/tls.rs is a test binary of its own');
 });
+
+/** The start of the process `pid` as ps gives it, the mark of a run beside its process id; empty when no process has it. */
+const startOf = (pid: number | string): string => spawnSync('ps', ['-o', 'lstart=', '-p', String(pid)], { encoding: 'utf8' }).stdout.trim();
+
+test('a run removes the servers and the directory of a run whose process is gone, and leaves a run that lives', (t) => {
+  // T1.77: a run that SIGKILL ends, with its command, removes nothing, and no process can: its servers stay, 7 of them
+  // after a kill of make test. The directory of that run stays too, with the mark of the run, the id and the start of
+  // its process, and the Compose file of each project, so the next run runs down for each, removes the directory and
+  // says so, as the run itself does at its end. A process id is used again, so a run is gone when no process has its
+  // id or the process that has it started at another time. A run whose process lives is left as it is, and so is a
+  // directory without a mark, which is no run that this program can judge.
+  const made = stand(t, present);
+  const temporary = join(made.directory, 'tmp');
+  const gone = spawnSync('/bin/sh', ['-c', 'echo $$'], { encoding: 'utf8' }).stdout.trim();
+  const runs = {
+    dead: { pid: Number(gone), started: 'Thu Jan  1 00:00:00 1970', projects: ['p-2-0', 'p-2-1'] },
+    reused: { pid: process.pid, started: 'Thu Jan  1 00:00:00 1970', projects: ['p-4-0'] },
+    alive: { pid: process.pid, started: startOf(process.pid), projects: ['p-3-0'] },
+    unmarked: { pid: Number(gone), started: undefined, projects: ['p-5-0'] },
+  };
+  const folder = (name: keyof typeof runs): string => join(temporary, `session-store-run-${name}`);
+  const file = (name: keyof typeof runs, project: string): string => join(folder(name), `session-store-test-${runs[name].pid}`, project, 'compose.yaml');
+  for (const name of Object.keys(runs) as (keyof typeof runs)[]) {
+    for (const project of runs[name].projects) {
+      mkdirSync(dirname(file(name, project)), { recursive: true });
+      writeFileSync(file(name, project), 'services: {}\n');
+    }
+    if (runs[name].started !== undefined) writeFileSync(join(folder(name), 'run.json'), JSON.stringify({ pid: runs[name].pid, started: runs[name].started }));
+  }
+  assert.notEqual(runs.alive.started, '');
+  const ended = runTests(t, present, `${leave([])}`, '/bin/sh', [], { TMPDIR: temporary }, made);
+  assert.equal(ended.status, 0);
+  assert.equal(ended.stderr, [
+    `scripts/test-run.mts: the run of the process ${gone} is gone; its 2 projects and its directory ${folder('dead')} are removed`,
+    `scripts/test-run.mts: the run of the process ${process.pid} is gone; its 1 project and its directory ${folder('reused')} are removed`,
+    '',
+  ].join('\n'));
+  assert.deepEqual(ended.calls, [
+    ...CHECKED,
+    ['bay', '-f', file('dead', 'p-2-0'), 'down'],
+    ['bay', '-f', file('dead', 'p-2-1'), 'down'],
+    ['bay', '-f', file('reused', 'p-4-0'), 'down'],
+  ]);
+  assert.equal(existsSync(folder('dead')), false, 'the directory of the run that is gone stays');
+  assert.equal(existsSync(folder('reused')), false, 'the directory of the run whose process id another process has stays');
+  assert.equal(existsSync(file('alive', 'p-3-0')), true, 'the directory of a run that lives is removed');
+  assert.equal(existsSync(file('unmarked', 'p-5-0')), true, 'a directory without the mark of a run is removed');
+});

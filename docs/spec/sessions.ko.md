@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 2bfdafd77e10be2edf538ce619fe50107878c70ac4e3345eb9fa7c20a90ec788 -->
+<!-- source-sha256: 4c422870ab4e2004b4ea3cd40eacc1c4990b1f7004b53419e67b1d023d3bb5d7 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -493,7 +493,11 @@
     프로그램이 없다. run이 끝날 때, 실패할 때, SIGINT나 SIGTERM으로 멈출
     때 script는 시험을 기다리고, 디렉터리에 남은 모든 Compose 파일에 `down`을 실행하고, 디렉터리를 지운다. 신호가
     멈춘 `up`은 자기가 만든 것을 지운다. `down`이 지우지 못한 프로젝트가 있으면 run은 실패하고, 디렉터리를 남기고 그
-    파일을 적는다.
+    파일을 적는다. SIGKILL로 끝난 run과 그 명령은 아무것도 지우지 못한다. 그래서 run은 자기 표지, 곧 process의 id와
+    시작 시각을 자기 디렉터리에 적고, 시작하는 run은 표지가 사라진 process를 가리키는 run을 지운다. 그 id의
+    process가 없거나, 그 id의 process가 다른 시각에 시작한 경우다. process id는 다시 쓰이기 때문이다. 그 디렉터리의
+    모든 Compose 파일에 `down`을 실행하고, 디렉터리를 지우고, 어느 run의 project 몇 개를 지웠는지 적는다. process가
+    살아 있는 run과 표지 없는 디렉터리는 그대로 둔다.
 
   `text_replies`를 가진 case(모델이 각 레코드를 status 응답으로 준다, SR-5.1), `status_replies`를 가진 case(모델이
   거기 적힌 이름의 모든 명령에 status 응답 `OK`를 준다, SR-5.1), `error_replies`를 가진 case(모델이 한 이름의 모든

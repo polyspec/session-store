@@ -218,7 +218,12 @@ fn a_cluster_with_an_acl_user_keeps_sessions() -> Result<(), Failed> {
     }
     let urls = |password: &str| hosts.iter().map(|host| format!("redis://alice:{password}@{host}/")).collect();
     let runtime = runtime()?;
-    runtime.block_on(round_trip(Setting::Cluster { urls: urls("sesame"), user: None, password: None, authorities: None }))?;
+    runtime.block_on(round_trip(Setting::Cluster {
+        urls: urls("sesame"),
+        user: None,
+        password: None,
+        authorities: None,
+    }))?;
     let without = Setting::Cluster { urls: urls("wrongword"), user: None, password: None, authorities: None };
     refused(&runtime, without, "a wrong password of a Cluster")?;
     // SR-6.8: the user and password of a Cluster beside its URLs, which give none, reach each of its nodes.
@@ -454,6 +459,26 @@ fn the_stores_of_one_setting_share_one_connection() -> Result<(), Failed> {
     Ok(())
 }
 
+fn a_failed_connection_is_made_again_by_the_next_request() -> Result<(), Failed> {
+    // SR-6.9, SR-6.4: the shared connection of a setting ends with the runtime that drives it; the request that finds it
+    // ended fails with connection, and the next request of an equal setting connects again.
+    let (_project, server) = plain(&[])?;
+    let setting = Setting::Server { url: format!("redis://{}/", server.name), authorities: None };
+    let first = runtime()?;
+    first.block_on(round_trip(setting.clone()))?;
+    drop(first);
+    let second = runtime()?;
+    let store = RedisSessions::new(&setting, &options()).map_err(failed)?;
+    match second.block_on(store.open(Some(&[b'a'; 32]))) {
+        Err(error) if error.kind() == "connection" => {}
+        Ok(opened) => {
+            second.block_on(opened.close()).map_err(failed)?;
+        }
+        Err(error) => return Err(format!("the request on an ended connection gives {error:?}").into()),
+    }
+    second.block_on(round_trip(setting))
+}
+
 fn main() {
     let arguments = Arguments::from_args();
     let trials = vec![
@@ -466,6 +491,10 @@ fn main() {
             an_acl_user_connects_and_a_wrong_password_tells_nothing,
         ),
         Trial::test("the_stores_of_one_setting_share_one_connection", the_stores_of_one_setting_share_one_connection),
+        Trial::test(
+            "a_failed_connection_is_made_again_by_the_next_request",
+            a_failed_connection_is_made_again_by_the_next_request,
+        ),
         Trial::test("sentinel_names_the_primary", sentinel_names_the_primary),
         Trial::test("a_cluster_keeps_sessions", a_cluster_keeps_sessions),
         Trial::test("a_cluster_with_an_acl_user_keeps_sessions", a_cluster_with_an_acl_user_keeps_sessions),

@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 6827802ebc22a105d6054468160818912aa2f5b3595cda0ac82b8f6560c0d801 -->
+<!-- source-sha256: e9b87a61d8204b0241a1f13d7ca9b14d2e393e70dc53bf37f556f8bcb8c7ce87 -->
 
 ## Unreleased
 
+- `.githooks`의 hook `commit-msg`가 AI 도구의 꼬리말이나 identity 줄이 있는 커밋 메시지를 커밋이 생기기 전에 kit check-commits의 규칙 `commit-ai-footer`, `commit-ai-identity`로 거부한다. `make hooks`가 `core.hooksPath`를 `.githooks`로 두고, `make hooks-check`는 그것이 없는 checkout을 실패시키며, `make commit-msg-hook MESSAGE=<file>`이 hook의 검사를 돌린다. 전에는 메시지를 검사하는 hook이 없었다.
 - 바인딩은 binding 0.0.17과, binding 0.0.17 위에서 빌드한 php-serialization 0.0.15를 쓴다. 그래서 `Cargo.lock`에는 `polyspec-binding-core`가 하나만 있다(CK-20). `make test-go`는 link flag를 `binding go-link`에서 받고, 생성 파일의 tag로 Go 시험을 빌드한다. Cargo를 읽는 모든 binding 명령은 `--cargo "$(CARGO)"`를 받는다. `packages/ts`는 php-serialization을 버전 `0.0.15`로 요구하고, 루트 `package.json`이 그 release의 asset을 적는다.
 - changelog와 `docs/plans`의 checklist는 kit의 driver `kit-changelog`, `kit-twin`, `kit-checklist`로 합친다. 이 driver들은 `make twin-merge`를 돌린다. `make hooks`가 그것을 선언하고, `make hooks-check`는 그것이 없는 checkout을 실패시킨다. 전에는 git이 자기 기본 merge로 합쳤고, 그 merge는 한쪽이 상태를 바꾼 task 행을 두 번 남긴다.
 - core는 wasm32의 난수 원천을 getrandom의 feature `wasm_js`만으로 고른다. getrandom 0.3.4에는 필요 없는 `--cfg getrandom_backend="wasm_js"`를 `.cargo/config.toml`이 더는 두지 않고, core를 wasm32로 빌드하는 crate도 아무것도 설정하지 않는다(SR-1.5).

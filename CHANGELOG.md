@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The hook `commit-msg` of `.githooks` refuses a commit message with the footer or the identity line of an AI tool, through the rules `commit-ai-footer` and `commit-ai-identity` of check-commits of kit, before the commit exists: `make hooks` points `core.hooksPath` at `.githooks`, `make hooks-check` fails a checkout without it, and `make commit-msg-hook MESSAGE=<file>` runs the check of the hook. Before, no hook checked the message.
 - The bindings use binding 0.0.17 and php-serialization 0.0.15, which is built on binding 0.0.17, so `Cargo.lock` holds one `polyspec-binding-core` (CK-20). `make test-go` takes its link flags from `binding go-link` and builds the Go tests with the tags of the generated files; every binding command that reads Cargo takes `--cargo "$(CARGO)"`. `packages/ts` requires php-serialization by its version, `0.0.15`, and the root `package.json` names the asset of that release.
 - The changelogs and the checklists of `docs/plans` merge with the drivers of kit, `kit-changelog`, `kit-twin` and `kit-checklist`, which run `make twin-merge`: `make hooks` declares them and `make hooks-check` fails a checkout without them. Before, git merged them by its own merge, which keeps a task row twice when one side changes its state.
 - The core selects the random source of wasm32 by the feature `wasm_js` of getrandom alone: `.cargo/config.toml` no longer sets `--cfg getrandom_backend="wasm_js"`, which getrandom 0.3.4 does not need, and a crate that builds the core for wasm32 sets nothing (SR-1.5).

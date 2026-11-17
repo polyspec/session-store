@@ -212,7 +212,7 @@ docs-check:
 # The hook commit-msg of .githooks refuses a message with the footer or the identity line of an AI tool, through the rules
 # commit-ai-footer and commit-ai-identity of check-commits of kit, before the commit exists: a pushed commit is not written
 # again. make hooks points core.hooksPath at .githooks and makes the hook executable; hooks-check fails a checkout without it.
-.PHONY: hooks hooks-check twin-merge
+.PHONY: hooks hooks-check twin-merge commit-msg-hook
 TWIN_MERGE_DRIVER := make --no-print-directory twin-merge MERGE="%O %A %B %P"
 HOOK_DECLARATION := --hooks-path .githooks --hook commit-msg --merge 'CHANGELOG.md=kit-changelog' --merge 'CHANGELOG.ko.md=kit-twin' \
 	--merge 'docs/plans/*/checklist.md=kit-checklist' --merge 'docs/plans/*/checklist.ko.md=kit-twin' \
@@ -226,6 +226,10 @@ hooks-check:
 # The merge driver of a Korean twin, a changelog and a checklist; git runs it with MERGE="<base> <ours> <theirs> <path>".
 twin-merge:
 	@$(NODE) $(KIT)/twin-merge.mjs $(MERGE)
+
+# The check of the hook commit-msg; git gives the hook the file of the message, which it passes as MESSAGE.
+commit-msg-hook:
+	$(NODE) $(KIT)/check-commits.mjs --message $(MESSAGE) --rules commit-ai-footer,commit-ai-identity
 
 # Writes the source-sha256 of each English document into the Korean twins that PATHS names, after they are translated
 # again; with no PATHS it lists each twin whose source moved.

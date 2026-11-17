@@ -335,6 +335,23 @@ impl Inner {
         mut next: impl FnMut(Option<Reply>) -> Result<Step<T>, Error>,
         prepare: bool,
     ) -> Result<T, Error> {
+        let result = self.run_once(&mut next, prepare).await;
+        if matches!(result, Err(Error::Connection { .. })) {
+            // SR-6.9, SR-6.4: a connection that failed, also one whose runtime ended, is made again by the next
+            // request of the setting.
+            let mut links = self.links.lock().await;
+            if links.as_ref().is_some_and(|links| links.process == std::process::id()) {
+                *links = None;
+            }
+        }
+        result
+    }
+
+    async fn run_once<T>(
+        &self,
+        next: &mut impl FnMut(Option<Reply>) -> Result<Step<T>, Error>,
+        prepare: bool,
+    ) -> Result<T, Error> {
         let mut connection = {
             let mut links = self.links.lock().await;
             let process = std::process::id();

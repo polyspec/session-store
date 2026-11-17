@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 835a1635cfc10eefcfd67f0aeea1aaad3309ce45c260693cee1fa0ebb19e578f -->
+<!-- source-sha256: fc994c3c7f56837d27a8201d90ba7d5285740cb6306e151d570736dbb7e47225 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -79,3 +79,4 @@
 | T1.60 | `CHANGELOG.md`, `CHANGELOG.ko.md`와 `docs/plans`의 checklist는 kit의 driver(K354) `kit-changelog`, `kit-twin`, `kit-checklist`로 합친다. 이 driver들은 checkout의 `make twin-merge`를 돌린다. Makefile이 merge를 선언하지 않아서 git이 자기 기본 merge로 합쳤다. 그 merge는 한쪽이 상태를 바꾼 task 행을 두 번 남기고, 한국어 짝의 source-sha256을 낡은 채로 둔다(binding B2.424). `make hooks`가 merge와 driver를 선언하고, `make hooks-check`는 그것이 없는 checkout을 실패시킨다. | `Makefile`; `CHANGELOG.md`; `CHANGELOG.ko.md` | make hooks-check | [v] |
 | T1.61 | AI 도구의 꼬리말이나 identity 줄이 있는 커밋 메시지는 커밋이 생기기 전에 거부된다. `.githooks`의 `commit-msg` hook이 `make commit-msg-hook`을 돌리고, 그것이 kit check-commits의 규칙 `commit-ai-footer`, `commit-ai-identity`를 적용한다. 메시지를 검사하는 hook이 없어서 이 lane의 커밋 42개가 AI 도구의 co-author 꼬리말을 달았고, push 전에 다시 쓰였다. `make hooks`가 `core.hooksPath`를 `.githooks`로 두고, `make hooks-check`는 그것이 없는 checkout을 실패시킨다. | `.githooks/commit-msg`; `Makefile`; `CHANGELOG.md`; `CHANGELOG.ko.md` | make hooks-check; make commit-msg-hook | [v] |
 | T1.62 | TLS 시험은 기계의 trust store만으로 bay를 믿고 `SSL_CERT_FILE`을 쓰지 않는다(SE-10.4). 시험 프로세스가 bay가 인증서를 발급한 TLS 서버에 두 번 연결한다(SR-6.1). redis-rs가 연결마다 trust store를 읽지 않는다는 것(SR-6.1a)은 빌드의 사실이고, `make servers-test`가 `cargo metadata`의 resolve features에서 offline으로 읽는다. redis-rs는 `tls-rustls-webpki-roots`로 빌드된다. T1.46의 증명은 자기 프로세스에 `SSL_CERT_FILE`을 주었고, `servers-test`의 시험 검사가 그것을 거부한다. | `packages/redis/rust/tests/server.rs`; `scripts/servers.test.mts`; `docs/operations/dependencies.md`; `docs/operations/dependencies.ko.md`; `CHANGELOG.md`; `CHANGELOG.ko.md` | make servers-test; make test | [v] |
+| T1.63 | kit 0.0.119가 0.0.116을 그 asset의 URL과 integrity로 대신한다. `link.mjs cargo`는 cargo의 줄을 cargo가 쓴 순서대로 쓰고(K1283), link는 provider의 Python package를 그 dist-info가 설치됐을 때만 연결하며(K1280) maturin의 `python-source`를 읽고(K1279), install-tools는 selector `maturin`을 받는다(K1278). `make install-packages` 뒤에 kit의 검사들이 통과한다. | `package.json`; `package-lock.json`; `CHANGELOG.md`(.ko) | make docs-check; make hooks-check; make link-check; make tool-pins-test | [v] |

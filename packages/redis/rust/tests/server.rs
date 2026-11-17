@@ -190,6 +190,132 @@ fn a_cluster_keeps_sessions() -> Result<(), Failed> {
     runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes, authorities: None }))
 }
 
+fn a_cluster_with_an_acl_user_keeps_sessions() -> Result<(), Failed> {
+    // SR-6.6, SR-6.3: the user and password of a Cluster are those of its addresses. The nodes hold the ACL user
+    // alice beside the default user, with which the nodes and `redis-cli --cluster create` speak to each other.
+    let names = ["node-0", "node-1", "node-2"];
+    let mut arguments = PLAIN.to_vec();
+    arguments.extend_from_slice(&["--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf"]);
+    arguments.extend_from_slice(&["--user", "alice", "on", ">sesame", "~*", "&*", "+@all"]);
+    let mut project =
+        Project::new(names.iter().map(|name| Service::new(name, PORT, &arguments)).collect()).map_err(Failed::from)?;
+    project.start().map_err(Failed::from)?;
+    let mut reports = Vec::new();
+    let mut hosts = Vec::new();
+    let mut addresses = Vec::new();
+    for name in names {
+        reports.push(project.follow(name).map_err(Failed::from)?);
+        let node = project.address(name).map_err(Failed::from)?;
+        hosts.push(node.name.clone());
+        addresses.push(format!("{}:{PORT}", node.ipv4));
+    }
+    let mut create = vec!["redis-cli", "--cluster", "create"];
+    create.extend(addresses.iter().map(String::as_str));
+    create.extend(["--cluster-replicas", "0", "--cluster-yes"]);
+    project.exec("node-0", &create).map_err(Failed::from)?;
+    for report in &mut reports {
+        report.wait_for("Cluster state changed: ok").map_err(Failed::from)?;
+    }
+    let urls = |password: &str| hosts.iter().map(|host| format!("redis://alice:{password}@{host}/")).collect();
+    let runtime = runtime()?;
+    runtime.block_on(round_trip(Setting::Cluster { urls: urls("sesame"), authorities: None }))?;
+    refused(&runtime, Setting::Cluster { urls: urls("wrongword"), authorities: None }, "a wrong password of a Cluster")
+}
+
+/// Opens a session with `setting`, whose connection must fail with the kind `connection` (SR-6.4).
+fn refused(runtime: &tokio::runtime::Runtime, setting: Setting, what: &str) -> Result<(), Failed> {
+    let opened = runtime.block_on(async {
+        let store = RedisSessions::new(&setting, &options()).map_err(failed)?;
+        Ok::<_, Failed>(store.open(Some(&[b'a'; 32])).await)
+    })?;
+    match opened {
+        Err(error) if error.kind() == "connection" => Ok(()),
+        other => Err(format!("{what} gives {other:?}").into()),
+    }
+}
+
+/// An authority that the trust store of the machine does not hold and the certificate that it issues for `host`: the
+/// PEM texts of the authority, of the certificate and of its key. The test makes them, so it reads no file of bay.
+fn issued(host: &str) -> Result<(String, String, String), Failed> {
+    let authority_key = rcgen::KeyPair::generate().map_err(failed)?;
+    let mut authority = rcgen::CertificateParams::new(Vec::<String>::new()).map_err(failed)?;
+    authority.is_ca = rcgen::IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
+    authority.distinguished_name.push(rcgen::DnType::CommonName, "the authority of a test of session-store");
+    authority.key_usages = vec![rcgen::KeyUsagePurpose::KeyCertSign, rcgen::KeyUsagePurpose::CrlSign];
+    let authority_pem = authority.self_signed(&authority_key).map_err(failed)?.pem();
+    let issuer = rcgen::Issuer::new(authority, authority_key);
+    let key = rcgen::KeyPair::generate().map_err(failed)?;
+    let certificate = rcgen::CertificateParams::new(vec![host.to_owned()])
+        .map_err(failed)?
+        .signed_by(&key, &issuer)
+        .map_err(failed)?;
+    Ok((authority_pem, certificate.pem(), key.serialize_pem()))
+}
+
+fn a_file_of_authorities_is_the_only_trust_of_its_setting() -> Result<(), Failed> {
+    // SR-6.7: the server `own` serves TLS with a certificate of an authority that the test makes and the trust store
+    // of the machine does not hold, and the server `bay` with the certificate that bay issues. A setting that names
+    // the file of that authority connects to `own`; without the file the connection fails, because the machine does
+    // not trust the authority; and with the file a connection to `bay` fails, because the file alone is trusted.
+    let mut project =
+        Project::new(vec![Service::new("own", PORT, &PLAIN).mount("own", true), Service::new("bay", PORT, &PLAIN)])
+            .map_err(Failed::from)?;
+    let host = project.planned("own").map_err(Failed::from)?.host.clone();
+    let (authority, certificate, key) = issued(&host)?;
+    let directory = project.directory().join("own");
+    std::fs::create_dir_all(&directory).map_err(failed)?;
+    for (name, text) in [("authority.pem", &authority), ("server.pem", &certificate), ("server.key", &key)] {
+        std::fs::write(directory.join(name), text).map_err(failed)?;
+    }
+    let port = PORT.to_string();
+    let (served, served_key, trusted) =
+        (format!("{MOUNT}/server.pem"), format!("{MOUNT}/server.key"), format!("{MOUNT}/authority.pem"));
+    project
+        .extend(
+            "own",
+            &[
+                "--port",
+                "0",
+                "--tls-port",
+                &port,
+                "--tls-cert-file",
+                &served,
+                "--tls-key-file",
+                &served_key,
+                "--tls-ca-cert-file",
+                &trusted,
+                "--tls-auth-clients",
+                "no",
+            ],
+        )
+        .map_err(Failed::from)?;
+    tls_only(&mut project, "bay", PORT, false)?;
+    project.start().map_err(Failed::from)?;
+    let own = format!("rediss://{}/", project.address("own").map_err(Failed::from)?.name);
+    let bay = format!("rediss://{}/", project.address("bay").map_err(Failed::from)?.name);
+    let file = directory.join("authority.pem").to_str().ok_or("the path of the authority is no text")?.to_owned();
+    let runtime = runtime()?;
+    runtime.block_on(round_trip(Setting::Server { url: own.clone(), authorities: Some(file.clone()) })).map_err(
+        |error| {
+            let message = match error.message() {
+                Some(message) => message.to_owned(),
+                None => String::new(),
+            };
+            Failed::from(format!("{message}\nthe server own wrote:\n{}", project.output("own")))
+        },
+    )?;
+    refused(
+        &runtime,
+        Setting::Server { url: own, authorities: None },
+        "a server of an authority that the machine does not trust",
+    )?;
+    refused(
+        &runtime,
+        Setting::Server { url: bay, authorities: Some(file) },
+        "a server of bay with the authorities of a file",
+    )
+}
+
 fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
     // SR-6.1: rediss:// to a server that accepts TLS alone, with the certificate that bay issues for its name, at the
     // paths in the container that the plan of the project gives. The store verifies the server against the trust
@@ -304,6 +430,11 @@ fn main() {
         ),
         Trial::test("sentinel_names_the_primary", sentinel_names_the_primary),
         Trial::test("a_cluster_keeps_sessions", a_cluster_keeps_sessions),
+        Trial::test("a_cluster_with_an_acl_user_keeps_sessions", a_cluster_with_an_acl_user_keeps_sessions),
+        Trial::test(
+            "a_file_of_authorities_is_the_only_trust_of_its_setting",
+            a_file_of_authorities_is_the_only_trust_of_its_setting,
+        ),
         Trial::test("a_tls_connection_reads_and_writes", a_tls_connection_reads_and_writes),
         Trial::test("sentinel_of_tls_names_a_primary_of_tls", sentinel_of_tls_names_a_primary_of_tls),
         Trial::test("a_cluster_of_tls_keeps_sessions", a_cluster_of_tls_keeps_sessions),

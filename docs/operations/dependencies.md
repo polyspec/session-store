@@ -20,3 +20,14 @@ and `set_client_to_redis_certificates`, and `ClusterClientBuilder::certs`. No co
 webpki.
 
 The feature is removed when a release of redis-rs does not read the trust store for a connection whose roots are given.
+
+## rcgen: a dependency of the tests alone
+
+`packages/redis/rust/Cargo.toml` takes `rcgen` 0.14.10 in `[dev-dependencies]`, without its default features and with
+`crypto`, `pem` and `ring`, the cryptography that rustls already brings. The test
+`a_file_of_authorities_is_the_only_trust_of_its_setting` (`packages/redis/rust/tests/server.rs`, SR-6.7) makes with it an
+authority that the trust store of the machine does not hold and the certificate that the authority issues for a
+server, so that a setting is shown to trust the authorities of its file alone. The test needs an authority that the
+machine does not trust, and bay adds its own to the trust store of the machine; the test makes the files itself, runs
+no `openssl` of the host and reads no file of bay. No released crate depends on `rcgen`: a dev-dependency is built for
+the tests of its crate only. `Cargo.lock` also names the optional dependencies of `rcgen`, which no build compiles.

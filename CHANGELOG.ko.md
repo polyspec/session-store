@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: b659ce8c821cc5692a8534224e4ce20e0cae3fda9c3be2caecfc5167fe9c5e1f -->
+<!-- source-sha256: e4546664518685e22a0c2c3e6d53bf50a90e196b26ceb3c9dcd579adfd386b66 -->
 
 ## Unreleased
 
+- 실제 서버에 대한 Redis 저장소의 시험이 주소의 ACL 사용자를 쓰는 Cluster와, 자기 파일의 인증 기관만 믿는 설정을 보인다(SR-6.6, SR-6.7, T1.81). 둘째 시험은 시험 전용 의존성인 `rcgen`으로 인증 기관과 인증서를 만든다(docs/operations/dependencies.md).
 - Redis 저장소의 각 연결 설정은 `authorities`, 곧 PEM 인증서 파일의 경로를 받거나 받지 않는다(SR-6.7, T1.81). 그것이 있으면 그 설정의 모든 TLS 연결이 그 파일의 인증 기관만 믿는다. 기계의 신뢰 저장소에 인증 기관이 없는 서버를 위한 것이다. 그것을 주고 어디에도 TLS로 연결하지 않는 설정, 읽을 수 없거나 PEM 인증서가 없는 파일은 `invalid_setting`으로 실패한다. 이 field는 `setting`의 세 case에 새로 생겼으므로 호출자는 그것을 적고, 파일을 주지 않을 때는 없음으로 적는다. 서버 하나와 Cluster의 TLS와 사용자와 비밀번호는 그 URL의 것이다(SR-6.6). scheme이나 사용자나 비밀번호가 서로 다른 Cluster의 주소는 이제 저장소의 검사로 `invalid_setting`이 된다.
 - Makefile의 binding target 목록의 이름은 `TARGETS`가 아니라 `BINDING_TARGETS`다(T1.80). kit의 ci-targets를 부르는 쪽이 자기 목록을 주는 명령줄의 `TARGETS`가 그 이름의 목록을 바꿨고, 그러면 `make bindings`가 호출자의 target을 생성했다.
 - `make test-python`은 php-serialization을 그 release의 wheel로 설치하고 clone에서 빌드하지 않는다(T1.59). 새 비공개 개발 root `pyproject.toml`이 platform마다 wheel을 그 asset의 URL과 sha256으로 이름하고, `uv.lock`이 그것을 잠그며, `make install-python-packages`가 그 lock을 kit이 연결하는 uv project의 환경 `.venv`에 설치하고, 시험은 checkout의 wheel을 의존 없이 거기에 설치한다. 전에는 recipe가 php-serialization의 wheel을 빌드해 둘을 pip으로 `var/venv`에 설치했다.

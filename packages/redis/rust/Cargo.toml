@@ -36,6 +36,9 @@ tokio = { version = "1.54.1", default-features = false, features = ["sync", "tim
 polyspec-session-store-core = { path = "../../core/rust", features = ["fault-test"] }
 polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.17", features = ["fault-test"] }
 libtest-mimic = "=0.8.2"
+# tests/server.rs makes an authority that the trust store of the machine does not hold and the certificate that it
+# issues for a server (SR-6.7); a dependency of the tests alone, in no released crate (docs/operations/dependencies.md).
+rcgen = { version = "=0.14.10", default-features = false, features = ["crypto", "pem", "ring"] }
 redis = { version = "=1.8.1", default-features = false, features = ["tokio-comp"] }
 serde_json = "1"
 tempfile = "3.27.0"

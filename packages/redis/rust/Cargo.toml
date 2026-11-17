@@ -16,7 +16,7 @@ path = "src/lib.rs"
 [dependencies]
 polyspec-php-serialization = { git = "https://github.com/polyspec/php-serialization.git", tag = "v0.0.15" }
 polyspec-session-store-core = { path = "../../core/rust" }
-polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.17" }
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.21" }
 # The connection (SR-6): a server, Sentinel or Cluster, TLS with rustls, an ACL user and password in the URL. The
 # feature tls-rustls-webpki-roots keeps redis-rs from reading the trust store for each connection
 # (docs/operations/dependencies.md).
@@ -34,7 +34,7 @@ tokio = { version = "1.54.1", default-features = false, features = ["sync", "tim
 # tests/contract.rs arms the fault injection points of the cases that name them, as a generated binding test does.
 # The points are in polyspec-session-store-core and judged by its feature fault-test (binding GN-5).
 polyspec-session-store-core = { path = "../../core/rust", features = ["fault-test"] }
-polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.17", features = ["fault-test"] }
+polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.21", features = ["fault-test"] }
 libtest-mimic = "=0.8.2"
 # tests/server.rs makes an authority that the trust store of the machine does not hold and the certificate that it
 # issues for a server (SR-6.7); a dependency of the tests alone, in no released crate (docs/operations/dependencies.md).

@@ -1892,6 +1892,8 @@
    "setting": {
     "kind": "cluster",
     "urls": [],
+    "user": null,
+    "password": null,
     "authorities": null
    },
    "options": {
@@ -1908,7 +1910,7 @@
    "id": "cluster_addresses_of_two_schemes_fail",
    "note": "the addresses of a Cluster that are not all redis:// or all rediss:// fail",
    "rule": [
-    "SR-6.6"
+    "SR-6.8"
    ],
    "setting": {
     "kind": "cluster",
@@ -1916,6 +1918,8 @@
      "redis://127.0.0.1:7000/",
      "rediss://127.0.0.1:7001/"
     ],
+    "user": null,
+    "password": null,
     "authorities": null
    },
    "options": {
@@ -1932,7 +1936,7 @@
    "id": "cluster_addresses_of_two_users_fail",
    "note": "the addresses of a Cluster that name two users fail",
    "rule": [
-    "SR-6.6"
+    "SR-6.8"
    ],
    "setting": {
     "kind": "cluster",
@@ -1940,6 +1944,8 @@
      "redis://alice:sesame@127.0.0.1:7000/",
      "redis://bob:sesame@127.0.0.1:7001/"
     ],
+    "user": null,
+    "password": null,
     "authorities": null
    },
    "options": {
@@ -1956,7 +1962,7 @@
    "id": "cluster_addresses_of_two_passwords_fail",
    "note": "the addresses of a Cluster that name two passwords fail",
    "rule": [
-    "SR-6.6"
+    "SR-6.8"
    ],
    "setting": {
     "kind": "cluster",
@@ -1964,6 +1970,8 @@
      "redis://alice:sesame@127.0.0.1:7000/",
      "redis://alice:another@127.0.0.1:7001/"
     ],
+    "user": null,
+    "password": null,
     "authorities": null
    },
    "options": {
@@ -2035,6 +2043,8 @@
     "urls": [
      "redis://127.0.0.1:7000/"
     ],
+    "user": null,
+    "password": null,
     "authorities": "/session-store/authorities.pem"
    },
    "options": {
@@ -2057,6 +2067,81 @@
     "kind": "server",
     "url": "rediss://127.0.0.1:6379/",
     "authorities": "/session-store/no-such-directory/authorities.pem"
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_cluster_password_beside_an_address_with_a_user_fails",
+   "note": "a password of a Cluster beside an address that gives a user and password fails",
+   "rule": [
+    "SR-6.8"
+   ],
+   "setting": {
+    "kind": "cluster",
+    "urls": [
+     "redis://alice:sesame@127.0.0.1:7000/"
+    ],
+    "user": "alice",
+    "password": "sesame",
+    "authorities": null
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_cluster_password_beside_an_address_with_a_password_fails",
+   "note": "a password of a Cluster beside an address that gives a password alone fails",
+   "rule": [
+    "SR-6.8"
+   ],
+   "setting": {
+    "kind": "cluster",
+    "urls": [
+     "redis://:sesame@127.0.0.1:7000/"
+    ],
+    "user": null,
+    "password": "sesame",
+    "authorities": null
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_cluster_user_without_a_password_fails",
+   "note": "a user of a Cluster without a password fails",
+   "rule": [
+    "SR-6.8"
+   ],
+   "setting": {
+    "kind": "cluster",
+    "urls": [
+     "redis://127.0.0.1:7000/"
+    ],
+    "user": "alice",
+    "password": null,
+    "authorities": null
    },
    "options": {
     "lock_expire": 30

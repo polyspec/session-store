@@ -1233,6 +1233,26 @@
             },
             {
               "name": [
+                "user"
+              ],
+              "type": {
+                "optional": "text"
+              },
+              "required": true,
+              "reason": "SR-6.8"
+            },
+            {
+              "name": [
+                "password"
+              ],
+              "type": {
+                "optional": "text"
+              },
+              "required": true,
+              "reason": "SR-6.8"
+            },
+            {
+              "name": [
                 "authorities"
               ],
               "type": {

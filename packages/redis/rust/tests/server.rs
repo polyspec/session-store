@@ -187,11 +187,11 @@ fn a_cluster_keeps_sessions() -> Result<(), Failed> {
     for report in &mut reports {
         report.wait_for("Cluster state changed: ok").map_err(Failed::from)?;
     }
-    runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes, authorities: None }))
+    runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes, user: None, password: None, authorities: None }))
 }
 
 fn a_cluster_with_an_acl_user_keeps_sessions() -> Result<(), Failed> {
-    // SR-6.6, SR-6.3: the user and password of a Cluster are those of its addresses. The nodes hold the ACL user
+    // SR-6.8, SR-6.3: the user and password of a Cluster are those of its addresses or beside them. The nodes hold the ACL user
     // alice beside the default user, with which the nodes and `redis-cli --cluster create` speak to each other.
     let names = ["node-0", "node-1", "node-2"];
     let mut arguments = PLAIN.to_vec();
@@ -218,8 +218,19 @@ fn a_cluster_with_an_acl_user_keeps_sessions() -> Result<(), Failed> {
     }
     let urls = |password: &str| hosts.iter().map(|host| format!("redis://alice:{password}@{host}/")).collect();
     let runtime = runtime()?;
-    runtime.block_on(round_trip(Setting::Cluster { urls: urls("sesame"), authorities: None }))?;
-    refused(&runtime, Setting::Cluster { urls: urls("wrongword"), authorities: None }, "a wrong password of a Cluster")
+    runtime.block_on(round_trip(Setting::Cluster { urls: urls("sesame"), user: None, password: None, authorities: None }))?;
+    let without = Setting::Cluster { urls: urls("wrongword"), user: None, password: None, authorities: None };
+    refused(&runtime, without, "a wrong password of a Cluster")?;
+    // SR-6.8: the user and password of a Cluster beside its URLs, which give none, reach each of its nodes.
+    let seeds: Vec<String> = hosts.iter().map(|host| format!("redis://{host}/")).collect();
+    let beside = |password: &str| Setting::Cluster {
+        urls: seeds.clone(),
+        user: Some("alice".to_owned()),
+        password: Some(password.to_owned()),
+        authorities: None,
+    };
+    runtime.block_on(round_trip(beside("sesame")))?;
+    refused(&runtime, beside("wrongword"), "a wrong password beside the URLs of a Cluster")
 }
 
 /// Opens a session with `setting`, whose connection must fail with the kind `connection` (SR-6.4).
@@ -414,7 +425,7 @@ fn a_cluster_of_tls_keeps_sessions() -> Result<(), Failed> {
     for report in &mut reports {
         report.wait_for("Cluster state changed: ok").map_err(Failed::from)?;
     }
-    runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes, authorities: None }))
+    runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes, user: None, password: None, authorities: None }))
 }
 
 fn main() {

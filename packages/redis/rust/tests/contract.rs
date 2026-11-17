@@ -418,7 +418,12 @@ fn setting_of(setting: &Value) -> Result<Setting, Failed> {
             password: text(setting, "password"),
             authorities: authorities(setting)?,
         }),
-        "cluster" => Ok(Setting::Cluster { urls: urls(setting)?, authorities: authorities(setting)? }),
+        "cluster" => Ok(Setting::Cluster {
+            urls: urls(setting)?,
+            user: text(setting, "user"),
+            password: text(setting, "password"),
+            authorities: authorities(setting)?,
+        }),
         other => Err(format!("a setting of the kind {other} is none of server, sentinel and cluster").into()),
     }
 }

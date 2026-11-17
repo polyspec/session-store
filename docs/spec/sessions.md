@@ -557,6 +557,8 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   new session reaches (SE-5.4, SE-7.2); `redis_session.close.made` closes a session that set a value, whose close
   connects to that socket and fails with `connection` (SR-6.4). `file_sessions.open.cancel` gives `cancelled` of
   `file_sessions.open` (SF-3.8) by a cancellation that fired before the call (`{"cancel": "fired"}`).
+  Its case `an_opening_without_a_cancellation_opens` leaves the cancellation out, whose default the core decides, and
+  opens the session of a found identifier without a wait (SF-3.8, binding CK-103).
   `file_session.close.made` gives `io` and `identifier_taken` of `file_session.close`: the point
   `session_store.create` fails the creation of the file of a new session with `EIO` and with `EEXIST` (SF-4.4, SF-9.2),
   because no input reaches either kind on every platform of the library. The cases of one call also reach what a

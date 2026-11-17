@@ -532,7 +532,8 @@
   `renew`의 group `file_session.<member>.made`와 `redis_session.<member>.made`는 새 세션의 시작이 닿는
   `session_store.random`을 장전한다(SE-5.4, SE-7.2). `redis_session.close.made`는 값을 set한 세션을 닫는다. 그 close는
   그 socket에 연결하므로 `connection`으로 실패한다(SR-6.4). `file_sessions.open.cancel`은 호출 전에 발동한
-  취소(`{"cancel": "fired"}`)로 `file_sessions.open`의 `cancelled`(SF-3.8)를 준다. `file_session.close.made`는
+  취소(`{"cancel": "fired"}`)로 `file_sessions.open`의 `cancelled`(SF-3.8)를 준다. 그 case `an_opening_without_a_cancellation_opens`는
+  취소를 빼고, 그 기본값은 core가 정하며, 찾은 식별자의 세션을 기다림 없이 연다(SF-3.8, binding CK-103). `file_session.close.made`는
   `file_session.close`의 `io`와 `identifier_taken`을 준다. 주입점 `session_store.create`가 새 세션 파일의 생성을
   `EIO`와 `EEXIST`로 실패시킨다(SF-4.4, SF-9.2). 라이브러리의 모든 플랫폼에서 두 kind에 닿는 입력이 없기 때문이다.
   호출 하나의 case는 쿠키 없이 만든 세션이 주는 것에도 닿는다. `file_session.close.made`는 4096겹 list를 set한 값으로

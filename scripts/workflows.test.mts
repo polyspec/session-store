@@ -32,7 +32,7 @@
 // continues on a later line is a finding.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { test } from 'node:test';
@@ -784,4 +784,28 @@ test('each job of assets.yml installs go before the release check of binding, wh
     else if (go === -1 || go > check) findings.push(`${recipe} runs the release check of binding without go installed before it`);
   }
   assert.deepEqual(findings, []);
+});
+
+test('the recipe of the job release adds the downloaded assets of each platform with their folders', () => {
+  // T1.72: the job release downloads the artifacts of the job assets into var/release/downloaded, where each asset lies
+  // in the folder of its kind (go/<platform>, npm, php-ext, wheel), in which the recipes of binding read it from
+  // var/release/assets. The line of ci-release-release that adds them runs here on such a tree: the release run of 0.0.3
+  // failed at it with "cp: -r not specified; omitting directory".
+  const recipe = readFileSync(join(root, 'Makefile'), 'utf8').split('\nci-release-release:\n')[1]?.split('\n\n')[0] ?? '';
+  const lines = recipe.split('\n').filter((line) => line.includes('var/release/downloaded'));
+  assert.equal(lines.length, 1, 'one line of ci-release-release adds the downloaded assets');
+  const directory = mkdtempSync(join(tmpdir(), 'downloaded-'));
+  const files = ['go/linux_arm64/libpolyspec_session_store_go.a', 'go/linux_arm64_musl/native-static-libs', 'npm/a.tgz', 'php-ext/a.zip', 'wheel/a.whl'];
+  for (const file of files) {
+    mkdirSync(dirname(join(directory, 'var/release/downloaded', file)), { recursive: true });
+    writeFileSync(join(directory, 'var/release/downloaded', file), file);
+  }
+  // The archives of release-assets are in var/release/assets before the line runs, and stay.
+  mkdirSync(join(directory, 'var/release/assets'), { recursive: true });
+  writeFileSync(join(directory, 'var/release/assets/archive.tgz'), 'archive');
+  execFileSync('sh', ['-ec', lines[0].trim()], { cwd: directory, stdio: ['ignore', 'ignore', 'inherit'] });
+  for (const file of [...files, 'archive.tgz']) {
+    assert.equal(existsSync(join(directory, 'var/release/assets', file)), true, `var/release/assets lacks ${file}`);
+  }
+  rmSync(directory, { recursive: true });
 });

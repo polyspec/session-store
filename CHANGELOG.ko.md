@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: b10919f8fb215f502cc04ef38d0b33c376c05e2f2872952c6da0b8bff71c6bfc -->
+<!-- source-sha256: b2c53f53ab04e14ff5da23b80a23737f8ff4996f200fb92084fe22f927618669 -->
 
 ## Unreleased
 
+- `config/toolchain.json`은 확장의 PHP minor를 `phpExtension.minors`에 8.4와 8.5로 둔다(T1.73). binding의 `release-platform-assets`가 release의 asset을 올리기 전에 그것을 읽고, 없으면 그 recipe가 실패한다.
 - job release의 recipe는 내려받은 각 platform의 asset을 그 폴더와 함께 `var/release/assets`에 더한다(T1.72). 그 줄이 폴더를 복사하지 않아서, 0.0.3의 release run이 draft release가 생긴 뒤 거기서 "cp: -r not specified; omitting directory"로 실패했다.
 
 ## 0.0.3

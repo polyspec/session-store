@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `config/toolchain.json` names the PHP minors of the extension in `phpExtension.minors`, 8.4 and 8.5 (T1.73), which `release-platform-assets` of binding reads before it uploads the assets of a release; without them that recipe fails.
 - The recipe of the job release adds the downloaded assets of each platform to `var/release/assets` with their folders (T1.72): its line copied no folder, so the release run of 0.0.3 failed at it with "cp: -r not specified; omitting directory" after the draft release existed.
 
 ## 0.0.3

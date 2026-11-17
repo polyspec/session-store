@@ -1386,7 +1386,7 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "polyspec-php-serialization",
  "polyspec-session-store",
@@ -1397,7 +1397,7 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-core"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "getrandom 0.3.4",
  "libtest-mimic",
@@ -1409,7 +1409,7 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-file"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "libtest-mimic",
  "polyspec-binding-core",
@@ -1422,7 +1422,7 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-go"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "polyspec-binding-core",
  "polyspec-php-serialization",
@@ -1431,7 +1431,7 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-node"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "napi",
  "napi-build",
@@ -1443,7 +1443,7 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-php-ext"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "ext-php-rs",
  "polyspec-binding-core",
@@ -1453,7 +1453,7 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-python"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "polyspec-binding-core",
  "polyspec-php-serialization",
@@ -1463,7 +1463,7 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-redis"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "libtest-mimic",
  "pem-rfc7468",
@@ -1480,7 +1480,7 @@ dependencies = [
 
 [[package]]
 name = "polyspec-session-store-wasm"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "js-sys",
  "polyspec-binding-core",

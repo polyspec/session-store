@@ -1,12 +1,15 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 195145ff4aed42a8d6adf226870dfcf31bf61dfdc2d2de4de3cf282bd6d056d8 -->
+<!-- source-sha256: dd3afc6a1d9fd7547c8a3348b2722e7aef721d02fe5d7fa9fb39a64be082f7d7 -->
 
 ## Unreleased
+
+## 0.0.3
 
 - assets.yml의 각 job은 binding의 release 검사 앞에서 go를 설치하고, 그 검사를 release에서처럼 ci의 run에서도 돌린다(T1.70). 그 검사는 Go module의 `go.sum` 때문에 go를 시작하는데 어떤 job도 go를 설치하지 않았고 검사는 release에서만 돌아서, release 0.0.2가 tag 뒤에 macOS runner에서 "spawnSync go ENOENT"로 실패했다. assets.yml의 입력 `release`와 make 변수 `RELEASE`를 지웠다.
 
 ## 0.0.2
 
+- tag `v0.0.2`는 있지만 release와 asset이 없다. release run이 tag를 만든 뒤 macOS에서 assets.yml의 job들이 실패했고(T1.70), tag는 옮기지 않으므로 0.0.3이 첫 release다.
 - Go library의 musl target은 C를 `config/toolchain.json`의 LLVM에 있는 clang과 llvm-ar로 빌드한다(T1.68). rustls의 암호인 ring이 C를 컴파일하는데, cc crate가 runner에서 `<arch>-linux-musl-gcc`를 찾지 못해 Linux에서 `make release-go-static`이 실패했다. Makefile이 musl target마다 `CC_<target>`과 `AR_<target>`을 절대 경로로 선언하고, job platform의 첫 검사인 `make musl-cc-check`는 Linux에서 그 clang이 없거나 pin한 major release가 아니면 실패한다.
 - hook commit-msg의 시험은 CI runner의 git으로 돌고, `git commit`처럼 사람의 identity를 검사에 준다(T1.67). 규칙 `commit-ai-identity`가 그 identity를 읽으므로, identity가 없는 runner에서 검사가 모든 메시지를 거부했다.
 - SR-6.1a를 retire하고 그 id를 다시 쓰지 않는다. SR-6.1b가 그 안의 동작을 말한다. TLS로 연결하는 저장소는 기계의 신뢰 저장소를 프로세스에서 한 번 읽고, 자기가 만드는 TLS의 모든 client에 그 인증 기관들을 준다. redis-rs가 연결마다 신뢰 저장소를 읽지 않는다는 것은 저장소의 규칙이 아니라 의존 라이브러리의 구현이다. redis-rs를 `tls-rustls-webpki-roots`로 빌드하는 이유는 `docs/operations/dependencies.md`에 남고, 어떤 시험도 그 빌드의 feature를 검사하지 않는다. TLS 시험은 서버의 `rediss://` 주소에 한 번 연결한다(SR-6.1).

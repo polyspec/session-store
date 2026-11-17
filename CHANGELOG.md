@@ -2,10 +2,13 @@
 
 ## Unreleased
 
+## 0.0.3
+
 - Each job of assets.yml installs go before the release check of binding and runs that check in the run of ci as in a release (T1.70): the check starts go for the `go.sum` of the Go module, no job installed go, and the check ran only in a release, so the release 0.0.2 failed after its tag on the macOS runners with "spawnSync go ENOENT". The input `release` of assets.yml and the make variable `RELEASE` are removed.
 
 ## 0.0.2
 
+- The tag `v0.0.2` exists and has no release and no asset: the release run made the tag and then failed in the jobs of assets.yml on macOS (T1.70), and a tag is not moved, so 0.0.3 is the first release.
 - The musl targets of the Go libraries build C with the clang and the llvm-ar of the LLVM of `config/toolchain.json` (T1.68): ring, the cryptography of rustls, compiles C, and the cc crate found no `<arch>-linux-musl-gcc` on a runner, so `make release-go-static` failed on Linux. The Makefile declares `CC_<target>` and `AR_<target>` of each musl target by their absolute paths, and `make musl-cc-check`, the first check of the job platform, fails on Linux while that clang is missing or is not the pinned major release.
 - The test of the hook commit-msg runs with the git of a runner of CI and gives the check the identity of a person, as `git commit` does (T1.67): the rule `commit-ai-identity` reads that identity, and on a runner with none the check refused every message.
 - SR-6.1a is retired and its id is not used again; SR-6.1b states the behavior that it held: a store that connects with TLS reads the trust store of the machine once in a process and gives its authorities to every client of TLS that it builds. That redis-rs reads no trust store for a connection is the implementation of a dependency, not a rule of the store: why redis-rs is built with `tls-rustls-webpki-roots` stays in `docs/operations/dependencies.md`, and no test checks the features of its build. The test of TLS connects once to its server at its `rediss://` address (SR-6.1).

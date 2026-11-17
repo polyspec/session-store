@@ -288,3 +288,17 @@ test('the hook commit-msg of .githooks refuses a message with the footer of an A
   assert.equal(check('test: x\n'), 0, 'the hook refuses a message without a footer');
   rmSync(directory, { recursive: true });
 });
+
+test('the musl targets of the Go libraries build C with the clang and llvm-ar of the pinned LLVM', () => {
+  // T1.68: ring, the cryptography of rustls (SR-6.1), builds C for the musl target of release-go-static on a Linux host,
+  // and the cc crate finds no <arch>-linux-musl-gcc on a runner; the Makefile declares the C compiler and the archiver of
+  // each musl target of rust-toolchain.toml as the clang and the llvm-ar of the LLVM of config/toolchain.json, by their
+  // absolute paths, and the job platform checks that clang before it builds.
+  const makefile = read('Makefile');
+  for (const target of ['x86_64_unknown_linux_musl', 'aarch64_unknown_linux_musl']) {
+    assert.match(makefile, new RegExp(`^export CC_${target} = \\$\\(LLVM_ROOT\\)/bin/clang$`, 'm'), `CC_${target} is not the clang of LLVM_ROOT`);
+    assert.match(makefile, new RegExp(`^export AR_${target} = \\$\\(LLVM_ROOT\\)/bin/llvm-ar$`, 'm'), `AR_${target} is not the llvm-ar of LLVM_ROOT`);
+  }
+  const platform = makefile.split('\nci-assets-platform:\n')[1]?.split('\n\n')[0] ?? '';
+  assert.match(platform, /\$\(MAKE\) --no-print-directory musl-cc-check\n/, 'the job platform does not check the clang of the musl targets');
+});

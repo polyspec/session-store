@@ -3,6 +3,11 @@
 
 ## Unreleased
 
+## 0.0.7
+
+- release job은 release-go-module 뒤에 `make release-go-module-push`로 Go module의 tag를 한 번 push한다. 그래서 한 release의 모든 tag가 `git push --atomic` 한 번으로 올라간다(T1.88). binding 0.0.21은 아무것도 push하지 않는다.
+- binding 0.0.21(T1.86)과 php-serialization 0.0.16(T1.89)의 pin이 0.0.17과 0.0.15를 대신한다. 그것을 적은 모든 manifest, lock과 go.mod에서.
+
 ## 0.0.6
 
 - 같은 설정의 Redis 저장소들은 프로세스의 연결을 그 수명 동안 공유한다(SR-6.9, T1.82). PHP extension처럼 요청마다 만든 저장소는 요청마다 다시 연결했고, 닫힌 연결이 client port들을 TIME_WAIT로 채웠다. 비밀번호나 인증 기관 파일처럼 어느 field든 다른 설정은 연결을 공유하지 않고, 그것을 닫는 호출은 없으며, 설정의 비밀번호는 어떤 message에도 나오지 않는다.

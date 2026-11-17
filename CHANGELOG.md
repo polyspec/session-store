@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.0.7
+
+- The Go module of a release is pushed once after its release-go-module, by `make release-go-module-push` in the job release, so that all tags of a release go up in one `git push --atomic` (T1.88); binding 0.0.21 pushes none.
+- The pins of binding 0.0.21 (T1.86) and of php-serialization 0.0.16 (T1.89) replace 0.0.17 and 0.0.15 in every manifest, lock and go.mod that names them.
+
 ## 0.0.6
 
 - The stores of Redis of an equal setting share the connections of the process for its life (SR-6.9, T1.82): a store made for each request, as the extension of PHP makes it, connected again for each request, whose closed connections filled the client ports in TIME_WAIT. Settings that differ in any field, such as a password or a file of authorities, share no connection, no call closes them, and the passwords of the settings appear in no message.

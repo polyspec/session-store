@@ -1571,7 +1571,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lifetime": 0,
@@ -1592,7 +1593,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lock_expire": 0
@@ -1612,7 +1614,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lock_expire": 45
@@ -1634,7 +1637,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lifetime": -1,
@@ -1657,7 +1661,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lifetime": 1.5,
@@ -1680,7 +1685,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lifetime": "60",
@@ -1703,7 +1709,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lifetime": true,
@@ -1726,7 +1733,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lock_expire": -1
@@ -1748,7 +1756,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lock_expire": 1.5
@@ -1770,7 +1779,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lock_expire": "60"
@@ -1792,7 +1802,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lock_expire": true
@@ -1813,7 +1824,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "not a url"
+    "url": "not a url",
+    "authorities": null
    },
    "options": {
     "lock_expire": 30
@@ -1833,7 +1845,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "http://127.0.0.1:6379/"
+    "url": "http://127.0.0.1:6379/",
+    "authorities": null
    },
    "options": {
     "lock_expire": 30
@@ -1857,7 +1870,8 @@
     "service": "primary",
     "tls": false,
     "user": null,
-    "password": null
+    "password": null,
+    "authorities": null
    },
    "options": {
     "lock_expire": 30
@@ -1877,7 +1891,172 @@
    ],
    "setting": {
     "kind": "cluster",
-    "urls": []
+    "urls": [],
+    "authorities": null
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "cluster_addresses_of_two_schemes_fail",
+   "note": "the addresses of a Cluster that are not all redis:// or all rediss:// fail",
+   "rule": [
+    "SR-6.6"
+   ],
+   "setting": {
+    "kind": "cluster",
+    "urls": [
+     "redis://127.0.0.1:7000/",
+     "rediss://127.0.0.1:7001/"
+    ],
+    "authorities": null
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "cluster_addresses_of_two_users_fail",
+   "note": "the addresses of a Cluster that name two users fail",
+   "rule": [
+    "SR-6.6"
+   ],
+   "setting": {
+    "kind": "cluster",
+    "urls": [
+     "redis://alice:sesame@127.0.0.1:7000/",
+     "redis://bob:sesame@127.0.0.1:7001/"
+    ],
+    "authorities": null
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "cluster_addresses_of_two_passwords_fail",
+   "note": "the addresses of a Cluster that name two passwords fail",
+   "rule": [
+    "SR-6.6"
+   ],
+   "setting": {
+    "kind": "cluster",
+    "urls": [
+     "redis://alice:sesame@127.0.0.1:7000/",
+     "redis://alice:another@127.0.0.1:7001/"
+    ],
+    "authorities": null
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "authorities_of_a_server_without_tls_fail",
+   "note": "a server setting that names a file of authorities and connects without TLS fails",
+   "rule": [
+    "SR-6.7"
+   ],
+   "setting": {
+    "kind": "server",
+    "url": "redis://127.0.0.1:6379/",
+    "authorities": "/session-store/authorities.pem"
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "authorities_of_sentinel_without_tls_fail",
+   "note": "a Sentinel setting that names a file of authorities and connects nowhere with TLS fails",
+   "rule": [
+    "SR-6.7"
+   ],
+   "setting": {
+    "kind": "sentinel",
+    "urls": [
+     "redis://127.0.0.1:26379/"
+    ],
+    "service": "primary",
+    "tls": false,
+    "user": null,
+    "password": null,
+    "authorities": "/session-store/authorities.pem"
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "authorities_of_a_cluster_without_tls_fail",
+   "note": "a Cluster setting that names a file of authorities and connects without TLS fails",
+   "rule": [
+    "SR-6.7"
+   ],
+   "setting": {
+    "kind": "cluster",
+    "urls": [
+     "redis://127.0.0.1:7000/"
+    ],
+    "authorities": "/session-store/authorities.pem"
+   },
+   "options": {
+    "lock_expire": 30
+   },
+   "raises": {
+    "kind": "invalid_setting",
+    "status": null,
+    "category": "value",
+    "message": null
+   }
+  },
+  {
+   "id": "a_file_of_authorities_that_is_missing_fails",
+   "note": "a setting of TLS whose file of authorities does not exist fails",
+   "rule": [
+    "SR-6.7"
+   ],
+   "setting": {
+    "kind": "server",
+    "url": "rediss://127.0.0.1:6379/",
+    "authorities": "/session-store/no-such-directory/authorities.pem"
    },
    "options": {
     "lock_expire": 30
@@ -1899,7 +2078,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {},
    "binding": true,
@@ -1922,7 +2102,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lock_expire": 30
@@ -1951,7 +2132,8 @@
    ],
    "setting": {
     "kind": "server",
-    "url": "redis+unix:///dev/null/redis.sock"
+    "url": "redis+unix:///dev/null/redis.sock",
+    "authorities": null
    },
    "options": {
     "lock_expire": 30
@@ -1981,7 +2163,8 @@
      "args": {
       "setting": {
        "kind": "server",
-       "url": "redis+unix:///dev/null/redis.sock"
+       "url": "redis+unix:///dev/null/redis.sock",
+       "authorities": null
       },
       "options": {
        "lock_expire": 30
@@ -2023,7 +2206,8 @@
      "args": {
       "setting": {
        "kind": "server",
-       "url": "redis+unix:///dev/null/redis.sock"
+       "url": "redis+unix:///dev/null/redis.sock",
+       "authorities": null
       },
       "options": {
        "lock_expire": 30
@@ -2069,7 +2253,8 @@
      "args": {
       "setting": {
        "kind": "server",
-       "url": "redis+unix:///dev/null/redis.sock"
+       "url": "redis+unix:///dev/null/redis.sock",
+       "authorities": null
       },
       "options": {
        "lock_expire": 30
@@ -2111,7 +2296,8 @@
      "args": {
       "setting": {
        "kind": "server",
-       "url": "redis+unix:///dev/null/redis.sock"
+       "url": "redis+unix:///dev/null/redis.sock",
+       "authorities": null
       },
       "options": {
        "lock_expire": 30
@@ -2150,7 +2336,8 @@
      "args": {
       "setting": {
        "kind": "server",
-       "url": "redis+unix:///dev/null/redis.sock"
+       "url": "redis+unix:///dev/null/redis.sock",
+       "authorities": null
       },
       "options": {
        "lock_expire": 30
@@ -2196,7 +2383,8 @@
      "args": {
       "setting": {
        "kind": "server",
-       "url": "redis+unix:///dev/null/redis.sock"
+       "url": "redis+unix:///dev/null/redis.sock",
+       "authorities": null
       },
       "options": {
        "lock_expire": 30
@@ -2225,7 +2413,8 @@
       "kind": "server",
       "url": {
        "service": "address"
-      }
+      },
+      "authorities": null
      },
      "options": {
       "lock_expire": 30,
@@ -2271,7 +2460,8 @@
       "kind": "server",
       "url": {
        "service": "address"
-      }
+      },
+      "authorities": null
      },
      "options": {
       "lock_expire": 30,
@@ -2322,7 +2512,8 @@
       "kind": "server",
       "url": {
        "service": "address"
-      }
+      },
+      "authorities": null
      },
      "options": {
       "lock_expire": 30,
@@ -2374,7 +2565,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,
@@ -2419,7 +2611,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,
@@ -2466,7 +2659,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,
@@ -2515,7 +2709,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,
@@ -2566,7 +2761,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,
@@ -2611,7 +2807,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,
@@ -2658,7 +2855,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,
@@ -2702,7 +2900,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,
@@ -2748,7 +2947,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,
@@ -2811,7 +3011,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,
@@ -2884,7 +3085,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,
@@ -2945,7 +3147,8 @@
        "kind": "server",
        "url": {
         "service": "address"
-       }
+       },
+       "authorities": null
       },
       "options": {
        "lock_expire": 30,

@@ -400,16 +400,25 @@ fn setting_of(setting: &Value) -> Result<Setting, Failed> {
         Ok(array_of(form, "urls")?.iter().filter_map(Value::as_str).map(str::to_owned).collect())
     };
     let text = |form: &Value, key: &str| form.get(key).and_then(Value::as_str).map(str::to_owned);
+    // SR-6.7: every setting states `authorities`, the path of a file of PEM certificates or none.
+    let authorities = |form: &Value| -> Result<Option<String>, Failed> {
+        match form.get("authorities") {
+            Some(Value::Null) => Ok(None),
+            Some(Value::String(path)) => Ok(Some(path.clone())),
+            _ => Err(Failed::from(format!("the setting {form} states no authorities"))),
+        }
+    };
     match str_of(setting, "kind")? {
-        "server" => Ok(Setting::Server { url: str_of(setting, "url")?.to_owned() }),
+        "server" => Ok(Setting::Server { url: str_of(setting, "url")?.to_owned(), authorities: authorities(setting)? }),
         "sentinel" => Ok(Setting::Sentinel {
             urls: urls(setting)?,
             service: str_of(setting, "service")?.to_owned(),
             tls: setting.get("tls").and_then(Value::as_bool).ok_or("a Sentinel setting has no tls")?,
             user: text(setting, "user"),
             password: text(setting, "password"),
+            authorities: authorities(setting)?,
         }),
-        "cluster" => Ok(Setting::Cluster { urls: urls(setting)? }),
+        "cluster" => Ok(Setting::Cluster { urls: urls(setting)?, authorities: authorities(setting)? }),
         other => Err(format!("a setting of the kind {other} is none of server, sentinel and cluster").into()),
     }
 }
@@ -907,7 +916,8 @@ async fn server_case(case: &Value, database: usize) -> Result<(), Failed> {
             .await
             .map_err(failed)?;
     }
-    let store = RedisSessions::new(&Setting::Server { url: address }, &store_options(case)).map_err(failed)?;
+    let store = RedisSessions::new(&Setting::Server { url: address, authorities: None }, &store_options(case))
+        .map_err(failed)?;
     let raises = case.get("raises");
     let mut created = Vec::new();
     let mut results = Vec::new();

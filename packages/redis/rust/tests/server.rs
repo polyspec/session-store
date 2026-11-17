@@ -57,7 +57,7 @@ fn the_requests_of_one_session_in_one_process_lose_no_write() -> Result<(), Fail
     // SE-8.1, SR-3.2: sixteen requests of one session on four threads add one each.
     let (_project, server) = plain(&[])?;
     runtime()?.block_on(async {
-        let setting = Setting::Server { url: format!("redis://{}/", server.name) };
+        let setting = Setting::Server { url: format!("redis://{}/", server.name), authorities: None };
         let store = Arc::new(RedisSessions::new(&setting, &options()).map_err(failed)?);
         let mut opened = store.open(None).await.map_err(failed)?;
         opened.set("n", &integer(0)).map_err(|error| failed(format!("{error:?}")))?;
@@ -105,11 +105,14 @@ fn an_acl_user_connects_and_a_wrong_password_tells_nothing() -> Result<(), Faile
     let (_project, server) = plain(&["--user", "alice", "on", ">sesame", "~*", "&*", "+@all"])?;
     let address = server.name.as_str();
     let runtime = runtime()?;
-    runtime.block_on(round_trip(Setting::Server { url: format!("redis://alice:sesame@{address}/") }))?;
+    runtime
+        .block_on(round_trip(Setting::Server { url: format!("redis://alice:sesame@{address}/"), authorities: None }))?;
     let wrong = runtime.block_on(async {
-        let store =
-            RedisSessions::new(&Setting::Server { url: format!("redis://alice:wrongword@{address}/") }, &options())
-                .map_err(failed)?;
+        let store = RedisSessions::new(
+            &Setting::Server { url: format!("redis://alice:wrongword@{address}/"), authorities: None },
+            &options(),
+        )
+        .map_err(failed)?;
         Ok::<_, Failed>(store.open(Some(&[b'a'; 32])).await)
     })?;
     match wrong {
@@ -153,6 +156,7 @@ fn sentinel_names_the_primary() -> Result<(), Failed> {
         tls: false,
         user: None,
         password: None,
+        authorities: None,
     }))
 }
 
@@ -183,7 +187,7 @@ fn a_cluster_keeps_sessions() -> Result<(), Failed> {
     for report in &mut reports {
         report.wait_for("Cluster state changed: ok").map_err(Failed::from)?;
     }
-    runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes }))
+    runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes, authorities: None }))
 }
 
 fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
@@ -197,7 +201,7 @@ fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
     let server = project.address("server").map_err(Failed::from)?;
     // A failure of the client tells nothing of its cause (SR-6.4), so the test adds what the server wrote.
     let url = format!("rediss://{}/", server.name);
-    runtime()?.block_on(round_trip(Setting::Server { url })).map_err(|error| {
+    runtime()?.block_on(round_trip(Setting::Server { url, authorities: None })).map_err(|error| {
         let message = match error.message() {
             Some(message) => message.to_owned(),
             None => String::new(),
@@ -233,6 +237,7 @@ fn sentinel_of_tls_names_a_primary_of_tls() -> Result<(), Failed> {
         tls: true,
         user: None,
         password: None,
+        authorities: None,
     };
     runtime()?.block_on(round_trip(setting)).map_err(|error| {
         let message = match error.message() {
@@ -283,7 +288,7 @@ fn a_cluster_of_tls_keeps_sessions() -> Result<(), Failed> {
     for report in &mut reports {
         report.wait_for("Cluster state changed: ok").map_err(Failed::from)?;
     }
-    runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes }))
+    runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes, authorities: None }))
 }
 
 fn main() {

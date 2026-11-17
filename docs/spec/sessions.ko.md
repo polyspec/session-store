@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: a23dbd74e6771aadce83f6f6686b2f25e5035e31222fa65b0c0bafeb0fcbdef4 -->
+<!-- source-sha256: cba83ae18acbf4f468bf0bf87ef2972c34d8fefc20ba2d9873599442a27e7ff3 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -332,16 +332,7 @@
   ACL 사용자와 비밀번호를 갖는다. <a id="SR-6.1b"></a> TLS로 연결하는 저장소(`rediss://`, 또는 `tls`인 Sentinel)는
   기계의 신뢰 저장소를 프로세스에서 한 번 읽고, 자기가 만드는 TLS의 모든 client에 그 인증 기관들을 준다. 서버의 client,
   Sentinel 노드와 그들이 알려 준 primary의 client, Cluster 노드의 client가 모두 그렇다. 읽을 수 없는 신뢰 저장소는 연결을 kind `connection`으로 실패시키고(SR-6.4), 다음 연결이 다시 읽는다.
-  Sentinel 주소는 모두 `rediss://`이거나 모두 `redis://`이다. 사용자와 비밀번호 하나를 함께 쓴다. 그렇지 않은 목록은 kind `invalid_setting`으로 실패한다. <a id="SR-6.1c"></a> 설정이 주소를 주는 서버의 TLS와
-  사용자와 비밀번호는 그 URL의 것이다. scheme `rediss://`와 URL의 사용자와 비밀번호가 그것이고, 서버 하나의 URL과
-  Cluster의 주소들이 그렇다. Cluster의 주소는 모두 `rediss://`이거나 모두 `redis://`이고 사용자와 비밀번호 하나를 함께
-  쓴다. 그렇지 않은 목록은 kind `invalid_setting`으로 실패한다. Sentinel의 primary는 설정에 주소가 없으므로, Sentinel
-  설정의 `tls`, `user`, `password`가 primary의 것이다. <a id="SR-6.1d"></a> 각 설정은 `authorities`, 곧 PEM 인증서
-  파일의 경로를 받거나 받지 않는다. 그것이 있으면 그 설정의 모든 TLS 연결, 곧 서버, Sentinel 노드와 그 primary,
-  Cluster 노드로 가는 연결이 그 파일의 인증 기관만 믿는다. 저장소는 그 파일을 첫 TLS 연결 때 읽고, 한 경로를
-  프로세스에서 한 번 읽는다. 그것이 없으면 연결은 기계의 신뢰 저장소의 인증 기관을 믿는다(SR-6.1b). `authorities`를
-  주고 어디에도 TLS로 연결하지 않는 설정, 그리고 읽을 수 없거나 PEM 인증서가 하나도 없는 파일은 kind
-  `invalid_setting`으로 실패하고, 그 글이 경로를 말한다. <a id="SR-6.2"></a> Sentinel에서는 명령을 보내는 요청이 첫 명령 전에 Sentinel에게
+  Sentinel 주소는 모두 `rediss://`이거나 모두 `redis://`이다. 사용자와 비밀번호 하나를 함께 쓴다. 그렇지 않은 목록은 kind `invalid_setting`으로 실패한다. <a id="SR-6.2"></a> Sentinel에서는 명령을 보내는 요청이 첫 명령 전에 Sentinel에게
   자기 service의 primary를 묻는다. 이전 primary로의 연결이 열려 있을 때에도 묻는다.
   이전 primary는 승격 뒤 몇 초 동안 쓰기를 받아들이기 때문이다. <a id="SR-6.3"></a> Cluster에서는 프로토콜의 모든 명령에
   key가 하나이므로 세션과 그 잠금이 서로 다른 primary에 있을 수 있다. 해제 스크립트는 자신의 key 하나를
@@ -349,6 +340,16 @@
   `connection`으로 실패하고, 오류는 주소, 사용자, 비밀번호를 알리지 않는다. 실패한 요청은 자신의 잠금이 만료되도록 둔다.
   <a id="SR-6.5"></a> 프로세스는 연결을 만들 때의 process id를 기억한다. `fork` 뒤에 자식은
   물려받은 연결을 쓰지도 닫지도 않고(그 socket은 부모가 아직 쓴다), 자신의 연결을 만든다.
+  <a id="SR-6.6"></a> 설정이 주소를 주는 서버의 TLS와
+  사용자와 비밀번호는 그 URL의 것이다. scheme `rediss://`와 URL의 사용자와 비밀번호가 그것이고, 서버 하나의 URL과
+  Cluster의 주소들이 그렇다. Cluster의 주소는 모두 `rediss://`이거나 모두 `redis://`이고 사용자와 비밀번호 하나를 함께
+  쓴다. 그렇지 않은 목록은 kind `invalid_setting`으로 실패한다. Sentinel의 primary는 설정에 주소가 없으므로, Sentinel
+  설정의 `tls`, `user`, `password`가 primary의 것이다. <a id="SR-6.7"></a> 각 설정은 `authorities`, 곧 PEM 인증서
+  파일의 경로를 받거나 받지 않는다. 그것이 있으면 그 설정의 모든 TLS 연결, 곧 서버, Sentinel 노드와 그 primary,
+  Cluster 노드로 가는 연결이 그 파일의 인증 기관만 믿는다. 저장소는 그 파일을 첫 TLS 연결 때 읽고, 한 경로를
+  프로세스에서 한 번 읽는다. 그것이 없으면 연결은 기계의 신뢰 저장소의 인증 기관을 믿는다(SR-6.1b). `authorities`를
+  주고 어디에도 TLS로 연결하지 않는 설정, 그리고 읽을 수 없거나 PEM 인증서가 하나도 없는 파일은 kind
+  `invalid_setting`으로 실패하고, 그 글이 경로를 말한다.
 - **SR-7** <a id="SR-7.1"></a> phpredis를 쓰는 PHP 프로세스는 다음을 설정할 때 세션을 공유한다: `session.save_handler=redis`,
   `session.serialize_handler=php_serialize`, `redis.session.locking_enabled=1`, `redis.session.lock_expire`를
   저장소의 `lock_expire`로(0은 안 된다. phpredis는 그때 `max_execution_time`을 쓰고 그 값은 명령줄에서 0이다),
@@ -368,7 +369,7 @@
   |---|---|---|---|
   | `invalid_lifetime` | 없음 | `value` | SR-1.2 |
   | `invalid_lock_expire` | 없음 | `value` | SR-1.2 |
-  | `invalid_setting` | 없음 | `value` | SR-6.1, SR-6.1c, SR-6.1d: Redis의 URL이 아닌 주소, 빈 주소 목록, scheme이나 사용자나 비밀번호가 서로 다른 Sentinel 또는 Cluster의 주소, TLS가 없는 설정의 `authorities`, 읽을 수 없거나 PEM 인증서가 하나도 없는 `authorities` 파일 |
+  | `invalid_setting` | 없음 | `value` | SR-6.1, SR-6.6, SR-6.7: Redis의 URL이 아닌 주소, 빈 주소 목록, scheme이나 사용자나 비밀번호가 서로 다른 Sentinel 또는 Cluster의 주소, TLS가 없는 설정의 `authorities`, 읽을 수 없거나 PEM 인증서가 하나도 없는 `authorities` 파일 |
   | `lock_timeout` | 500 | `store` | SR-3.3 |
   | `lock_lost` | 500 | `store` | SR-4.3 |
   | `reply` | 500 | `store` | SR-5.1 |

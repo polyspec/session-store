@@ -1148,6 +1148,16 @@
               ],
               "type": "text",
               "required": true
+            },
+            {
+              "name": [
+                "authorities"
+              ],
+              "type": {
+                "optional": "text"
+              },
+              "required": true,
+              "reason": "SR-6.7"
             }
           ]
         },
@@ -1196,6 +1206,16 @@
               },
               "required": true,
               "reason": "SR-6.1"
+            },
+            {
+              "name": [
+                "authorities"
+              ],
+              "type": {
+                "optional": "text"
+              },
+              "required": true,
+              "reason": "SR-6.7"
             }
           ]
         },
@@ -1210,6 +1230,16 @@
                 "list": "text"
               },
               "required": true
+            },
+            {
+              "name": [
+                "authorities"
+              ],
+              "type": {
+                "optional": "text"
+              },
+              "required": true,
+              "reason": "SR-6.7"
             }
           ]
         }
@@ -1603,13 +1633,17 @@
       "member": "memory_store.get",
       "file": "contracts/sessions.json",
       "group": "memory_store.get.made",
-      "reads": ["record"]
+      "reads": [
+        "record"
+      ]
     },
     {
       "member": "memory_store.set",
       "file": "contracts/sessions.json",
       "group": "memory_store.set.made",
-      "reads": ["record"]
+      "reads": [
+        "record"
+      ]
     },
     {
       "member": "memory_store.remove",
@@ -1635,19 +1669,28 @@
       "member": "accept",
       "file": "contracts/sessions.json",
       "group": "identifier",
-      "reads": ["identifier"]
+      "reads": [
+        "identifier"
+      ]
     },
     {
       "member": "new_identifier",
       "file": "contracts/sessions.json",
       "group": "created",
-      "reads": ["alphabet", "length"]
+      "reads": [
+        "alphabet",
+        "length"
+      ]
     },
     {
       "member": "file_sessions.in_directory",
       "file": "contracts/file-sessions.json",
       "group": "open",
-      "reads": ["binding", "store_directory", "store_lifetime"]
+      "reads": [
+        "binding",
+        "store_directory",
+        "store_lifetime"
+      ]
     },
     {
       "member": "file_sessions.open",
@@ -1675,7 +1718,10 @@
       "member": "redis_sessions.new",
       "file": "contracts/redis-sessions.json",
       "group": "open",
-      "reads": ["binding", "defaults"]
+      "reads": [
+        "binding",
+        "defaults"
+      ]
     },
     {
       "member": "redis_sessions.open",

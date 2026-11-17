@@ -365,3 +365,15 @@ test('the Python root names the wheel of php-serialization of its release, and t
   assert.match(recipe, /\$\(UV\) pip install --python \.venv\/bin\/python --no-deps --reinstall \$\(VAR\)\/wheels\/\*\.whl\n/, 'test-python does not install the wheel of the checkout without its dependencies');
   assert.match(recipe, /\$\(SERVICE_RUN\) \$\(CURDIR\)\/\.venv\/bin\/python -m unittest discover /, 'test-python does not run in the environment of the Python root');
 });
+
+test('a variable TARGETS of the command line does not change the targets of the bindings', () => {
+  // T1.80: ci-targets of kit starts the make of each target with the variables of the command line of its caller, and
+  // a caller that gives a list of targets in TARGETS replaced the list of the same name of a Makefile (http-form: "No
+  // rule to make target 'bindings-node'"). The list of the binding targets of this Makefile has a name of its own, so
+  // the dry run of bindings generates the same targets with a TARGETS of the command line as without one.
+  const make = process.env.MAKE ?? 'make';
+  const targets = (extra: string[]): string[] => [...execFileSync(make, ['-n', '--no-print-directory', '-C', root, 'bindings', ...extra], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '' } }).matchAll(/ generate --root \. --target (\S+)/g)].map((found) => found[1]).sort();
+  assert.deepEqual(targets([]), ['go', 'node', 'php', 'python', 'wasm']);
+  assert.deepEqual(targets(['TARGETS=docs-check owner-validate']), targets([]));
+  assert.doesNotMatch(read('Makefile'), /^TARGETS\s*[:?+]?=/m, 'the Makefile assigns TARGETS, the name of the list of a caller');
+});

@@ -1,7 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: dd3afc6a1d9fd7547c8a3348b2722e7aef721d02fe5d7fa9fb39a64be082f7d7 -->
+<!-- source-sha256: b10919f8fb215f502cc04ef38d0b33c376c05e2f2872952c6da0b8bff71c6bfc -->
 
 ## Unreleased
+
+- job release의 recipe는 내려받은 각 platform의 asset을 그 폴더와 함께 `var/release/assets`에 더한다(T1.72). 그 줄이 폴더를 복사하지 않아서, 0.0.3의 release run이 draft release가 생긴 뒤 거기서 "cp: -r not specified; omitting directory"로 실패했다.
 
 ## 0.0.3
 

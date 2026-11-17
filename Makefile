@@ -552,7 +552,7 @@ ci-release-release:
 	$(MAKE) --no-print-directory release-tools
 	$(RELEASE_PATH) $(MAKE) --no-print-directory release-assets
 	$(RELEASE_PATH) $(MAKE) --no-print-directory release-publish
-	mkdir -p var/release/assets && cp var/release/downloaded/* var/release/assets/
+	mkdir -p var/release/assets && cp -R var/release/downloaded/. var/release/assets/
 	$(RELEASE_PATH) $(MAKE) --no-print-directory install-rust
 	$(RELEASE_PATH) $(MAKE) --no-print-directory release-recipes
 	$(RELEASE_IDENTITY) $(RELEASE_PATH) $(MAKE) --no-print-directory release-go-module

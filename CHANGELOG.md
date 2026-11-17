@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The recipe of the job release adds the downloaded assets of each platform to `var/release/assets` with their folders (T1.72): its line copied no folder, so the release run of 0.0.3 failed at it with "cp: -r not specified; omitting directory" after the draft release existed.
+
 ## 0.0.3
 
 - Each job of assets.yml installs go before the release check of binding and runs that check in the run of ci as in a release (T1.70): the check starts go for the `go.sum` of the Go module, no job installed go, and the check ran only in a release, so the release 0.0.2 failed after its tag on the macOS runners with "spawnSync go ENOENT". The input `release` of assets.yml and the make variable `RELEASE` are removed.

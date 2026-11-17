@@ -540,6 +540,7 @@ ci-release-release:
 	$(RELEASE_PATH) $(MAKE) --no-print-directory install-rust
 	$(RELEASE_PATH) $(MAKE) --no-print-directory release-recipes
 	$(RELEASE_IDENTITY) $(RELEASE_PATH) $(MAKE) --no-print-directory release-go-module
+	$(RELEASE_IDENTITY) $(RELEASE_PATH) $(MAKE) --no-print-directory release-go-module-push
 	$(RELEASE_PATH) $(MAKE) --no-print-directory release-platform-assets
 	$(RELEASE_PATH) $(MAKE) --no-print-directory release-undraft
 

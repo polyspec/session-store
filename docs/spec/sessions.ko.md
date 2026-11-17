@@ -1,5 +1,5 @@
 <!-- doc-id: sessions -->
-<!-- source-sha256: 0f1401fabbc46a4438d2429129070f5723b9a47920ee51c7b051aec465ad8419 -->
+<!-- source-sha256: 2bfdafd77e10be2edf538ce619fe50107878c70ac4e3345eb9fa7c20a90ec788 -->
 # session-store: 규칙
 
 이 문서는 session-store의 명세다. 규칙은 목록 항목 `**SE-n**`(저장소와 그 레코드, crate
@@ -329,13 +329,9 @@
   남는다. <a id="SR-5.2"></a> Redis의 오류 응답은 명령을 적는 kind `redis`로 실패한다.
 - **SR-6** <a id="SR-6.1"></a> 연결은 프로세스의 tokio runtime 하나에서 crate `redis`(redis-rs)를 쓴다.
   애플리케이션은 client가 아니라 연결 설정을 준다: 서버 하나, Sentinel 또는 Cluster이고, 각각 그 주소, TLS,
-  ACL 사용자와 비밀번호를 갖는다. <a id="SR-6.1a"></a> TLS로 연결하는 저장소(`rediss://`, 또는 `tls`인 Sentinel)는
+  ACL 사용자와 비밀번호를 갖는다. <a id="SR-6.1b"></a> TLS로 연결하는 저장소(`rediss://`, 또는 `tls`인 Sentinel)는
   기계의 신뢰 저장소를 프로세스에서 한 번 읽고, 자기가 만드는 TLS의 모든 client에 그 인증 기관들을 준다. 서버의 client,
-  Sentinel 노드와 그들이 알려 준 primary의 client, Cluster 노드의 client가 모두 그렇다. redis-rs는 feature
-  `tls-rustls-webpki-roots`로 빌드한다. 이것은 redis-rs 1.8.1이 연결마다 신뢰 저장소를 읽지 않게 하는 유일한 공개
-  수단이다(`connection.rs:1240`). 그 읽기는 1초의 연결 제한 시간 안에서 일어나고, macOS의 keychain을 읽는 시간이 그것을
-  넘길 수 있다. 이 feature가 넣는 webpki의 루트는 어떤 연결에도 쓰이지 않는다. TLS의 모든 client가 인증 기관들을 받기
-  때문이다. 읽을 수 없는 신뢰 저장소는 연결을 kind `connection`으로 실패시키고(SR-6.4), 다음 연결이 다시 읽는다.
+  Sentinel 노드와 그들이 알려 준 primary의 client, Cluster 노드의 client가 모두 그렇다. 읽을 수 없는 신뢰 저장소는 연결을 kind `connection`으로 실패시키고(SR-6.4), 다음 연결이 다시 읽는다.
   Sentinel 주소는 모두 `rediss://`이거나 모두 `redis://`이다. 사용자와 비밀번호 하나를 함께 쓴다. 그렇지 않은 목록은 kind `invalid_setting`으로 실패한다. <a id="SR-6.2"></a> Sentinel에서는 명령을 보내는 요청이 첫 명령 전에 Sentinel에게
   자기 service의 primary를 묻는다. 이전 primary로의 연결이 열려 있을 때에도 묻는다.
   이전 primary는 승격 뒤 몇 초 동안 쓰기를 받아들이기 때문이다. <a id="SR-6.3"></a> Cluster에서는 프로토콜의 모든 명령에

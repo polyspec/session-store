@@ -10,7 +10,7 @@
 //   - binding is the npm package of its release, pinned by the URL of its asset and its integrity, whose tag the
 //     manifests name for polyspec-binding-core, and the binding targets run Cargo offline.
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -260,4 +260,25 @@ test('packages/ts is a workspace of the root, whose php-serialization is the npm
   const locked = lock.packages['node_modules/@polyspec/php-serialization'];
   assert.equal(locked?.resolved, url);
   assert.match(locked?.integrity ?? '', /^sha512-/);
+});
+
+test('the hook commit-msg of .githooks refuses a message with the footer of an AI tool', () => {
+  // T1.61: git runs .githooks/commit-msg, an executable file, with the file of the message; it runs commit-msg-hook,
+  // the rules commit-ai-footer and commit-ai-identity of check-commits of kit, which refuses the footer and passes a
+  // message without it. make hooks names the hook, so hooks-check fails a checkout whose core.hooksPath misses it.
+  const mode = execFileSync('git', ['-C', root, 'ls-files', '-s', '.githooks/commit-msg'], { encoding: 'utf8' }).split(' ')[0];
+  assert.equal(mode, '100755', '.githooks/commit-msg is not tracked as an executable file');
+  assert.match(read('.githooks/commit-msg'), /^exec make --no-print-directory commit-msg-hook MESSAGE="\$1"$/m);
+  assert.match(read('Makefile'), /^HOOK_DECLARATION := --hooks-path \.githooks --hook commit-msg /m);
+  const make = process.env.MAKE ?? 'make';
+  const directory = mkdtempSync(join(tmpdir(), 'message-'));
+  const check = (text: string): number => {
+    const message = join(directory, 'message');
+    writeFileSync(message, text);
+    const run = spawnSync(make, ['-s', '--no-print-directory', '-C', root, 'commit-msg-hook', `MESSAGE=${message}`], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '' } });
+    return run.status ?? -1;
+  };
+  assert.notEqual(check('test: x\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n'), 0, 'the hook passes the footer of an AI tool');
+  assert.equal(check('test: x\n'), 0, 'the hook refuses a message without a footer');
+  rmSync(directory, { recursive: true });
 });

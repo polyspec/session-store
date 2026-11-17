@@ -2,11 +2,15 @@
 
 ## Unreleased
 
+## 0.0.4
+
+- `make workflows-test` runs the recipe that uploads the assets of a release to a stand-in of gh, on a tree of the names of the assets (T1.74): no run of ci reaches that recipe, and it fails without the PHP minors of T1.73.
 - `config/toolchain.json` names the PHP minors of the extension in `phpExtension.minors`, 8.4 and 8.5 (T1.73), which `release-platform-assets` of binding reads before it uploads the assets of a release; without them that recipe fails.
 - The recipe of the job release adds the downloaded assets of each platform to `var/release/assets` with their folders (T1.72): its line copied no folder, so the release run of 0.0.3 failed at it with "cp: -r not specified; omitting directory" after the draft release existed.
 
 ## 0.0.3
 
+- The tag `v0.0.3` exists and its release stays a draft without the assets of the platforms: the release run made the tag and the draft and then failed where it adds the assets of each platform (T1.72), and a tag is not moved, so 0.0.4 is the first release.
 - Each job of assets.yml installs go before the release check of binding and runs that check in the run of ci as in a release (T1.70): the check starts go for the `go.sum` of the Go module, no job installed go, and the check ran only in a release, so the release 0.0.2 failed after its tag on the macOS runners with "spawnSync go ENOENT". The input `release` of assets.yml and the make variable `RELEASE` are removed.
 
 ## 0.0.2

@@ -1,13 +1,17 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: b2c53f53ab04e14ff5da23b80a23737f8ff4996f200fb92084fe22f927618669 -->
+<!-- source-sha256: 7eab049c761560794c7a0ac5679d17b6d980264fb86613f341b9475f04f64fee -->
 
 ## Unreleased
 
+## 0.0.4
+
+- `make workflows-test`가 release의 asset을 올리는 recipe를 asset 이름의 tree에서 대역 gh까지 돌린다(T1.74). ci의 어떤 run도 그 recipe에 닿지 않고, T1.73의 PHP minor가 없으면 그것이 실패한다.
 - `config/toolchain.json`은 확장의 PHP minor를 `phpExtension.minors`에 8.4와 8.5로 둔다(T1.73). binding의 `release-platform-assets`가 release의 asset을 올리기 전에 그것을 읽고, 없으면 그 recipe가 실패한다.
 - job release의 recipe는 내려받은 각 platform의 asset을 그 폴더와 함께 `var/release/assets`에 더한다(T1.72). 그 줄이 폴더를 복사하지 않아서, 0.0.3의 release run이 draft release가 생긴 뒤 거기서 "cp: -r not specified; omitting directory"로 실패했다.
 
 ## 0.0.3
 
+- tag `v0.0.3`은 있고 그 release는 platform의 asset 없이 draft로 남았다. release run이 tag와 draft를 만든 뒤 각 platform의 asset을 더하는 곳에서 실패했고(T1.72), tag는 옮기지 않으므로 0.0.4가 첫 release다.
 - assets.yml의 각 job은 binding의 release 검사 앞에서 go를 설치하고, 그 검사를 release에서처럼 ci의 run에서도 돌린다(T1.70). 그 검사는 Go module의 `go.sum` 때문에 go를 시작하는데 어떤 job도 go를 설치하지 않았고 검사는 release에서만 돌아서, release 0.0.2가 tag 뒤에 macOS runner에서 "spawnSync go ENOENT"로 실패했다. assets.yml의 입력 `release`와 make 변수 `RELEASE`를 지웠다.
 
 ## 0.0.2

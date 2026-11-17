@@ -275,7 +275,9 @@ test('the hook commit-msg of .githooks refuses a message with the footer of an A
   const check = (text: string): number => {
     const message = join(directory, 'message');
     writeFileSync(message, text);
-    const run = spawnSync(make, ['-s', '--no-print-directory', '-C', root, 'commit-msg-hook', `MESSAGE=${message}`], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '' } });
+    // The git of the runner of CI has no global configuration and no identity it can guess, so the run reads none.
+    const runner = { GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'user.useConfigOnly', GIT_CONFIG_VALUE_0: 'true' };
+    const run = spawnSync(make, ['-s', '--no-print-directory', '-C', root, 'commit-msg-hook', `MESSAGE=${message}`], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '', ...runner } });
     return run.status ?? -1;
   };
   assert.notEqual(check('test: x\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n'), 0, 'the hook passes the footer of an AI tool');

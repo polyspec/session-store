@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 999bc184bc016cca691cf35c5a454c9b06c6ee7f20256f24610bf581c88a7e27 -->
+<!-- source-sha256: 27bdef61c61007da6c15ae712b19b4d55a74b2560cb849f7ed9682e765936812 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -83,3 +83,4 @@
 | T1.64 | `.githooks/**`는 `tool-pins-test`가 맡는다. 그 시험은 `.githooks/commit-msg`가 `make commit-msg-hook`을 돌리는 실행 파일로 추적되는지, `make hooks`가 그것을 이름하는지, 그 검사가 AI 도구의 꼬리말이 있는 메시지를 거부하고 없는 메시지를 통과시키는지를 offline으로 확인한다. T1.61 뒤에 `make owner-validate`가 ".githooks/commit-msg: the path matches no owner"로 실패했고, `hooks-check`는 CI가 만들지 않는 clone의 설정을 읽는다. | `config/owner-checks.json`; `scripts/tool-pins.test.mts` | make owner-validate; make tool-pins-test | [v] |
 | T1.65 | SR-6.1a를 retire하고 그 id를 다시 쓰지 않는다. 그 문장은 저장소의 동작 말고도 redis-rs가 연결마다 신뢰 저장소를 읽지 않는다고 말했고, 그것은 저장소의 동작이 아니라 의존 라이브러리의 구현이다. SR-6.1b는 동작만 말한다. 저장소는 기계의 신뢰 저장소를 프로세스에서 한 번 읽고 TLS의 모든 client에 그 인증 기관들을 준다. `trust.rs`, 읽기 한 번을 세는 `connection.rs`의 unit test, Sentinel과 Cluster의 TLS 시험이 그것을 보인다. redis-rs를 `tls-rustls-webpki-roots`로 빌드하는 이유는 `docs/operations/dependencies.md`에 남는다. T1.62의 resolve features 검사는 지우고, TLS 시험은 bay 서버의 `rediss://` 주소에 한 번 연결해 기계의 신뢰 저장소로 bay를 믿는다(SR-6.1). | `docs/spec/sessions.md`; `packages/redis/rust`; `scripts/servers.test.mts`; `docs/operations/dependencies.md`; `CHANGELOG.md`(.ko) | make check | [v] |
 | T1.66 | session-store의 첫 release로 0.0.2를 낸다. 0.0.1은 버전 커밋만 있고(T1.36) tag와 release가 없다. workspace 버전과 binding scaffold가 그것으로 쓰는 manifest는 `Cargo.lock`, `package-lock.json`과 함께 0.0.2이고, 두 changelog의 `## Unreleased` 섹션은 빈 `## Unreleased` 아래의 `## 0.0.2`다(T1.36과 같다). `## 0.0.1` 섹션은 그대로 둔다. 버전 커밋은 그 push의 마지막 커밋이라 release workflow가 그 위에서 돈다. | `Cargo.toml`; 생성된 manifest; `Cargo.lock`; `package-lock.json`; `CHANGELOG.md`(.ko) | make check | [v] |
+| T1.67 | hook commit-msg의 시험은 `git commit`처럼 committer의 identity를 검사에 주고, 전역 설정이 없고 추측할 identity도 없는 CI runner의 git으로 돈다. 규칙 `commit-ai-identity`는 `git var GIT_AUTHOR_IDENT`를 읽는데 거기서 그것이 실패하므로("Author identity unknown"), CI 43991961457에서 검사가 꼬리말 없는 메시지를 거부했다(T1.64). | `scripts/tool-pins.test.mts` | make tool-pins-test | [ ] |

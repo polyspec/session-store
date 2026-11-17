@@ -852,3 +852,18 @@ test('release-platform-assets names the asset of each platform and PHP minor of 
   ].sort());
   rmSync(directory, { recursive: true });
 });
+
+test('the job shared of ci builds the archives of a release from the commit of the run, with no tag', () => {
+  // T1.78: the release makes and pushes its tag before it builds the archive of each package, so a failure of those
+  // steps first shows after the tag. release-candidate-assets runs them on the committed HEAD for the version of the
+  // first section of the change log (kit K1286), and the job shared runs it in every run of ci, after it installed the
+  // uv with which kit reads the environment of the Python project.
+  const makefile = readFileSync(join(root, 'Makefile'), 'utf8');
+  assert.match(makefile, /^release-candidate-assets:\n\tRELEASE_ASSETS=var\/release-candidate\/assets \$\(NODE\) \$\(KIT\)\/release\.mjs candidate-assets$/m, 'release-candidate-assets does not build the candidate of the change log');
+  assert.match(/^CI_SHARED := (.*)$/m.exec(makefile)?.[1] ?? '', /(^| )release-candidate-assets( |$)/, 'the job shared does not run release-candidate-assets');
+  const make = process.env.MAKE ?? 'make';
+  const lines = execFileSync(make, ['-n', '--no-print-directory', '-C', root, 'ci-shared'], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '' } }).split('\n');
+  const uv = lines.findIndex((line) => /install-tools\.mjs --no-self-update(?: \S+)* uv(?: |$)/.test(line));
+  const targets = lines.findIndex((line) => /ci-targets\.mjs .* release-candidate-assets( |$)/.test(line));
+  assert.ok(uv !== -1 && targets !== -1 && uv < targets, 'the job shared does not install uv before its targets');
+});

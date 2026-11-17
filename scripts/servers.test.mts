@@ -76,9 +76,12 @@ function stand(t: TestContext, machine: Machine): Stand {
   // A program that starts another one, as sudo does: it records its words and runs the words after its option.
   writeFileSync(join(bin, 'wrap'), `#!/bin/sh\nline=wrap\nfor word in "$@"; do line="$line\t$word"; done\nprintf '%s\\n' "$line" >> '${calls}'\nshift\nexec "$@"\n`);
   chmodSync(join(bin, 'wrap'), 0o755);
+  // The temporary directory of the runs of this stand: a run removes the runs of its temporary directory whose process
+  // is gone (T1.77), so the runs of a test share none with the runs of the machine or of another test.
+  mkdirSync(join(directory, 'tmp'));
   return {
     directory,
-    env: { PATH: `${bin}:/usr/bin:/bin` },
+    env: { PATH: `${bin}:/usr/bin:/bin`, TMPDIR: join(directory, 'tmp') },
     calls: () => (existsSync(calls) ? readFileSync(calls, 'utf8').split('\n').filter((line) => line !== '').map((line) => line.split('\t')) : []),
   };
 }
@@ -417,7 +420,7 @@ test('a run removes the servers and the directory of a run whose process is gone
     if (runs[name].started !== undefined) writeFileSync(join(folder(name), 'run.json'), JSON.stringify({ pid: runs[name].pid, started: runs[name].started }));
   }
   assert.notEqual(runs.alive.started, '');
-  const ended = runTests(t, present, `${leave([])}`, '/bin/sh', [], { TMPDIR: temporary }, made);
+  const ended = runTests(t, present, `${leave([])}`, '/bin/sh', [], {}, made);
   assert.equal(ended.status, 0);
   assert.equal(ended.stderr, [
     `scripts/test-run.mts: the run of the process ${gone} is gone; its 2 projects and its directory ${folder('dead')} are removed`,

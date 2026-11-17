@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 4949e96b9163c12d3a37c26eb1582fa90feecf7481cc5bff44ca6894b08b2051 -->
+<!-- source-sha256: 71c009a5732f077765e1057b6778f1d7a386ca86b0b16a4482f14771eddddabb -->
 
 ## Unreleased
 
+- 시험의 run은 시작할 때 process가 사라진 run의 서버와 디렉터리를 지우고, 어느 run의 project 몇 개인지 적는다(SE-10.4, T1.77). SIGKILL로 끝난 run과 그 명령은 아무것도 지우지 못해서, kill된 `make test`의 container 7개가 남았다. run은 자기 process의 id와 시작 시각을 자기 디렉터리에 적고, 그 id의 process가 없거나 그 id의 process가 다른 시각에 시작했으면 그 run은 사라진 것이다. `make servers-test`의 run들은 자기만의 임시 디렉터리를 쓴다.
 - `make test-node`와 `make test-wasm`은 생성된 시험을 kit이 연결하는 root의 설치에서 돌린다(T1.76). root가 php-serialization release의 platform별 npm package를 그 asset의 URL로 `optionalDependencies`에 이름하므로 그 addon은 빌드하지 않고 설치하며, 이 저장소의 addon은 생성된 entry 옆에 둔다. 전에는 recipe가 php-serialization과 이 package를 빌드해 묶고 둘을 `var/node`에 다시 설치했다.
 - tag `v0.0.2`, `v0.0.3`과 release 0.0.3의 draft를 지웠다. 그 release run들이 tag를 만든 뒤 실패해서 어떤 release도 그것을 갖지 않고, 0.0.4가 첫 release다. 0.0.2, 0.0.3, 0.0.4 섹션은 그 tag들이 있다고 적는데, 그때까지는 그랬다.
 

@@ -132,7 +132,8 @@
         "config/toolchain.json",
         "package.json",
         "Makefile",
-        ".github/actions/**"
+        ".github/actions/**",
+        ".githooks/**"
       ],
       "targets": [
         "tool-pins-test"

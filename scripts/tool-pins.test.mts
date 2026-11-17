@@ -275,8 +275,12 @@ test('the hook commit-msg of .githooks refuses a message with the footer of an A
   const check = (text: string): number => {
     const message = join(directory, 'message');
     writeFileSync(message, text);
-    // The git of the runner of CI has no global configuration and no identity it can guess, so the run reads none.
-    const runner = { GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'user.useConfigOnly', GIT_CONFIG_VALUE_0: 'true' };
+    // The git of the runner of CI has no global configuration and no identity it can guess, so the run reads none, and
+    // gives the identity of a person, as git commit does, which refuses to commit without one; commit-ai-identity reads it.
+    const runner = {
+      GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'user.useConfigOnly', GIT_CONFIG_VALUE_0: 'true',
+      GIT_AUTHOR_NAME: 'A Person', GIT_AUTHOR_EMAIL: 'person@example.com', GIT_COMMITTER_NAME: 'A Person', GIT_COMMITTER_EMAIL: 'person@example.com',
+    };
     const run = spawnSync(make, ['-s', '--no-print-directory', '-C', root, 'commit-msg-hook', `MESSAGE=${message}`], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '', ...runner } });
     return run.status ?? -1;
   };

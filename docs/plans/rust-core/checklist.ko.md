@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 2da343617d2b399b50c037ca50f26e117430b7b5c6b644a44a342a8d3c47fb88 -->
+<!-- source-sha256: 7391e9f6487e530500d700b3a31e2b846796bff06e2d46fef9f7b061ef082fc7 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -12,7 +12,7 @@
 | T1.6 | 계획과 checklist를 한국어 쌍과 함께 두고, 모든 문서와 이 checklist를 `make docs-check`로 읽는다 | `docs/plans/rust-core`, `config/documents.json`, `config/checklist.json`, `package.json`, `package-lock.json`, `Makefile` | `make docs-check` | [o] |
 | T1.6-1 | Runtime 설치 선행 조건을 별도 task로 기록하고 API 생성 뒤, 전체 binding job 완료 전에 runner를 개발하도록 순서를 정한다. 기존 runtime 상태와 검증 요건은 유지한다 | `docs/plans/rust-core/plan.md`, `docs/plans/rust-core/checklist.md` and their Korean twins | `make docs-check` | [o] |
 | T1.7 | PHP, Python, Node, WASM 바인딩을 binding이 생성하는 시험과 contract case로 각 언어의 표준 runner에서 시험한다. 각 target은 자기 `make bindings-<target>`이 생성한다 | `packages/php-ext/tests`, `packages/python/tests`, `packages/ts/tests`, `Makefile` | `make test-php`, `make test-python`, `make test-node`, `make test-wasm` | [o] |
-| T1.8 | 이 저장소에 대한 binding의 end-to-end 검사를 php, python, node, wasm에서 통과한다 | binding의 추적되지 않는 `var/report/e2e/session-store.json` | binding의 `make e2e` | [!] cause: binding의 `make e2e`가 이 저장소에서 돈 적이 없다. bypass의 원인은 사라졌다. binding이 모든 target을 생성하고 ci의 job `bindings`가 통과한다(T1.7); retry: binding이 이 저장소로 end-to-end 검사를 돌리거나, 소비자에게는 그런 검사가 없다고 밝힌다 |
+| T1.8 | 이 저장소에 대한 binding의 end-to-end 검사를 php, python, node, wasm에서 통과한다 철회: binding의 end-to-end 검사는 binding 자신의 fixture를 돌리고, 소비자 저장소를 돌리는 검사가 아니다. 이 행이 보려던 것은 두 검사가 덮는다. binding의 consumers 검사가 자기 fixture에 사본이 있는 이 저장소의 contract를 contract 검사와 생성기에 돌리고, 이 저장소 ci의 job `bindings`가 다섯 target의 생성된 시험을 돌린다(T1.7, T1.9). | binding의 추적되지 않는 `var/report/e2e/session-store.json` | binding의 `make e2e` | [-] |
 | T1.9 | Go 바인딩을 binding이 생성하는 시험과 `packages/go/tests`의 contract case로 시험한다 | `packages/go` | `make test-go` | [o] |
 | T1.10 | GitHub workflow의 규칙을 스크립트 시험으로 검사하고, CI와 릴리스를 그 규칙대로 실행한다. 모든 job은 `ubuntu-26.04-arm`에서 실행하고, 모든 action은 릴리스를 적은 주석과 함께 commit으로 고정하고, 어떤 job도 `timeout-minutes`를 두지 않고, 모든 `run` step은 `Makefile`이 정의하는 make target 하나이고, workflow `ci`는 `main`의 push와 `workflow_dispatch`에서만 시작한다. `make test`는 CI의 target이 아니다. Redis 저장소의 시험에는 Apple container가 필요한데 Linux runner에는 그것이 없다 | `scripts/workflows.test.mts`, `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/actions/bootstrap`, `.node-version`, `Makefile` | `make workflows-test` | [o] |
 | T1.11 | 저장소의 모든 manifest를 `config/release.json`에서 릴리스에 대해 분류한다. kit 0.0.111이 platform asset을 만들고 Go module이 tag 형식, 곧 release commit과 `packages/go/vX.Y.Z`를 갖출 때까지 어떤 package도 릴리스하지 않는다 | `config/release.json`, `Makefile` | `make release-coverage` | [o] |

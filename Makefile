@@ -209,9 +209,12 @@ docs-check:
 # The changelogs and the checklists merge with the drivers of kit (K354), which run twin-merge of this checkout: the merge
 # of git keeps a task row twice when one side changes its state, and leaves the source-sha256 of a Korean twin stale.
 # make hooks declares the merges and their drivers; hooks-check fails a checkout without them.
+# The hook commit-msg of .githooks refuses a message with the footer or the identity line of an AI tool, through the rules
+# commit-ai-footer and commit-ai-identity of check-commits of kit, before the commit exists: a pushed commit is not written
+# again. make hooks points core.hooksPath at .githooks and makes the hook executable; hooks-check fails a checkout without it.
 .PHONY: hooks hooks-check twin-merge
 TWIN_MERGE_DRIVER := make --no-print-directory twin-merge MERGE="%O %A %B %P"
-HOOK_DECLARATION := --merge 'CHANGELOG.md=kit-changelog' --merge 'CHANGELOG.ko.md=kit-twin' \
+HOOK_DECLARATION := --hooks-path .githooks --hook commit-msg --merge 'CHANGELOG.md=kit-changelog' --merge 'CHANGELOG.ko.md=kit-twin' \
 	--merge 'docs/plans/*/checklist.md=kit-checklist' --merge 'docs/plans/*/checklist.ko.md=kit-twin' \
 	--driver 'kit-twin=$(TWIN_MERGE_DRIVER)' --driver 'kit-changelog=$(TWIN_MERGE_DRIVER)' --driver 'kit-checklist=$(TWIN_MERGE_DRIVER)'
 hooks:

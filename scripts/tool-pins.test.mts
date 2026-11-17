@@ -220,7 +220,7 @@ test('a php-serialization of .links is the checkout that the targets build, and 
   // The checkout of .links is a provider that the run never writes into (T1.54): its provider generates its bindings in
   // it, so no target of php-serialization runs binding generate there, and the clone of the release is generated.
   const plan = (file: string, target: string): string => execFileSync(make, ['-n', '--no-print-directory', '-C', root, `LINKS_FILE=${file}`, target], { encoding: 'utf8', env: { ...process.env, MAKEFLAGS: '' } });
-  for (const target of ['php-serialization-python', 'php-serialization-php', 'php-serialization-go']) {
+  for (const target of ['php-serialization-php', 'php-serialization-go']) {
     assert.doesNotMatch(plan(links, target), /cli\.js generate/, `${target} generates into the checkout of .links`);
   }
   writeFileSync(links, `${join(directory, 'binding')}\n`);
@@ -330,4 +330,38 @@ test('the musl targets of the Go libraries build C with the clang and llvm-ar of
   }
   const platform = makefile.split('\nci-assets-platform:\n')[1]?.split('\n\n')[0] ?? '';
   assert.match(platform, /\$\(MAKE\) --no-print-directory musl-cc-check\n/, 'the job platform does not check the clang of the musl targets');
+});
+
+test('the Python root names the wheel of php-serialization of its release, and the tests of Python run in its environment', () => {
+  // T1.59: the generated package of packages/python requires php-serialization by its name and version alone, and no
+  // registry carries it, so the root that installs it for the tests names the wheel of the release for each platform by
+  // the URL of the asset and its sha256, as the root package.json names the npm packages; uv.lock locks them and
+  // make install-python-packages installs the lock into .venv, the environment of the uv project, which kit links.
+  const tag = /polyspec\/php-serialization\.git", tag = "v([0-9.]+)"/.exec(read('packages/redis/rust/Cargo.toml'))?.[1];
+  assert.ok(tag !== undefined, 'no tag of php-serialization in packages/redis/rust/Cargo.toml');
+  assert.match(read('packages/python/pyproject.toml'), new RegExp(`^dependencies = \\["polyspec-php-serialization==${tag.replaceAll('.', '\\.')}"\\]$`, 'm'));
+  const root_ = read('pyproject.toml');
+  const lock = read('uv.lock');
+  const platforms = [
+    ['macosx_11_0_arm64', "sys_platform == 'darwin' and platform_machine == 'arm64'"],
+    ['manylinux_2_34_aarch64', "sys_platform == 'linux' and platform_machine == 'aarch64'"],
+    ['manylinux_2_34_x86_64', "sys_platform == 'linux' and platform_machine == 'x86_64'"],
+  ];
+  for (const [wheel, marker] of platforms) {
+    const url = `https://github.com/polyspec/php-serialization/releases/download/v${tag}/polyspec_php_serialization-${tag}-cp314-abi3-${wheel}.whl`;
+    const line = root_.split('\n').find((text) => text.includes(url));
+    assert.ok(line !== undefined, `the Python root does not name ${url}`);
+    assert.match(line, /#sha256=[0-9a-f]{64} ; /, `the wheel ${wheel} has no sha256`);
+    assert.ok(line.includes(` ; ${marker}"`), `the wheel ${wheel} is not for ${marker}`);
+    const digest = /#sha256=([0-9a-f]{64})/.exec(line)?.[1] ?? '';
+    assert.ok(lock.includes(url) && lock.includes(`sha256:${digest}`), `uv.lock does not lock ${url} with its sha256`);
+  }
+  assert.match(root_, /^\[tool\.uv\]\npackage = false$/m, 'the Python root is a package');
+  // No recipe builds the wheel of php-serialization from its clone or makes a second environment in var.
+  const makefile = read('Makefile');
+  assert.doesNotMatch(makefile, /deps\/wheels|php-serialization-python|\$\(VAR\)\/venv/, 'a recipe builds the wheel of php-serialization or makes an environment in var');
+  assert.match(makefile, /^install-python-packages:\n\t\$\(ONLINE\) \$\(UV\) sync --locked$/m, 'install-python-packages does not install the lock of the Python root');
+  const recipe = makefile.split('\ntest-python: bindings-python\n')[1]?.split('\n\n')[0] ?? '';
+  assert.match(recipe, /\$\(UV\) pip install --python \.venv\/bin\/python --no-deps --reinstall \$\(VAR\)\/wheels\/\*\.whl\n/, 'test-python does not install the wheel of the checkout without its dependencies');
+  assert.match(recipe, /\$\(SERVICE_RUN\) \$\(CURDIR\)\/\.venv\/bin\/python -m unittest discover /, 'test-python does not run in the environment of the Python root');
 });

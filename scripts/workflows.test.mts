@@ -380,7 +380,8 @@ const BINDING_TESTS = ['lint-bindings', 'check-declarations', 'test-python', 'te
 // test pulls it. The machine setup of bay is applied once per machine, so no recipe of a job applies it (MACHINE_SETUP).
 const BINDINGS_RUN = 'make ci-bindings';
 const BAY_ACTION = './.github/actions/bay';
-const BINDING_PREREQUISITES = ['redis-image'];
+// install-python-packages installs the lock of the Python root, with the wheel of php-serialization, into .venv (T1.59).
+const BINDING_PREREQUISITES = ['install-python-packages', 'redis-image'];
 const MACHINE_SETUP = /(?:^|\s)(?:setup-bay|install|sudo)(?:\s|$)/;
 
 /**

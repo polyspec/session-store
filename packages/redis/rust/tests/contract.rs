@@ -904,6 +904,18 @@ fn two_trials_do_not_hold_one_database_at_once() -> Result<(), Failed> {
     expect_eq("the database after the first trial", &try_claim(DATABASES).map(|claim| claim.database), &Some(0))
 }
 
+/// The one runtime of the trials against the server, as a process has one (SR-6.1): the stores of an equal setting
+/// share the connection of the process (SR-6.9), which the runtime that made it drives, so a runtime for each trial
+/// would end the connection that the next trial of its database takes.
+fn server_runtime() -> Result<&'static tokio::runtime::Runtime, Failed> {
+    static RUNTIME: std::sync::OnceLock<tokio::runtime::Runtime> = std::sync::OnceLock::new();
+    if let Some(runtime) = RUNTIME.get() {
+        return Ok(runtime);
+    }
+    let made = tokio::runtime::Builder::new_multi_thread().worker_threads(4).enable_all().build().map_err(failed)?;
+    Ok(RUNTIME.get_or_init(|| made))
+}
+
 fn url(address: &str, database: usize) -> String {
     format!("redis://{address}/{database}")
 }
@@ -1013,9 +1025,8 @@ fn main() {
         }
         let server_case_value = case.clone();
         trials.push(Trial::test(format!("server::{id}"), move || {
-            let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(failed)?;
             let claim = claim(index);
-            runtime.block_on(server_case(&server_case_value, claim.database))
+            server_runtime()?.block_on(server_case(&server_case_value, claim.database))
         }));
     }
     let Some(Value::Array(missing)) = contract.get("openMissing") else {

@@ -160,9 +160,9 @@ ci-bindings:
 	$(MAKE) --no-print-directory redis-image
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_BINDINGS)
 
-# The jobs of assets.yml. Each writes the release recipes, and with RELEASE=true, the input release of assets.yml that the
-# workflow release passes, runs the release check of binding before it builds.
-release_check = $(if $(filter true,$(RELEASE)),$(MAKE) --no-print-directory release-binding-check)
+# The jobs of assets.yml. Each writes the release recipes and runs the release check of binding before it builds, in the
+# run of ci as in a release, so that a check that fails stops the run of ci before a tag exists. The check starts go for
+# the go.sum of the Go module (binding CK-19), so each job installs the go of mise.toml before it.
 
 # ring, the cryptography of rustls (SR-6.1), compiles C in its build script, and on a Linux host release-go-static builds
 # the musl target of its arch, for which the cc crate looks for <arch>-linux-musl-gcc, which no runner holds. The C
@@ -184,10 +184,10 @@ musl-cc-check:
 # The job platform: the static library of the Go module, the wheel and the npm platform package of this host.
 ci-assets-platform:
 	$(MAKE) --no-print-directory install-rust
-	$(MAKE) --no-print-directory install-tools TOOLS="uv python"
+	$(MAKE) --no-print-directory install-tools TOOLS="uv python go"
 	$(MAKE) --no-print-directory release-recipes
 	$(MAKE) --no-print-directory musl-cc-check
-	$(release_check)
+	$(MAKE) --no-print-directory release-binding-check
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) release-go-static release-wheel release-npm-platform
 
 # The job php: the PHP extension for the PHP on PATH, whose minor is EXPECTED_PHP_MINOR. The job provisions the LLVM of
@@ -202,16 +202,18 @@ ci-assets-php: LD_LIBRARY_PATH :=
 ci-assets-php:
 	@test -n "$(EXPECTED_PHP_MINOR)" || { echo 'ci-assets-php needs EXPECTED_PHP_MINOR, the PHP minor of the job, for example make ci-assets-php EXPECTED_PHP_MINOR=8.4' >&2; exit 2; }
 	$(MAKE) --no-print-directory install-rust
+	$(MAKE) --no-print-directory install-tools TOOLS=go
 	$(MAKE) --no-print-directory release-recipes
-	$(release_check)
+	$(MAKE) --no-print-directory release-binding-check
 	$(MAKE) --no-print-directory release-php-ext PHP=php EXPECTED_PHP_MINOR=$(EXPECTED_PHP_MINOR) $(if $(LLVM_PATH),LLVM_ROOT=$(LLVM_PATH))
 
 # The job npm: the npm package, packed with the wasm-bindgen of mise.toml.
 ci-assets-npm:
 	$(MAKE) --no-print-directory install-rust
+	$(MAKE) --no-print-directory install-tools TOOLS=go
 	$(MAKE) --no-print-directory release-recipes
 	$(MAKE) --no-print-directory install-wasm-bindgen
-	$(release_check)
+	$(MAKE) --no-print-directory release-binding-check
 	$(MAKE) --no-print-directory release-npm
 
 # The last job of .github/workflows/ci.yml: fails unless every job of RESULTS, the JSON of toJSON(needs), has the result

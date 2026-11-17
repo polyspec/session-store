@@ -300,7 +300,7 @@ function platformFindings(file: string, text: string): string[] {
 }
 
 // The run step of the job php and the one line of its recipe ci-assets-php that builds the extension of the minor of the job.
-const PHP_RUN = 'make ci-assets-php EXPECTED_PHP_MINOR=${{ matrix.php }} RELEASE=${{ inputs.release }}';
+const PHP_RUN = 'make ci-assets-php EXPECTED_PHP_MINOR=${{ matrix.php }}';
 const PHP_BUILD = '$(MAKE) --no-print-directory release-php-ext PHP=php EXPECTED_PHP_MINOR=$(EXPECTED_PHP_MINOR) $(if $(LLVM_PATH),LLVM_ROOT=$(LLVM_PATH))';
 // The target-specific lines that empty the library paths of the dynamic loader for ci-assets-php, which install-llvm-action
 // sets with /usr/lib first, so that the PHP of Homebrew does not load the libraries of the system.
@@ -558,7 +558,7 @@ const PHP_SAMPLE = `jobs:
   platform:
     runs-on: \${{ matrix.runner }}
     steps:
-      - run: make ci-assets-platform RELEASE=\${{ inputs.release }}
+      - run: make ci-assets-platform
   php:
     strategy:
       matrix:
@@ -569,7 +569,7 @@ ${Object.entries(PLATFORM_RUNNERS).flatMap(([platform, runner]) => ['8.4', '8.5'
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
         with:
           php-version: \${{ matrix.php }}
-      - run: make ci-assets-php EXPECTED_PHP_MINOR=\${{ matrix.php }} RELEASE=\${{ inputs.release }}
+      - run: make ci-assets-php EXPECTED_PHP_MINOR=\${{ matrix.php }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: assets-php-\${{ matrix.platform }}-\${{ matrix.php }}
@@ -766,7 +766,7 @@ test('each job of assets.yml installs go before the release check of binding, wh
   // (CK-19) and starts go for it, and a job declares the tools that it runs (AGENTS.md): the release 0.0.2 failed after
   // its tag on the macOS runners with "go mod download did not start: spawnSync go ENOENT", because no job of assets.yml
   // installed go and the jobs ran the check only in a release. The dry run of each recipe with the arguments of its run
-  // step, for the run of ci and for a release, runs the check, after an install-tools that names go.
+  // step, which the run of ci and a release give alike, runs the check, after an install-tools that names go.
   const make = process.env.MAKE ?? 'make';
   const environment = { ...process.env, MAKEFLAGS: '' };
   execFileSync(make, ['-s', '--no-print-directory', '-C', root, 'release-recipes'], { env: environment, stdio: ['ignore', 'ignore', 'inherit'] });
@@ -774,16 +774,14 @@ test('each job of assets.yml installs go before the release check of binding, wh
   assert.deepEqual(runs.map((run) => run[1]).sort(), ['ci-assets-npm', 'ci-assets-php', 'ci-assets-platform']);
   const findings: string[] = [];
   for (const [, recipe, given] of runs) {
-    for (const release of ['false', 'true']) {
-      const values = given.replaceAll('${{ inputs.release }}', release).replaceAll('${{ matrix.php }}', '8.4').trim();
-      assert.doesNotMatch(values, /\$\{\{/, `an expression of ${recipe} that the test gives no value`);
-      const lines = execFileSync(make, ['-n', '--no-print-directory', '-C', root, recipe, ...(values === '' ? [] : values.split(' '))], { encoding: 'utf8', env: environment }).split('\n');
-      // The check is the line of binding, or the line of the sub-make of its target where the dry run does not enter it.
-      const check = lines.findIndex((line) => / check \S+interface\.json --release |make\S* --no-print-directory release-binding-check$/.test(line));
-      const go = lines.findIndex((line) => /install-tools\.mjs --no-self-update(?: \S+)* go(?: |$)/.test(line));
-      if (check === -1) findings.push(`${recipe} (release ${release}) does not run the release check of binding`);
-      else if (go === -1 || go > check) findings.push(`${recipe} (release ${release}) runs the release check of binding without go installed before it`);
-    }
+    const values = given.replaceAll('${{ matrix.php }}', '8.4').trim();
+    assert.doesNotMatch(values, /\$\{\{/, `an expression of ${recipe} that the test gives no value`);
+    const lines = execFileSync(make, ['-n', '--no-print-directory', '-C', root, recipe, ...(values === '' ? [] : values.split(' '))], { encoding: 'utf8', env: environment }).split('\n');
+    // The check is the line of binding, or the line of the sub-make of its target where the dry run does not enter it.
+    const check = lines.findIndex((line) => / check \S+interface\.json --release |make\S* --no-print-directory release-binding-check$/.test(line));
+    const go = lines.findIndex((line) => /install-tools\.mjs --no-self-update(?: \S+)* go(?: |$)/.test(line));
+    if (check === -1) findings.push(`${recipe} does not run the release check of binding`);
+    else if (go === -1 || go > check) findings.push(`${recipe} runs the release check of binding without go installed before it`);
   }
   assert.deepEqual(findings, []);
 });

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Each job of assets.yml installs go before the release check of binding and runs that check in the run of ci as in a release (T1.70): the check starts go for the `go.sum` of the Go module, no job installed go, and the check ran only in a release, so the release 0.0.2 failed after its tag on the macOS runners with "spawnSync go ENOENT". The input `release` of assets.yml and the make variable `RELEASE` are removed.
+
 ## 0.0.2
 
 - The musl targets of the Go libraries build C with the clang and the llvm-ar of the LLVM of `config/toolchain.json` (T1.68): ring, the cryptography of rustls, compiles C, and the cc crate found no `<arch>-linux-musl-gcc` on a runner, so `make release-go-static` failed on Linux. The Makefile declares `CC_<target>` and `AR_<target>` of each musl target by their absolute paths, and `make musl-cc-check`, the first check of the job platform, fails on Linux while that clang is missing or is not the pinned major release.

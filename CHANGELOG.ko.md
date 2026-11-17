@@ -1,7 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 311aa6e03c564b227782bd29e9ec7cc92cde0c769b8ae2d65c803e7ed3e2129a -->
+<!-- source-sha256: 195145ff4aed42a8d6adf226870dfcf31bf61dfdc2d2de4de3cf282bd6d056d8 -->
 
 ## Unreleased
+
+- assets.yml의 각 job은 binding의 release 검사 앞에서 go를 설치하고, 그 검사를 release에서처럼 ci의 run에서도 돌린다(T1.70). 그 검사는 Go module의 `go.sum` 때문에 go를 시작하는데 어떤 job도 go를 설치하지 않았고 검사는 release에서만 돌아서, release 0.0.2가 tag 뒤에 macOS runner에서 "spawnSync go ENOENT"로 실패했다. assets.yml의 입력 `release`와 make 변수 `RELEASE`를 지웠다.
 
 ## 0.0.2
 

@@ -1,6 +1,6 @@
 # The assets of each platform of the bindings of session-store (binding GN-19a, GN-19i). The workflow ci calls it for the
-# commit of its run, and the workflow release calls it for the tree of the tag that it releases, with release true, which runs
-# the release check of binding before a job builds (make release-binding-check).
+# commit of its run, and the workflow release calls it for the tree of the tag that it releases; in both, each job runs the
+# release check of binding before it builds (make release-binding-check), after it installed the go that the check starts.
 #
 # The job platform runs on the runner of its platform, ubuntu-26.04, ubuntu-26.04-arm or macos-15, the one exception to the
 # runner rule of AGENTS.md: the asset of a platform is linked and loaded only on that platform, because no tool of the release
@@ -10,7 +10,7 @@
 # the separate job php builds one PHP extension per platform and minor;
 # the job npm packs the npm package itself with the wasm-bindgen of mise.toml. Each uploads var/release/assets as an
 # artifact, which the workflow release downloads. Each job runs one recipe of the Makefile, make ci-assets-<job>, with the
-# values of its matrix and the input release as make variables: the recipe installs and writes what the job needs, which
+# values of its matrix as make variables: the recipe installs and writes what the job needs, which
 # stops at a failure, then builds every asset of the job also after a failed one, so one run names every asset that does
 # not build.
 name: assets
@@ -23,11 +23,6 @@ on:
         required: false
         type: string
         default: ''
-      release:
-        description: Whether each job runs the release check of binding before it builds
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -55,7 +50,7 @@ jobs:
       # Python of mise.toml, with which uv builds the wheel, then the static library of the Go module, the wheel and the npm
       # platform package.
       - name: build the assets of the platform
-        run: make ci-assets-platform RELEASE=${{ inputs.release }}
+        run: make ci-assets-platform
       # actions/upload-artifact v7.0.1: the assets of the platform.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: ${{ !cancelled() }}
@@ -113,7 +108,7 @@ jobs:
       # The Rust toolchain and the locked crates, then the extension for the PHP of the setup, whose minor the build checks
       # against EXPECTED_PHP_MINOR.
       - name: build the PHP extension
-        run: make ci-assets-php EXPECTED_PHP_MINOR=${{ matrix.php }} RELEASE=${{ inputs.release }}
+        run: make ci-assets-php EXPECTED_PHP_MINOR=${{ matrix.php }}
       # actions/upload-artifact v7.0.1: the isolated platform and minor asset.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: ${{ !cancelled() }}
@@ -131,7 +126,7 @@ jobs:
       - uses: ./.github/actions/bootstrap
       # The Rust toolchain and the locked crates and the wasm-bindgen of mise.toml, then the npm package.
       - name: pack the npm package
-        run: make ci-assets-npm RELEASE=${{ inputs.release }}
+        run: make ci-assets-npm
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: ${{ !cancelled() }}
         with:

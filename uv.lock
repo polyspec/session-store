@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.14"
 resolution-markers = [
     "platform_machine == 'arm64' and sys_platform == 'darwin'",
@@ -10,35 +10,35 @@ resolution-markers = [
 
 [[package]]
 name = "polyspec-php-serialization"
-version = "0.0.15"
-source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-macosx_11_0_arm64.whl" }
+version = "0.0.16"
+source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-macosx_11_0_arm64.whl" }
 resolution-markers = [
     "platform_machine == 'arm64' and sys_platform == 'darwin'",
 ]
 wheels = [
-    { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-macosx_11_0_arm64.whl", hash = "sha256:5d3e32006a7c56f3630c67baf714ea8aa724bc1bdca228cde4a9881229d0fe0c" },
+    { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-macosx_11_0_arm64.whl", hash = "sha256:3c23767e1e7eebe2fd6ba15c6974c58290a3160f016022dc540481fba231a51d" },
 ]
 
 [[package]]
 name = "polyspec-php-serialization"
-version = "0.0.15"
-source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-manylinux_2_34_aarch64.whl" }
+version = "0.0.16"
+source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-manylinux_2_34_aarch64.whl" }
 resolution-markers = [
     "platform_machine == 'aarch64' and sys_platform == 'linux'",
 ]
 wheels = [
-    { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-manylinux_2_34_aarch64.whl", hash = "sha256:be9288f59e5677886c0b06d6d277a38eb4b27f1ee5848baec07bd70f0b5d25b3" },
+    { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-manylinux_2_34_aarch64.whl", hash = "sha256:9a2bb8b6ab99e64db642275cf20f5faccf656192d295684e3ab26e2d360d7637" },
 ]
 
 [[package]]
 name = "polyspec-php-serialization"
-version = "0.0.15"
-source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-manylinux_2_34_x86_64.whl" }
+version = "0.0.16"
+source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-manylinux_2_34_x86_64.whl" }
 resolution-markers = [
     "platform_machine == 'x86_64' and sys_platform == 'linux'",
 ]
 wheels = [
-    { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:d1b318297ab46fbfb86895ac01c3cd72e17e4f469b03064d2ea275eacce32b58" },
+    { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:003c6bb350e932f8f9a9769d47110d76f5c81ca1d0bbe2b3e83bf3b19ddf7e9c" },
 ]
 
 [[package]]
@@ -46,14 +46,14 @@ name = "polyspec-session-store-development"
 version = "0"
 source = { virtual = "." }
 dependencies = [
-    { name = "polyspec-php-serialization", version = "0.0.15", source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-macosx_11_0_arm64.whl" }, marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "polyspec-php-serialization", version = "0.0.15", source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-manylinux_2_34_aarch64.whl" }, marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "polyspec-php-serialization", version = "0.0.15", source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-manylinux_2_34_x86_64.whl" }, marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "polyspec-php-serialization", version = "0.0.16", source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-macosx_11_0_arm64.whl" }, marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "polyspec-php-serialization", version = "0.0.16", source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-manylinux_2_34_aarch64.whl" }, marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
+    { name = "polyspec-php-serialization", version = "0.0.16", source = { url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-manylinux_2_34_x86_64.whl" }, marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "polyspec-php-serialization", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'", url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-macosx_11_0_arm64.whl" },
-    { name = "polyspec-php-serialization", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'", url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-manylinux_2_34_aarch64.whl" },
-    { name = "polyspec-php-serialization", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'", url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-manylinux_2_34_x86_64.whl" },
+    { name = "polyspec-php-serialization", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'", url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-macosx_11_0_arm64.whl" },
+    { name = "polyspec-php-serialization", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'", url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-manylinux_2_34_aarch64.whl" },
+    { name = "polyspec-php-serialization", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'", url = "https://github.com/polyspec/php-serialization/releases/download/v0.0.16/polyspec_php_serialization-0.0.16-cp314-abi3-manylinux_2_34_x86_64.whl" },
 ]

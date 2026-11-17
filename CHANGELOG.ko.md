@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: cc71bed9ffc1a1599196bcb8a84ebd6a62d42b53026971535aefa9b5beb228a3 -->
+<!-- source-sha256: 4949e96b9163c12d3a37c26eb1582fa90feecf7481cc5bff44ca6894b08b2051 -->
 
 ## Unreleased
 
+- `make test-node`와 `make test-wasm`은 생성된 시험을 kit이 연결하는 root의 설치에서 돌린다(T1.76). root가 php-serialization release의 platform별 npm package를 그 asset의 URL로 `optionalDependencies`에 이름하므로 그 addon은 빌드하지 않고 설치하며, 이 저장소의 addon은 생성된 entry 옆에 둔다. 전에는 recipe가 php-serialization과 이 package를 빌드해 묶고 둘을 `var/node`에 다시 설치했다.
 - tag `v0.0.2`, `v0.0.3`과 release 0.0.3의 draft를 지웠다. 그 release run들이 tag를 만든 뒤 실패해서 어떤 release도 그것을 갖지 않고, 0.0.4가 첫 release다. 0.0.2, 0.0.3, 0.0.4 섹션은 그 tag들이 있다고 적는데, 그때까지는 그랬다.
 
 ## 0.0.4

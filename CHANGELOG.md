@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `make test-node` and `make test-wasm` run the generated tests on the install of the root, which kit links (T1.76): the root names the npm package of each platform of the release of php-serialization by the URL of its asset in `optionalDependencies`, so its addon is installed and not built, and the addon of this repository lies beside its generated entry. Before, the recipes built and packed php-serialization and this package and installed both again into `var/node`.
 - The tags `v0.0.2` and `v0.0.3` and the draft of the release 0.0.3 are removed: their release runs failed after they made the tag, so no release holds them, and 0.0.4 is the first release. The sections 0.0.2, 0.0.3 and 0.0.4 state that these tags exist, which was so until then.
 
 ## 0.0.4

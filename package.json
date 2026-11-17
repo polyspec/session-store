@@ -19,5 +19,10 @@
     "@polyspec/kit": "https://github.com/polyspec/kit/releases/download/v0.0.119/polyspec-kit-0.0.119.tgz",
     "@polyspec/php-serialization": "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec-php-serialization-0.0.15.tgz",
     "typescript": "7.0.2"
+  },
+  "optionalDependencies": {
+    "@polyspec/php-serialization-darwin-arm64": "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec-php-serialization-darwin-arm64-0.0.15.tgz",
+    "@polyspec/php-serialization-linux-arm64-gnu": "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec-php-serialization-linux-arm64-gnu-0.0.15.tgz",
+    "@polyspec/php-serialization-linux-x64-gnu": "https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec-php-serialization-linux-x64-gnu-0.0.15.tgz"
   }
 }

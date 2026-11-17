@@ -567,14 +567,23 @@ fn made_call(case: &Value, name: &str) -> Result<(), Failed> {
 
 /// SF-3.8: an opening whose cancellation fired before the call; only `file_sessions.open` reads the group.
 fn open_cancel(case: &Value) -> Result<(), Failed> {
-    let raises = case.get("raises").ok_or("the case has no raises")?;
     let root = case_directory(case)?;
     let store = store_with(case, root.path())?;
-    let (_trigger, cancel) = cancel_of(case.get("cancel").ok_or("the case has no cancel")?)?;
+    // A cancellation that the case leaves out or gives as null is the one that the core decides (SF-3.8, CK-103).
+    let (_trigger, cancel) = match case.get("cancel") {
+        None | Some(Value::Null) => (None, None),
+        Some(value) => {
+            let (trigger, cancel) = cancel_of(value)?;
+            (Some(trigger), Some(cancel))
+        }
+    };
     let cookie = cookie_of(case)?;
-    match store.open(ProcessWait::for_generated_call(), cookie.as_deref(), Some(cancel)) {
-        Ok(_) => Err("the session is opened".into()),
-        Err(error) => expect_failure(&error, raises),
+    let opened = store.open(ProcessWait::for_generated_call(), cookie.as_deref(), cancel);
+    match (opened, case.get("raises")) {
+        (Ok(_), None) => Ok(()),
+        (Ok(_), Some(_)) => Err("the session is opened".into()),
+        (Err(error), Some(raises)) => expect_failure(&error, raises),
+        (Err(error), None) => Err(format!("the opening fails: {error:?}").into()),
     }
 }
 

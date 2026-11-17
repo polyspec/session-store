@@ -1,7 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 7eab049c761560794c7a0ac5679d17b6d980264fb86613f341b9475f04f64fee -->
+<!-- source-sha256: cc71bed9ffc1a1599196bcb8a84ebd6a62d42b53026971535aefa9b5beb228a3 -->
 
 ## Unreleased
+
+- tag `v0.0.2`, `v0.0.3`과 release 0.0.3의 draft를 지웠다. 그 release run들이 tag를 만든 뒤 실패해서 어떤 release도 그것을 갖지 않고, 0.0.4가 첫 release다. 0.0.2, 0.0.3, 0.0.4 섹션은 그 tag들이 있다고 적는데, 그때까지는 그랬다.
 
 ## 0.0.4
 

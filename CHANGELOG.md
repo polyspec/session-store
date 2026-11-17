@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The tags `v0.0.2` and `v0.0.3` and the draft of the release 0.0.3 are removed: their release runs failed after they made the tag, so no release holds them, and 0.0.4 is the first release. The sections 0.0.2, 0.0.3 and 0.0.4 state that these tags exist, which was so until then.
+
 ## 0.0.4
 
 - `make workflows-test` runs the recipe that uploads the assets of a release to a stand-in of gh, on a tree of the names of the assets (T1.74): no run of ci reaches that recipe, and it fails without the PHP minors of T1.73.

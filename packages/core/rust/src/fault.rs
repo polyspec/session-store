@@ -11,8 +11,10 @@ pub const RANDOM: &str = "session_store.random";
 /// The point of the kind `internal` (X-1), at two invariant branches that no input reaches: the count of renewals of a
 /// memory store, which passes u64 when it is armed as `broken` (SE-4.3), and the state of a record session that its
 /// start left waiting, in the start of `get`, `set`, `remove` and `renew` of a record session (SE-7.2). The second is on
-/// the path of every caller of a session of a request, so a contract that passes on the kinds of this library arms it
-/// for a member of its own.
+/// the path of every caller of a session of a request. Only the generated tests of this library arm it: an arming is
+/// held by the binding core that the arming crate links, and this point reads the one that the crate of this library
+/// links. A library that passes on the kinds of this library and reaches the point through an object that the package
+/// of this library made links a binding core of its own, so its generated tests cannot arm the point (binding GN-5).
 #[doc(hidden)]
 pub const INTERNAL: &str = "session_store.internal";
 /// The open of the session file, in `FileSessions::open` (SF-3, SF-9.2).

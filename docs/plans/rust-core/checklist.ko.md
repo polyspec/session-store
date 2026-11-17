@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: ff15d2b39b0f93e8267ff776cd6da31152aca4b5761d5ea4787c7f87c3a54005 -->
+<!-- source-sha256: 3fbdd914d6f97474387f9a578f6b1ac61258aecd02fbd1b4d6a5d2c39429fa2d -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -85,3 +85,4 @@
 | T1.66 | session-store의 첫 release로 0.0.2를 낸다. 0.0.1은 버전 커밋만 있고(T1.36) tag와 release가 없다. workspace 버전과 binding scaffold가 그것으로 쓰는 manifest는 `Cargo.lock`, `package-lock.json`과 함께 0.0.2이고, 두 changelog의 `## Unreleased` 섹션은 빈 `## Unreleased` 아래의 `## 0.0.2`다(T1.36과 같다). `## 0.0.1` 섹션은 그대로 둔다. 버전 커밋은 그 push의 마지막 커밋이라 release workflow가 그 위에서 돈다. | `Cargo.toml`; 생성된 manifest; `Cargo.lock`; `package-lock.json`; `CHANGELOG.md`(.ko) | make check | [v] |
 | T1.67 | hook commit-msg의 시험은 `git commit`처럼 committer의 identity를 검사에 주고, 전역 설정이 없고 추측할 identity도 없는 CI runner의 git으로 돈다. 규칙 `commit-ai-identity`는 `git var GIT_AUTHOR_IDENT`를 읽는데 거기서 그것이 실패하므로("Author identity unknown"), CI 43991961457에서 검사가 꼬리말 없는 메시지를 거부했다(T1.64). | `scripts/tool-pins.test.mts` | make tool-pins-test | [v] |
 | T1.68 | Go library의 musl target은 C를 `config/toolchain.json`의 LLVM에 있는 clang과 llvm-ar로 빌드한다. rustls의 암호인 ring 0.17.14(SR-6.1)는 build script에서 C를 컴파일한다. Linux host에서 `make release-go-static`은 자기 arch의 musl target을 빌드하고, 그 target에 cc crate는 `<arch>-linux-musl-gcc`를 찾는데 runner에는 그것이 없어서 assets.yml의 job platform이 "failed to find tool x86_64-linux-musl-gcc"로 실패했다. job은 자기가 돌리는 도구를 선언하고(AGENTS.md), C 컴파일러는 session-store의 의존이 필요로 하므로, Makefile이 `rust-toolchain.toml`의 musl target마다 `CC_<target>`과 `AR_<target>`을 `LLVM_ROOT`의 절대 경로로 선언한다. job이 먼저 돌리는 `make musl-cc-check`는 Linux에서 그 clang이 없거나 pin의 major release가 아니면 실패한다. aarch64의 ubuntu:26.04 container에서 빌드는 그것 없이 "failed to find tool aarch64-linux-musl-gcc"로 실패했고, 그것으로 `libpolyspec_session_store_go.a`를 빌드했다. | `Makefile`; `scripts/tool-pins.test.mts`; `config/toolchain.json` | make tool-pins-test; Linux에서 make release-go-static | [v] |
+| T1.69 | push의 끝에 0.0.2를 낸다. T1.66의 버전 커밋 뒤에 T1.67과 T1.68의 고침이 왔고, 그 변경은 `## Unreleased` 섹션에 있었다. 그래서 이 커밋이 그것들을 아직 어떤 release에도 들지 않은 `## 0.0.2`로 옮기고, 그 위에 빈 `## Unreleased`를 둔다. manifest는 T1.66부터 0.0.2다. release workflow는 push의 마지막 커밋에서 돈다. | `CHANGELOG.md`(.ko) | make check | [v] |

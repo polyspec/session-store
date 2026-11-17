@@ -1,12 +1,12 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: ea3222c605c91a91eb70c11e2bcb132c0cbbb35475f65d369fb24afc2d4a822c -->
+<!-- source-sha256: 311aa6e03c564b227782bd29e9ec7cc92cde0c769b8ae2d65c803e7ed3e2129a -->
 
 ## Unreleased
 
-- Go library의 musl target은 C를 `config/toolchain.json`의 LLVM에 있는 clang과 llvm-ar로 빌드한다(T1.68). rustls의 암호인 ring이 C를 컴파일하는데, cc crate가 runner에서 `<arch>-linux-musl-gcc`를 찾지 못해 Linux에서 `make release-go-static`이 실패했다. Makefile이 musl target마다 `CC_<target>`과 `AR_<target>`을 절대 경로로 선언하고, job platform의 첫 검사인 `make musl-cc-check`는 Linux에서 그 clang이 없거나 pin한 major release가 아니면 실패한다.
-- hook commit-msg의 시험은 CI runner의 git으로 돌고, `git commit`처럼 사람의 identity를 검사에 준다(T1.67). 규칙 `commit-ai-identity`가 그 identity를 읽으므로, identity가 없는 runner에서 검사가 모든 메시지를 거부했다.
 ## 0.0.2
 
+- Go library의 musl target은 C를 `config/toolchain.json`의 LLVM에 있는 clang과 llvm-ar로 빌드한다(T1.68). rustls의 암호인 ring이 C를 컴파일하는데, cc crate가 runner에서 `<arch>-linux-musl-gcc`를 찾지 못해 Linux에서 `make release-go-static`이 실패했다. Makefile이 musl target마다 `CC_<target>`과 `AR_<target>`을 절대 경로로 선언하고, job platform의 첫 검사인 `make musl-cc-check`는 Linux에서 그 clang이 없거나 pin한 major release가 아니면 실패한다.
+- hook commit-msg의 시험은 CI runner의 git으로 돌고, `git commit`처럼 사람의 identity를 검사에 준다(T1.67). 규칙 `commit-ai-identity`가 그 identity를 읽으므로, identity가 없는 runner에서 검사가 모든 메시지를 거부했다.
 - SR-6.1a를 retire하고 그 id를 다시 쓰지 않는다. SR-6.1b가 그 안의 동작을 말한다. TLS로 연결하는 저장소는 기계의 신뢰 저장소를 프로세스에서 한 번 읽고, 자기가 만드는 TLS의 모든 client에 그 인증 기관들을 준다. redis-rs가 연결마다 신뢰 저장소를 읽지 않는다는 것은 저장소의 규칙이 아니라 의존 라이브러리의 구현이다. redis-rs를 `tls-rustls-webpki-roots`로 빌드하는 이유는 `docs/operations/dependencies.md`에 남고, 어떤 시험도 그 빌드의 feature를 검사하지 않는다. TLS 시험은 서버의 `rediss://` 주소에 한 번 연결한다(SR-6.1).
 - kit 0.0.119가 0.0.116을 대신한다(T1.63). `link.mjs cargo`는 cargo의 줄을 그 순서대로 쓰고, link는 provider의 Python package를 그 배포판이 설치됐을 때만 연결한다.
 - TLS 시험은 기계의 신뢰 저장소만으로 bay를 믿고 `SSL_CERT_FILE`을 쓰지 않는다. 시험 프로세스가 bay가 인증서를 발급한 서버에 두 번 연결한다. redis-rs가 연결마다 신뢰 저장소를 읽지 않는다는 것(SR-6.1a)은 빌드의 사실이고, `make servers-test`가 `cargo metadata`의 resolve features에서 offline으로 읽는다. redis-rs는 `tls-rustls-webpki-roots`로 빌드된다. 전에는 시험이 자기 프로세스에 `SSL_CERT_FILE`을 주고 두 연결 사이에 그 파일을 지웠고, `servers-test`의 시험 검사가 그것을 거부한다(SE-10.4).

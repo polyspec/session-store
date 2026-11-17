@@ -260,6 +260,22 @@ test('packages/ts is a workspace of the root, whose php-serialization is the npm
   const locked = lock.packages['node_modules/@polyspec/php-serialization'];
   assert.equal(locked?.resolved, url);
   assert.match(locked?.integrity ?? '', /^sha512-/);
+  // T1.76: the addon of php-serialization is the npm package of the platform of its release, which the root names by the
+  // URL of its asset in optionalDependencies (binding GN-3c), so the install of the root holds it and nothing builds it.
+  const optional = (JSON.parse(read('package.json')) as { optionalDependencies?: Record<string, string> }).optionalDependencies ?? {};
+  for (const platform of ['darwin-arm64', 'linux-arm64-gnu', 'linux-x64-gnu']) {
+    const name = `@polyspec/php-serialization-${platform}`;
+    const asset = `https://github.com/polyspec/php-serialization/releases/download/v${tag}/polyspec-php-serialization-${platform}-${tag}.tgz`;
+    assert.equal(optional[name], asset, `the root does not name the asset of ${name}`);
+    assert.equal(lock.packages[`node_modules/${name}`]?.resolved, asset);
+    assert.match(lock.packages[`node_modules/${name}`]?.integrity ?? '', /^sha512-/);
+  }
+  // The generated tests of Node and of WASM run on that install, which kit links, with the addon of the checkout beside
+  // the generated entry: no recipe packs a package of php-serialization or installs a second copy into var.
+  const makefile = read('Makefile');
+  assert.doesNotMatch(makefile, /\$\(VAR\)\/node\b|\$\(VAR\)\/deps\/npm|php-serialization-node/, 'a recipe installs a copy of the Node packages into var');
+  assert.match(makefile, /^\t\$\(SERVICE_RUN\) \$\(NODE\) --test packages\/ts\/generated\/tests\/generated\.test\.mjs$/m, 'test-node does not run the generated tests in the checkout');
+  assert.match(makefile, /^\t\$\(NODE\) --expose-gc --test packages\/ts\/wasm\/generated\/tests\/generated\.test\.mjs$/m, 'test-wasm does not run the generated tests in the checkout');
 });
 
 test('the hook commit-msg of .githooks refuses a message with the footer of an AI tool', () => {

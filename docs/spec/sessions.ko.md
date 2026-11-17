@@ -353,6 +353,14 @@
   프로세스에서 한 번 읽는다. 그것이 없으면 연결은 기계의 신뢰 저장소의 인증 기관을 믿는다(SR-6.1b). `authorities`를
   주고 어디에도 TLS로 연결하지 않는 설정, 그리고 읽을 수 없거나 PEM 인증서가 하나도 없는 파일은 kind
   `invalid_setting`으로 실패하고, 그 글이 경로를 말한다.
+  <a id="SR-6.9"></a> 프로세스는 한 설정의 연결을 그 수명 동안 유지하고, 그 설정의 요청들과
+  저장소들이 그것을 공유한다. PHP extension처럼 요청마다 만든 저장소는 같은 설정의 앞선 저장소가 만든 연결을 받고,
+  프로세스에 연결이 없을 때만 연결한다. 두 설정은 모든 field, 곧 종류, 주소들, `service`, `tls`, `user`,
+  `password`, `authorities`가 같을 때 같다. 어느 field든 다른 설정의 저장소들은 연결을 공유하지 않는다. 그러므로 한
+  사용자로 인증되었거나 한 인증 기관 파일을 믿는 연결은 다른 설정에 쓰이지 않는다. 실패한 연결은 다음 요청이 다시
+  만들고(SR-6.4), `fork` 뒤의 자식은 자신의 연결을 만든다(SR-6.5). 그것을 닫는 호출은 없고, 연결은 프로세스와 함께
+  끝난다. 설정이 가진 비밀번호는 프로세스 안에서만 그 연결을 가리키며, 라이브러리의 어떤 log, 오류, 값의 글에도
+  나오지 않는다.
 - **SR-7** <a id="SR-7.1"></a> phpredis를 쓰는 PHP 프로세스는 다음을 설정할 때 세션을 공유한다: `session.save_handler=redis`,
   `session.serialize_handler=php_serialize`, `redis.session.locking_enabled=1`, `redis.session.lock_expire`를
   저장소의 `lock_expire`로(0은 안 된다. phpredis는 그때 `max_execution_time`을 쓰고 그 값은 명령줄에서 0이다),

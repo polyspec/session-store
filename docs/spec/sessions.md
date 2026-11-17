@@ -360,6 +360,15 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   first connection of TLS and once in a process for a path; without it the connections trust those of the trust store
   of the machine (SR-6.1b). A setting that gives `authorities` and connects nowhere with TLS, and a file that cannot be
   read or that holds no PEM certificate, fail with the kind `invalid_setting`, whose text names the path.
+  <a id="SR-6.9"></a> A process keeps the connections of a setting for its life and shares them across
+  the requests and the stores of that setting: a store made for each request, as the extension of PHP makes it, takes
+  the connection that an earlier store of an equal setting made, and connects only when the process has none. Two
+  settings are equal when every field is equal, the kind, the addresses, `service`, `tls`, `user`, `password` and
+  `authorities`; stores of settings that differ in any field share no connection, so a connection authenticated as
+  one user or trusting one file of authorities serves no other setting. A connection that fails is made again by the
+  next request (SR-6.4), and a child after a `fork` makes its own (SR-6.5). No call closes them; they end with the
+  process. The password that a setting holds names its connections in the process alone and appears in no log, error
+  or text of a value of the library.
 - **SR-7** <a id="SR-7.1"></a> A PHP process with phpredis shares the sessions when it sets `session.save_handler=redis`,
   `session.serialize_handler=php_serialize`, `redis.session.locking_enabled=1`, `redis.session.lock_expire` to the
   `lock_expire` of the store (never 0, because phpredis then takes `max_execution_time`, which is 0 on the command line),

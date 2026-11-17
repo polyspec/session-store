@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.0.6
+
 - The stores of Redis of an equal setting share the connections of the process for its life (SR-6.9, T1.82): a store made for each request, as the extension of PHP makes it, connected again for each request, whose closed connections filled the client ports in TIME_WAIT. Settings that differ in any field, such as a password or a file of authorities, share no connection, no call closes them, and the passwords of the settings appear in no message.
 - A Cluster setting of the store of Redis takes `user` and `password` beside its URLs (SR-6.8, T1.83), for an application that holds the credentials apart: they reach every node, the URLs then give no user or password, and a `user` without a `password` fails with `invalid_setting`; a `password` alone is that of the user `default`. The fields are new in the case `cluster` of `setting`, so a caller states them, with none where its URLs give the credentials. SR-6.8 replaces SR-6.6, which is retired.
 ## 0.0.5

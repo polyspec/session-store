@@ -15,11 +15,8 @@ that leaves out that read: it compiles the roots of webpki in its place. redis-r
 configuration of rustls.
 
 The store reads the trust store once in a process and gives its authorities to every client of TLS that it builds
-(SR-6.1a), through public setters alone: `Client::build_with_tls`, `SentinelClientBuilder::set_client_to_sentinel_certificates`
+(SR-6.1b), through public setters alone: `Client::build_with_tls`, `SentinelClientBuilder::set_client_to_sentinel_certificates`
 and `set_client_to_redis_certificates`, and `ClusterClientBuilder::certs`. No connection therefore uses the roots of
-webpki. That a connection reads no trust store is a fact of the build: `make servers-test` reads offline from the
-resolved features of `cargo metadata` that redis-rs is built with `tls-rustls-webpki-roots`. The test
-`a_tls_connection_reads_and_writes` (`packages/redis/rust/tests/server.rs`) connects twice to a server whose certificate
-bay issues, trusting bay through the trust store of the machine alone.
+webpki.
 
 The feature is removed when a release of redis-rs does not read the trust store for a connection whose roots are given.

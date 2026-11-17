@@ -1,5 +1,5 @@
 <!-- doc-id: operations-dependencies -->
-<!-- source-sha256: 7d9254dfa0dee975fd859351fd240aae0cfcbae5d430d7b0bf25ab7f916f3b82 -->
+<!-- source-sha256: ec4e428ba35c648ed2e39cb265a1c35e7d28771b4aabe56d2d15cd11c963e5a6 -->
 # 이유가 있는 의존성
 
 ## redis (redis-rs): feature `tls-rustls-webpki-roots`
@@ -14,11 +14,8 @@ redis-rs 1.8.1은 TLS 연결마다 rustls 설정을 만든다(`create_rustls_con
 있어서 TLS 연결이 제한 시간으로 실패했다. 이 feature는 그 읽기를 빼는 유일한 공개 수단이다. 그 자리에 webpki의 루트를
 컴파일해 넣는다. redis-rs에는 rustls 설정을 넘기는 공개 방법이 없다.
 
-저장소는 신뢰 저장소를 프로세스에서 한 번 읽고, 자기가 만드는 TLS의 모든 client에 그 인증 기관들을 준다(SR-6.1a). 공개
+저장소는 신뢰 저장소를 프로세스에서 한 번 읽고, 자기가 만드는 TLS의 모든 client에 그 인증 기관들을 준다(SR-6.1b). 공개
 setter만 쓴다. `Client::build_with_tls`, `SentinelClientBuilder::set_client_to_sentinel_certificates`와
-`set_client_to_redis_certificates`, `ClusterClientBuilder::certs`다. 그래서 어떤 연결도 webpki의 루트를 쓰지 않는다. 연결이
-신뢰 저장소를 읽지 않는다는 것은 빌드의 사실이다. `make servers-test`가 `cargo metadata`의 resolve features에서
-redis-rs가 `tls-rustls-webpki-roots`로 빌드된다는 것을 offline으로 읽는다. 시험 `a_tls_connection_reads_and_writes`
-(`packages/redis/rust/tests/server.rs`)는 기계의 신뢰 저장소만으로 bay를 믿고, bay가 인증서를 발급한 서버에 두 번 연결한다.
+`set_client_to_redis_certificates`, `ClusterClientBuilder::certs`다. 그래서 어떤 연결도 webpki의 루트를 쓰지 않는다.
 
 redis-rs의 release가 루트를 받은 연결에서 신뢰 저장소를 읽지 않게 되면 이 feature를 뺀다.

@@ -18,14 +18,14 @@ polyspec-php-serialization = { git = "https://github.com/polyspec/php-serializat
 polyspec-session-store-core = { path = "../../core/rust" }
 polyspec-binding-core = { git = "https://github.com/polyspec/binding.git", tag = "v0.0.17" }
 # The connection (SR-6): a server, Sentinel or Cluster, TLS with rustls, an ACL user and password in the URL. The
-# feature tls-rustls-webpki-roots keeps redis-rs from reading the trust store for each connection (SR-6.1a,
-# docs/operations/dependencies.md).
+# feature tls-rustls-webpki-roots keeps redis-rs from reading the trust store for each connection
+# (docs/operations/dependencies.md).
 redis = { version = "=1.8.1", default-features = false, features = ["tokio-comp", "tokio-rustls-comp", "tls-rustls-webpki-roots", "sentinel", "cluster-async"] }
 # The cryptography of rustls for TLS (SR-6.1): one provider, ring, so that rustls selects it for the process.
 rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
-# The trust store of the machine, read once in a process for every client of TLS (SR-6.1a).
+# The trust store of the machine, read once in a process for every client of TLS (SR-6.1b).
 rustls-native-certs = "=0.8.5"
-# The PEM text of the authorities of the trust store, which TlsCertificates of redis takes (SR-6.1a).
+# The PEM text of the authorities of the trust store, which TlsCertificates of redis takes (SR-6.1b).
 pem-rfc7468 = { version = "=1.0.0", features = ["alloc"] }
 # The wait between two tries of a lock and the queue of a process (SR-3.2, SR-8).
 tokio = { version = "1.54.1", default-features = false, features = ["sync", "time"] }

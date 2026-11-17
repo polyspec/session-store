@@ -107,7 +107,7 @@ fn invalid(detail: &str) -> Error {
     Error::InvalidSetting { detail: detail.to_owned() }
 }
 
-/// The client of Sentinel (SR-6.1a, SR-6.2): the Sentinel nodes share one scheme, one user and one password, and every
+/// The client of Sentinel (SR-6.1b, SR-6.2): the Sentinel nodes share one scheme, one user and one password, and every
 /// connection of TLS, to a node or to the primary that it names, trusts the authorities read once.
 fn sentinel(
     urls: &[String],
@@ -381,10 +381,8 @@ impl Store for RedisSession {
 mod trust_tests {
     use super::{Link, Setting};
 
-    /// SR-6.1a: the links of TLS of a server, of Sentinel and of a Cluster take the authorities that this crate reads
+    /// SR-6.1b: the links of TLS of a server, of Sentinel and of a Cluster take the authorities that this crate reads
     /// once in the process (`trust::authorities`), however many links there are; it counts the reads of this crate.
-    /// It does not show that redis-rs reads no trust store of its own for a connection with those authorities, which
-    /// is a fact of the build that `make servers-test` reads from the resolved features of redis-rs (T1.62).
     #[test]
     fn the_links_of_tls_read_the_trust_store_once() {
         let settings = [

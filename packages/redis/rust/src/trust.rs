@@ -1,4 +1,4 @@
-//! The authorities of the trust store of the machine, read once in a process (SR-6.1a).
+//! The authorities of the trust store of the machine, read once in a process (SR-6.1b).
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
@@ -6,15 +6,15 @@ use std::sync::Mutex;
 use polyspec_session_store_core::Error;
 use redis::TlsCertificates;
 
-/// The reads of the trust store of the machine in this process, which a test counts (SR-6.1a).
+/// The reads of the trust store of the machine in this process, which a test counts (SR-6.1b).
 static READS: AtomicUsize = AtomicUsize::new(0);
 
-/// The authorities that every client of TLS of the process trusts (SR-6.1a).
+/// The authorities that every client of TLS of the process trusts (SR-6.1b).
 /// The authorities of the trust store as PEM text, once they were read; a read that failed leaves nothing, so that the
-/// next connection reads again (SR-6.1a).
+/// next connection reads again (SR-6.1b).
 static READ: Mutex<Option<Vec<u8>>> = Mutex::new(None);
 
-/// The authorities of the trust store of the machine as PEM text, read once in a process (SR-6.1a).
+/// The authorities of the trust store of the machine as PEM text, read once in a process (SR-6.1b).
 pub(crate) fn authorities() -> Result<Vec<u8>, Error> {
     let mut read_once = match READ.lock() {
         Ok(held) => held,
@@ -28,7 +28,7 @@ pub(crate) fn authorities() -> Result<Vec<u8>, Error> {
     Ok(pem)
 }
 
-/// The authorities that every client of TLS of the process trusts (SR-6.1a).
+/// The authorities that every client of TLS of the process trusts (SR-6.1b).
 pub(crate) fn certificates(authorities: &[u8]) -> TlsCertificates {
     TlsCertificates { client_tls: None, root_cert: Some(authorities.to_vec()) }
 }

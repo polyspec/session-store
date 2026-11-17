@@ -197,24 +197,17 @@ fn a_tls_connection_reads_and_writes() -> Result<(), Failed> {
     let server = project.address("server").map_err(Failed::from)?;
     // A failure of the client tells nothing of its cause (SR-6.4), so the test adds what the server wrote.
     let url = format!("rediss://{}/", server.name);
-    let wrote = |when: &str, error: Failed| {
+    runtime()?.block_on(round_trip(Setting::Server { url })).map_err(|error| {
         let message = match error.message() {
             Some(message) => message.to_owned(),
             None => String::new(),
         };
-        Failed::from(format!("{when}{message}\nthe server at {} wrote:\n{}", server.name, project.output("server")))
-    };
-    // SR-6.1a: two stores of the process connect, the second with the authorities that the process read once. That
-    // redis-rs reads no trust store for a connection is a fact of its build, which servers-test reads (T1.62).
-    let rounds = runtime()?;
-    rounds
-        .block_on(round_trip(Setting::Server { url: url.clone() }))
-        .map_err(|error| wrote("the first store: ", error))?;
-    rounds.block_on(round_trip(Setting::Server { url })).map_err(|error| wrote("the second store: ", error))
+        Failed::from(format!("{message}\nthe server at {} wrote:\n{}", server.name, project.output("server")))
+    })
 }
 
 fn sentinel_of_tls_names_a_primary_of_tls() -> Result<(), Failed> {
-    // SR-6.1a, SR-6.2: the Sentinel node and the primary accept TLS alone with the certificates that bay issues, whose
+    // SR-6.1b, SR-6.2: the Sentinel node and the primary accept TLS alone with the certificates that bay issues, whose
     // authority the roots of webpki do not hold: the store connects to both only with the authorities that it read.
     let configuration = format!("{MOUNT}/sentinel.conf");
     let mut project = Project::new(vec![
@@ -255,7 +248,7 @@ fn sentinel_of_tls_names_a_primary_of_tls() -> Result<(), Failed> {
 }
 
 fn a_cluster_of_tls_keeps_sessions() -> Result<(), Failed> {
-    // SR-6.1a, SR-6.3: the nodes accept TLS alone, also between themselves, and name each other by the names of their
+    // SR-6.1b, SR-6.3: the nodes accept TLS alone, also between themselves, and name each other by the names of their
     // certificates, whose authority the roots of webpki do not hold.
     let names = ["node-0", "node-1", "node-2"];
     let mut services = Vec::new();

@@ -1,7 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 6ece98e7ff3749cb8729f72f3fac9686d58950af34cc8f3d2d93a367071b41a5 -->
+<!-- source-sha256: 0db396d242db6df5b87785d9cd194422491afbbf14feeec3745f0be79eb2240b -->
 
 ## Unreleased
+
+## 0.0.2
 
 - SR-6.1a를 retire하고 그 id를 다시 쓰지 않는다. SR-6.1b가 그 안의 동작을 말한다. TLS로 연결하는 저장소는 기계의 신뢰 저장소를 프로세스에서 한 번 읽고, 자기가 만드는 TLS의 모든 client에 그 인증 기관들을 준다. redis-rs가 연결마다 신뢰 저장소를 읽지 않는다는 것은 저장소의 규칙이 아니라 의존 라이브러리의 구현이다. redis-rs를 `tls-rustls-webpki-roots`로 빌드하는 이유는 `docs/operations/dependencies.md`에 남고, 어떤 시험도 그 빌드의 feature를 검사하지 않는다. TLS 시험은 서버의 `rediss://` 주소에 한 번 연결한다(SR-6.1).
 - kit 0.0.119가 0.0.116을 대신한다(T1.63). `link.mjs cargo`는 cargo의 줄을 그 순서대로 쓰고, link는 provider의 Python package를 그 배포판이 설치됐을 때만 연결한다.

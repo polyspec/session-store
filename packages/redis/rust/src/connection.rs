@@ -54,8 +54,30 @@ struct Links {
 struct Inner {
     options: Options,
     setting: Setting,
-    links: Mutex<Option<Links>>,
+    links: Shared,
     turns: Turns,
+}
+
+/// The links of a setting, which the stores of an equal setting share (SR-6.9).
+type Shared = Arc<Mutex<Option<Links>>>;
+
+/// The links of the process by their whole setting, kept for the life of the process: a store of an equal setting
+/// takes those that an earlier store made, and a store of a setting that differs in any field takes its own (SR-6.9).
+/// The settings hold passwords, which this list tells to no message.
+static LINKS: std::sync::Mutex<Vec<(Setting, Shared)>> = std::sync::Mutex::new(Vec::new());
+
+/// The links of the process for `setting` (SR-6.9).
+fn shared_links(setting: &Setting) -> Shared {
+    let mut all = match LINKS.lock() {
+        Ok(held) => held,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+    if let Some((_, links)) = all.iter().find(|(made, _)| made == setting) {
+        return Arc::clone(links);
+    }
+    let links: Shared = Arc::new(Mutex::new(None));
+    all.push((setting.clone(), Arc::clone(&links)));
+    links
 }
 
 /// The store of Redis of a process (SR-1).
@@ -343,7 +365,8 @@ impl Inner {
 }
 
 impl RedisSessions {
-    /// The store of a connection setting with its options (SR-1.2, SR-6.1). It connects at its first request.
+    /// The store of a connection setting with its options (SR-1.2, SR-6.1). It connects at its first request, unless
+    /// a store of an equal setting of the process connected before (SR-6.9).
     pub fn new(setting: &Setting, options: &StoreOptions) -> Result<Self, Error> {
         let options = Options::of(options)?;
         Link::new(setting)?;
@@ -351,7 +374,7 @@ impl RedisSessions {
             inner: Arc::new(Inner {
                 options,
                 setting: setting.clone(),
-                links: Mutex::new(None),
+                links: shared_links(setting),
                 turns: Turns::default(),
             }),
         })

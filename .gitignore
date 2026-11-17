@@ -18,3 +18,5 @@ go.work
 go.work.sum
 # The link declaration of kit (K869), which the local links read; never committed.
 /.links
+# The environment of the Python root, which make install-python-packages installs from uv.lock.
+/.venv/

@@ -1,0 +1,18 @@
+# The private development root of Python (T1.59): no package and no version of the repository. The generated package of
+# packages/python requires php-serialization by its name and version alone, and no registry carries it, so this root,
+# which installs it for the tests, names the wheel of its release for each platform by the URL of the asset and its
+# sha256, as the root package.json names its npm packages. uv.lock locks them, make install-packages installs the lock
+# into .venv, which kit links, and make test-python installs the wheel of this checkout there without its dependencies.
+[project]
+name = "polyspec-session-store-development"
+version = "0"
+requires-python = ">=3.14"
+dependencies = [
+    "polyspec-php-serialization @ https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-macosx_11_0_arm64.whl#sha256=5d3e32006a7c56f3630c67baf714ea8aa724bc1bdca228cde4a9881229d0fe0c ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "polyspec-php-serialization @ https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-manylinux_2_34_aarch64.whl#sha256=be9288f59e5677886c0b06d6d277a38eb4b27f1ee5848baec07bd70f0b5d25b3 ; sys_platform == 'linux' and platform_machine == 'aarch64'",
+    "polyspec-php-serialization @ https://github.com/polyspec/php-serialization/releases/download/v0.0.15/polyspec_php_serialization-0.0.15-cp314-abi3-manylinux_2_34_x86_64.whl#sha256=d1b318297ab46fbfb86895ac01c3cd72e17e4f469b03064d2ea275eacce32b58 ; sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+# The root is no package: uv installs its dependencies and builds nothing of it.
+[tool.uv]
+package = false

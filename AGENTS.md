@@ -224,7 +224,7 @@ are stable and ext-php-rs builds on Windows with a pinned stable toolchain.
   and then `CI_RUST` (`make lint-rust`, `make fmt-check` and `make binding-check`); each runs its targets past failures with
   ci-targets of kit and uploads the report `var/report/ci-targets`.
 - The job `bindings` of the workflow `ci` sets up the PHP of `.php-version`, uses the action bay and runs
-  `make ci-bindings`, whose recipe runs `make install-rust`, `make install-tools`, `make install-php-tools` and
+  `make ci-bindings`, whose recipe runs `make install-rust`, `make install-tools`, `make install-php-tools`, `make install-python-packages` and
   `make redis-image`, in that order, and then `CI_BINDINGS` (`make lint-bindings`,
   `make check-declarations`, `make test-python`, `make test-node`, `make test-wasm`, `make test-php` and
   `make test-go`), so that no binding package of a release is untested; `ci-passed` needs it, and

@@ -1,5 +1,5 @@
 <!-- doc-id: agents -->
-<!-- source-sha256: a7112d1e8478c2f73799f90d688fd3d8ed0d4e473553a3c6afdf69115332acfc -->
+<!-- source-sha256: 451d5419c3b02aaba489cfd1a7de26037ca746dcce1df3182436e58236fd23ef -->
 # AGENTS.md
 
 session-store의 모든 변경이 따르는 규칙이다. 라이브러리의 규칙은 [docs/spec/sessions.ko.md](docs/spec/sessions.ko.md)에 있다.
@@ -211,7 +211,7 @@ toolchain으로 Windows에서 빌드될 때까지 Windows는 지원하지 않는
   `make fmt-check`, `make binding-check`)를 실행한다. 각 job은 kit의 ci-targets로 target을 실패 뒤에도 끝까지 실행하고
   보고서 `var/report/ci-targets`를 올린다.
 - workflow `ci`의 job `bindings`는 `.php-version`의 PHP를 설치하고 action bay를 쓴 뒤 `make ci-bindings`를 실행한다. 그
-  recipe는 `make install-rust`, `make install-tools`, `make install-php-tools`, `make redis-image`를 그 순서로 실행한 뒤 `CI_BINDINGS`(`make lint-bindings`, `make check-declarations`,
+  recipe는 `make install-rust`, `make install-tools`, `make install-php-tools`, `make install-python-packages`, `make redis-image`를 그 순서로 실행한 뒤 `CI_BINDINGS`(`make lint-bindings`, `make check-declarations`,
   `make test-python`, `make test-node`, `make test-wasm`, `make test-php`, `make test-go`)를 실행한다. 그래서
   릴리스의 바인딩 package는 시험되지 않은 채로 나가지 않는다. `ci-passed`가 이 job을 `needs`에 두고,
   `make workflows-test`는 이 job이 없는 workflow `ci`, action bay보다 먼저 실행하는 job, 시험 전에 `make redis-image`가

@@ -717,9 +717,9 @@ test('every job of CI runs its recipe ci-<job> in one run step, and its other st
 
 test('the job bindings runs make ci-bindings after the action bay, and no recipe applies the machine setup of bay', () => {
   const job = `${GOOD}  bindings:\n    runs-on: ubuntu-26.04-arm\n    steps:\n      - uses: ${BAY_ACTION}\n      - run: ${BINDINGS_RUN}\n`;
-  const recipe = 'ci-bindings: ## The job bindings\n\t$(MAKE) install-rust\n\t$(MAKE) redis-image\n\t$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_BINDINGS)\n';
+  const recipe = 'ci-bindings: ## The job bindings\n\t$(MAKE) install-rust\n\t$(MAKE) install-python-packages\n\t$(MAKE) redis-image\n\t$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_BINDINGS)\n';
   const makefile = `CI_BINDINGS := ${BINDING_TESTS.join(' ')}\n${recipe}ci-test:\n\t$(MAKE) redis-image\n\t$(MAKE) test\n`;
-  const order = 'Makefile: the recipe ci-bindings does not run redis-image, $(CI_BINDINGS) in this order';
+  const order = 'Makefile: the recipe ci-bindings does not run install-python-packages, redis-image, $(CI_BINDINGS) in this order';
   assert.deepEqual(bindingsJobFindings(CI, job, makefile), []);
   assert.deepEqual(bindingsJobFindings(CI, GOOD, makefile), [`${CI}: has no job bindings`]);
   assert.deepEqual(bindingsJobFindings(CI, job.replace(BINDINGS_RUN, 'make ci-bindings BAY_SUDO=1'), makefile), [`${CI}: the job bindings does not run ${BINDINGS_RUN}`]);

@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: a43a9660ff393f43bb7c7fbcfbada6b4fba0ebf9cfb7722d2ada152a32a3b5f5 -->
+<!-- source-sha256: 561d81312beeee8262c3365d18be4817a29c79fc29e625f2a7bd13ea2fd8fbc8 -->
 
 ## Unreleased
 
+- `make test-python`은 php-serialization을 그 release의 wheel로 설치하고 clone에서 빌드하지 않는다(T1.59). 새 비공개 개발 root `pyproject.toml`이 platform마다 wheel을 그 asset의 URL과 sha256으로 이름하고, `uv.lock`이 그것을 잠그며, `make install-python-packages`가 그 lock을 kit이 연결하는 uv project의 환경 `.venv`에 설치하고, 시험은 checkout의 wheel을 의존 없이 거기에 설치한다. 전에는 recipe가 php-serialization의 wheel을 빌드해 둘을 pip으로 `var/venv`에 설치했다.
 - `make release-candidate-assets`는 tag 없이 커밋된 HEAD에서 release의 모든 package의 archive를 change log 첫 섹션의 버전으로 만들고, ci의 job shared가 매 run에서 그것을 돌린다(T1.78). archive 단계의 실패는 release의 tag 뒤에야 드러났다. kit 0.0.120이 0.0.119를 대신하고, 그 버전을 읽는다(K1286).
 - 시험의 run은 시작할 때 process가 사라진 run의 서버와 디렉터리를 지우고, 어느 run의 project 몇 개인지 적는다(SE-10.4, T1.77). SIGKILL로 끝난 run과 그 명령은 아무것도 지우지 못해서, kill된 `make test`의 container 7개가 남았다. run은 자기 process의 id와 시작 시각을 자기 디렉터리에 적고, 그 id의 process가 없거나 그 id의 process가 다른 시각에 시작했으면 그 run은 사라진 것이다. `make servers-test`의 run들은 자기만의 임시 디렉터리를 쓴다.
 - `make test-node`와 `make test-wasm`은 생성된 시험을 kit이 연결하는 root의 설치에서 돌린다(T1.76). root가 php-serialization release의 platform별 npm package를 그 asset의 URL로 `optionalDependencies`에 이름하므로 그 addon은 빌드하지 않고 설치하며, 이 저장소의 addon은 생성된 entry 옆에 둔다. 전에는 recipe가 php-serialization과 이 package를 빌드해 묶고 둘을 `var/node`에 다시 설치했다.

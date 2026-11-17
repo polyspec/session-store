@@ -75,7 +75,7 @@ export PHP PHP_CONFIG
 # "Platforms").
 CDYLIB := $(if $(filter Darwin,$(shell uname -s)),dylib,so)
 
-.PHONY: bootstrap install-deps php-serialization-checkout php-serialization-python php-serialization-php php-serialization-go install-tools install-packages install-php-tools toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test link unlink link-check servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
+.PHONY: bootstrap install-deps php-serialization-checkout php-serialization-php php-serialization-go install-tools install-packages install-php-tools install-python-packages toolchain-lock install-rust ci-bindings install-bay bay-path setup-bay install-bay-test ci-shared ci-rust ci-test ci-assets-platform ci-assets-php ci-assets-npm ci-release-tag ci-release-release ci-passed owner-check owner-validate docs-check documents-stamp workflows-test tool-pins-test link unlink link-check servers-test redis-state-test install-bay-test commit-names-check commit-names-test check test redis-image lint-rust fmt-check binding-check bindings $(addprefix bindings-,$(TARGETS)) test-bindings lint-bindings check-declarations \
 	test-python node-package test-node test-wasm test-php test-go \
 	release-coverage release-candidate-assets release-tag release-tag-output release-tools release-tools-path release-assets release-publish release-undraft \
 	release-recipes
@@ -119,6 +119,12 @@ install-packages:
 install-php-tools:
 	$(COMPOSER) install --no-interaction --no-progress
 
+# The lock of the Python root (pyproject.toml, uv.lock) into .venv, the environment of the uv project, which kit links,
+# with the uv of mise.toml: the wheel of the release of php-serialization of this platform, which the generated package
+# of packages/python requires and no registry carries (T1.59); the one target that installs Python packages.
+install-python-packages:
+	$(ONLINE) $(UV) sync --locked
+
 # Writes mise.lock with mise lock for each platform that has the archives of the tools.
 TOOLCHAIN_LOCK_PLATFORMS := linux-x64,linux-arm64,macos-arm64,macos-x64,windows-x64,windows-arm64
 toolchain-lock:
@@ -157,6 +163,7 @@ ci-bindings:
 	$(MAKE) --no-print-directory install-rust
 	$(MAKE) --no-print-directory install-tools
 	$(MAKE) --no-print-directory install-php-tools
+	$(MAKE) --no-print-directory install-python-packages
 	$(MAKE) --no-print-directory install-deps
 	$(MAKE) --no-print-directory redis-image
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) $(CI_BINDINGS)
@@ -378,14 +385,13 @@ check-declarations: bindings-node bindings-wasm
 SERVICE_RUN = BAY='$(BAY)' REDIS_IMAGE='$(REDIS_IMAGE)' $(NODE) $(CURDIR)/scripts/test-run.mts --service redis
 
 # The generated packages of session-store require those of php-serialization (php_value, SE-1.5): the wheel, the PHP
-# extension, the npm package and the Go module of the release that Cargo.lock pins by its tag and commit. make
-# install-deps fetches the crates of Cargo.lock and clones the checkout of php-serialization at that commit into
-# PHP_SERIALIZATION (scripts/deps.mts); the targets php-serialization-python, -php and -go generate its bindings
-# there with the binding of package-lock.json and build them: the wheel PHP_SERIALIZATION_WHEEL, which test-python
-# installs beside the wheel of this repository, the extension PHP_SERIALIZATION_EXTENSION, which test-php loads before
-# this one, and the static library of its Go crate with GO_WORK, which names the Go modules of both checkouts (T1.34-1
-# to T1.34-3). The npm package of php-serialization is the one of its release in the install of the root (T1.76). maturin runs in this checkout with the manifest of the clone, because the shim of mise refuses a folder whose
-# mise.toml mise does not trust.
+# extension, the npm package and the Go module of the release that Cargo.lock pins by its tag and commit. The npm
+# package and the wheel are those of its release, in the installs of the roots (T1.76, T1.59). make install-deps
+# fetches the crates of Cargo.lock and clones the checkout of php-serialization at that commit into PHP_SERIALIZATION
+# (scripts/deps.mts) for the PHP and Go tests; the targets php-serialization-php and -go generate its bindings there
+# with the binding of package-lock.json and build them with their test features: the extension
+# PHP_SERIALIZATION_EXTENSION, which test-php loads before this one, and the static library of its Go crate with
+# GO_WORK, which names the Go modules of both checkouts (T1.34-3).
 install-deps:
 	$(ONLINE) $(CARGO) fetch --locked
 	$(ONLINE) $(NODE) scripts/deps.mts
@@ -397,17 +403,11 @@ PHP_SERIALIZATION_LINK := $(firstword $(foreach line,$(shell cat '$(LINKS_FILE)'
 PHP_SERIALIZATION := $(or $(PHP_SERIALIZATION_LINK),$(VAR)/deps/php-serialization)
 # A run writes nothing into the checkout of .links (T1.54): its provider generates its bindings there itself, so the
 # targets generate only the clone of the release.
-PHP_SERIALIZATION_WHEEL = $(wildcard $(VAR)/deps/wheels/*.whl)
 PHP_SERIALIZATION_EXTENSION = $(CARGO_TARGET_DIR)/debug/libpolyspec_php_serialization.$(CDYLIB)
 GO_WORK := $(VAR)/go.work
 
 php-serialization-checkout:
 	test -e "$(PHP_SERIALIZATION)/.git" || { echo 'the checkout of php-serialization is missing: run make install-deps or name it in .links'; exit 1; }
-
-php-serialization-python: php-serialization-checkout
-	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target python --cargo "$(CARGO)")
-	rm -rf $(VAR)/deps/wheels
-	$(MATURIN_LINK) build --locked --manifest-path $(PHP_SERIALIZATION)/packages/python/Cargo.toml --interpreter $(PYTHON) --features panic-test --out $(VAR)/deps/wheels $(CARGOFLAGS)
 
 php-serialization-php: php-serialization-checkout
 	$(if $(PHP_SERIALIZATION_LINK),,$(BINDING) generate --root $(PHP_SERIALIZATION) --target php --cargo "$(CARGO)")
@@ -418,15 +418,15 @@ php-serialization-go: php-serialization-checkout
 	$(CARGO) build $(CARGOFLAGS) --manifest-path $(PHP_SERIALIZATION)/Cargo.toml -p polyspec-php-serialization-go --locked --features panic-test,codec-test
 	printf 'go $(GO_RELEASE)\n\nuse (\n\t$(CURDIR)/packages/go\n\t$(PHP_SERIALIZATION)/packages/go\n)\n' > $(GO_WORK)
 
-# The wheel that the maturin of mise.toml builds, installed with the wheel of php-serialization into a virtual
-# environment without an index; the generated tests (binding G-5), which run the contract cases.
-test-python: bindings-python php-serialization-python
-	test -f "$(PHP_SERIALIZATION_WHEEL)"
-	$(PYTHON) -m venv --clear $(VAR)/venv
+# The wheel that the maturin of mise.toml builds, installed without its dependencies into .venv, the environment of the
+# Python root, which holds the wheel of the release of php-serialization and which kit links (T1.59); the generated
+# tests (binding G-5), which run the contract cases, run in that environment.
+test-python: bindings-python
+	@test -x .venv/bin/python || { echo 'test-python: the environment .venv of the Python root is missing; run make install-python-packages' >&2; exit 1; }
 	rm -rf $(VAR)/wheels
-	$(MATURIN_LINK) build --locked --manifest-path packages/python/Cargo.toml --interpreter $(VAR)/venv/bin/python --features panic-test,fault-test --out $(VAR)/wheels $(CARGOFLAGS)
-	$(VAR)/venv/bin/pip install -q --no-index --force-reinstall $(VAR)/deps/wheels/*.whl $(VAR)/wheels/*.whl
-	cd $(VAR) && $(SERVICE_RUN) venv/bin/python -m unittest discover -s $(CURDIR)/packages/python/generated/tests -t $(CURDIR)/packages/python/generated/tests
+	$(MATURIN_LINK) build --locked --manifest-path packages/python/Cargo.toml --interpreter .venv/bin/python --features panic-test,fault-test --out $(VAR)/wheels $(CARGOFLAGS)
+	$(UV) pip install --python .venv/bin/python --no-deps --reinstall $(VAR)/wheels/*.whl
+	$(SERVICE_RUN) $(CURDIR)/.venv/bin/python -m unittest discover -s packages/python/generated/tests -t packages/python/generated/tests
 
 # The WASM module with its glue, which wasm-bindgen writes into packages/ts/wasm/generated (binding GN-18, P-5), and the
 # addon of this machine's platform beside the generated entry of packages/ts/generated, where the entry loads it in a

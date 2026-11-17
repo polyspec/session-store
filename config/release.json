@@ -29,6 +29,7 @@
     "Cargo.toml": "the root Cargo workspace of the crates of the library and the binding crates (binding design L-2)",
     "composer.json": "the private development root of PHP: PHPUnit, which runs the tests of the PHP extension, and carries no version",
     "package.json": "the private package of the development tools of the repository, which installs @polyspec/kit, @polyspec/binding and the napi CLI and carries no version",
+    "pyproject.toml": "the private development root of Python: it names the wheel of the release of php-serialization that the tests of the Python binding install, and carries no version of the repository",
     "packages/core/rust/Cargo.toml": "a crate of the library, publish = false: the bindings that packages/rust/interface.json generates build it from the source of the checkout, and no runtime installs it alone",
     "packages/file/rust/Cargo.toml": "a crate of the library, publish = false: the bindings that packages/rust/interface.json generates build it from the source of the checkout, and no runtime installs it alone",
     "packages/go/go.mod": "the Go module of the binding: make release-go-module carries it in a commit with the generated files and the static library of each platform and creates the tag packages/go/vX.Y.Z of that commit (binding GN-19f), which kit does not make, so goModules names no module and no tag of kit releases it",

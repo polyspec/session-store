@@ -133,7 +133,9 @@
         "package.json",
         "Makefile",
         ".github/actions/**",
-        ".githooks/**"
+        ".githooks/**",
+        "pyproject.toml",
+        "uv.lock"
       ],
       "targets": [
         "tool-pins-test"

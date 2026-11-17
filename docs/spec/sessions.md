@@ -347,12 +347,14 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   `connection`, and the error tells no address, user or password. A failed request leaves its lock to expire.
   <a id="SR-6.5"></a> A process remembers the process id with which it made its connections; after a `fork` the child
   neither uses nor closes the connections that it inherited, whose sockets the parent still uses, and makes its own.
-  <a id="SR-6.6"></a> The TLS and the
-  user and password of a server whose address the setting gives are those of its URL: the scheme `rediss://` and the
-  user and password of the URL, for the URL of a server and for the addresses of a Cluster. The addresses of a Cluster
-  are all `rediss://` or all `redis://` and share one user and password; another list fails with the kind
-  `invalid_setting`. The primary of Sentinel has no address in the setting, so `tls`, `user` and `password` of the
-  Sentinel setting are those of the primary. <a id="SR-6.7"></a> Each setting takes `authorities`, the path of a file
+  <a id="SR-6.8"></a> The TLS of a server whose address the setting gives is
+  that of its URL, the scheme `rediss://`: for the URL of a server and for the addresses of a Cluster, which are all
+  `rediss://` or all `redis://`. The user and password of a server are those of its URL. A Cluster takes `user` and
+  `password`, each a text or none, for each of its nodes: with a `password` no address gives a user or password, and a
+  `user` without a `password` gives no password to send; either fails with the kind `invalid_setting`. Without them the
+  user and password of a Cluster are those of its addresses, which share one user and password or fail with the kind
+  `invalid_setting`. A `password` without a `user` is the password of the user `default`. The primary of Sentinel has
+  no address in the setting, so `tls`, `user` and `password` of the Sentinel setting are those of the primary. <a id="SR-6.7"></a> Each setting takes `authorities`, the path of a file
   of PEM certificates, or none. With it every connection of TLS of the setting, to a server, to the Sentinel nodes and
   their primary and to the nodes of a Cluster, trusts the authorities of that file alone, which the store reads at the
   first connection of TLS and once in a process for a path; without it the connections trust those of the trust store
@@ -377,7 +379,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   |---|---|---|---|
   | `invalid_lifetime` | none | `value` | SR-1.2 |
   | `invalid_lock_expire` | none | `value` | SR-1.2 |
-  | `invalid_setting` | none | `value` | SR-6.1, SR-6.6, SR-6.7: an address that is no URL of Redis, an empty list of addresses, addresses of Sentinel or of a Cluster that differ in their scheme, user or password, `authorities` in a setting without TLS, or a file of `authorities` that cannot be read or holds no PEM certificate |
+  | `invalid_setting` | none | `value` | SR-6.1, SR-6.7, SR-6.8: an address that is no URL of Redis, an empty list of addresses, addresses of Sentinel or of a Cluster that differ in their scheme, user or password, a Cluster whose `password` stands beside an address with a user or password or whose `user` has no `password`, `authorities` in a setting without TLS, or a file of `authorities` that cannot be read or holds no PEM certificate |
   | `lock_timeout` | 500 | `store` | SR-3.3 |
   | `lock_lost` | 500 | `store` | SR-4.3 |
   | `reply` | 500 | `store` | SR-5.1 |

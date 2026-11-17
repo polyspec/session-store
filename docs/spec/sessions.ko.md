@@ -340,10 +340,13 @@
   `connection`으로 실패하고, 오류는 주소, 사용자, 비밀번호를 알리지 않는다. 실패한 요청은 자신의 잠금이 만료되도록 둔다.
   <a id="SR-6.5"></a> 프로세스는 연결을 만들 때의 process id를 기억한다. `fork` 뒤에 자식은
   물려받은 연결을 쓰지도 닫지도 않고(그 socket은 부모가 아직 쓴다), 자신의 연결을 만든다.
-  <a id="SR-6.6"></a> 설정이 주소를 주는 서버의 TLS와
-  사용자와 비밀번호는 그 URL의 것이다. scheme `rediss://`와 URL의 사용자와 비밀번호가 그것이고, 서버 하나의 URL과
-  Cluster의 주소들이 그렇다. Cluster의 주소는 모두 `rediss://`이거나 모두 `redis://`이고 사용자와 비밀번호 하나를 함께
-  쓴다. 그렇지 않은 목록은 kind `invalid_setting`으로 실패한다. Sentinel의 primary는 설정에 주소가 없으므로, Sentinel
+  <a id="SR-6.8"></a> 설정이 주소를 주는 서버의 TLS는 그 URL의 것, 곧
+  scheme `rediss://`이다. 서버 하나의 URL과 Cluster의 주소들이 그렇고, Cluster의 주소는 모두 `rediss://`이거나 모두
+  `redis://`이다. 서버 하나의 사용자와 비밀번호는 그 URL의 것이다. Cluster는 그 모든 node를 위한 `user`와
+  `password`를 받고, 각각은 text이거나 없다. `password`가 있으면 어떤 주소도 사용자나 비밀번호를 주지 않는다. `password`
+  없는 `user`는 보낼 비밀번호가 없다. 둘 다 kind `invalid_setting`으로 실패한다. 그것들이 없으면 Cluster의 사용자와
+  비밀번호는 그 주소들의 것이고, 주소들은 사용자와 비밀번호 하나를 함께 쓰거나 kind `invalid_setting`으로 실패한다.
+  `user` 없는 `password`는 사용자 `default`의 비밀번호다. Sentinel의 primary는 설정에 주소가 없으므로, Sentinel
   설정의 `tls`, `user`, `password`가 primary의 것이다. <a id="SR-6.7"></a> 각 설정은 `authorities`, 곧 PEM 인증서
   파일의 경로를 받거나 받지 않는다. 그것이 있으면 그 설정의 모든 TLS 연결, 곧 서버, Sentinel 노드와 그 primary,
   Cluster 노드로 가는 연결이 그 파일의 인증 기관만 믿는다. 저장소는 그 파일을 첫 TLS 연결 때 읽고, 한 경로를
@@ -369,7 +372,7 @@
   |---|---|---|---|
   | `invalid_lifetime` | 없음 | `value` | SR-1.2 |
   | `invalid_lock_expire` | 없음 | `value` | SR-1.2 |
-  | `invalid_setting` | 없음 | `value` | SR-6.1, SR-6.6, SR-6.7: Redis의 URL이 아닌 주소, 빈 주소 목록, scheme이나 사용자나 비밀번호가 서로 다른 Sentinel 또는 Cluster의 주소, TLS가 없는 설정의 `authorities`, 읽을 수 없거나 PEM 인증서가 하나도 없는 `authorities` 파일 |
+  | `invalid_setting` | 없음 | `value` | SR-6.1, SR-6.7, SR-6.8: Redis의 URL이 아닌 주소, 빈 주소 목록, scheme이나 사용자나 비밀번호가 서로 다른 Sentinel 또는 Cluster의 주소, 사용자나 비밀번호를 주는 주소 옆에 `password`가 있거나 `user`에 `password`가 없는 Cluster, TLS가 없는 설정의 `authorities`, 읽을 수 없거나 PEM 인증서가 하나도 없는 `authorities` 파일 |
   | `lock_timeout` | 500 | `store` | SR-3.3 |
   | `lock_lost` | 500 | `store` | SR-4.3 |
   | `reply` | 500 | `store` | SR-5.1 |

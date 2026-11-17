@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A Cluster setting of the store of Redis takes `user` and `password` beside its URLs (SR-6.8, T1.83), for an application that holds the credentials apart: they reach every node, the URLs then give no user or password, and a `user` without a `password` fails with `invalid_setting`; a `password` alone is that of the user `default`. The fields are new in the case `cluster` of `setting`, so a caller states them, with none where its URLs give the credentials. SR-6.8 replaces SR-6.6, which is retired.
 ## 0.0.5
 
 - `file_sessions.open.cancel` holds a case that opens without a cancellation, whose default the core decides (SF-3.8, T1.84): binding 0.0.21 requires for an optional parameter whose default the core computes a case that raises nothing and leaves it out (binding CK-103).

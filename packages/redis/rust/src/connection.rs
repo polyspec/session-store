@@ -20,10 +20,10 @@ use crate::turns::{Turn, Turns};
 /// `rediss://` (TLS), with the ACL user and password as its user information.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Setting {
-    /// One server, whose URL gives its TLS, user and password (SR-6.6).
+    /// One server, whose URL gives its TLS, user and password (SR-6.8).
     Server { url: String, authorities: Option<String> },
     /// The primary of a service that Sentinel names (SR-6.2); `tls`, `user` and `password` are those of the primary,
-    /// which has no address in the setting (SR-6.6).
+    /// which has no address in the setting (SR-6.8).
     Sentinel {
         urls: Vec<String>,
         service: String,
@@ -32,8 +32,9 @@ pub enum Setting {
         password: Option<String>,
         authorities: Option<String>,
     },
-    /// A Redis Cluster from its first nodes (SR-6.3), whose URLs give its TLS, user and password (SR-6.6).
-    Cluster { urls: Vec<String>, authorities: Option<String> },
+    /// A Redis Cluster from its first nodes (SR-6.3), whose URLs give its TLS; its user and password are `user` and
+    /// `password`, beside URLs that give none, or else those of its URLs (SR-6.8).
+    Cluster { urls: Vec<String>, user: Option<String>, password: Option<String>, authorities: Option<String> },
 }
 
 /// The connections of one process (SR-6.5).
@@ -128,7 +129,7 @@ fn authorities_for(with_tls: bool, authorities: &Option<String>) -> Result<Optio
 }
 
 /// The addresses `urls` of `named` nodes, which are all `redis://` or all `rediss://` and share one user and password
-/// (SR-6.1, SR-6.6); the scheme of TLS and the first address.
+/// (SR-6.1, SR-6.8); the scheme of TLS and the first address.
 fn shared(urls: &[String], named: &str) -> Result<(bool, Vec<redis::ConnectionInfo>), Error> {
     let nodes = urls
         .iter()
@@ -205,9 +206,24 @@ impl Link {
                 sentinel: Box::new(sentinel(urls, service, *tls, user, password, authorities)?),
                 primary: None,
             }),
-            Setting::Cluster { urls, authorities } => {
-                let (with_tls, _) = shared(urls, "Cluster")?;
+            Setting::Cluster { urls, user, password, authorities } => {
+                let (with_tls, nodes) = shared(urls, "Cluster")?;
                 let mut builder = redis::cluster::ClusterClientBuilder::new(urls.iter().map(String::as_str));
+                // SR-6.8: a user and password beside the URLs, which then give none, reach every node.
+                match (user, password) {
+                    (_, Some(password)) => {
+                        let settings = nodes[0].redis_settings();
+                        if settings.username().is_some() || settings.password().is_some() {
+                            return Err(invalid("a Cluster gives a password beside addresses with a user or password"));
+                        }
+                        builder = builder.password(password.clone());
+                        if let Some(user) = user {
+                            builder = builder.username(user.clone());
+                        }
+                    }
+                    (Some(_), None) => return Err(invalid("a Cluster gives a user without a password")),
+                    (None, None) => {}
+                }
                 if let Some(trusted) = authorities_for(with_tls, authorities)? {
                     builder = builder.certs(trusted);
                 }
@@ -421,7 +437,12 @@ mod trust_tests {
                 password: None,
                 authorities: None,
             },
-            Setting::Cluster { urls: vec!["rediss://localhost:7000/".to_owned()], authorities: None },
+            Setting::Cluster {
+                urls: vec!["rediss://localhost:7000/".to_owned()],
+                user: None,
+                password: None,
+                authorities: None,
+            },
         ];
         for setting in &settings {
             assert!(Link::new(setting).is_ok(), "the link of {setting:?} is not made");

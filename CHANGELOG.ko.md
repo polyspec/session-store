@@ -3,6 +3,7 @@
 
 ## Unreleased
 
+- Redis 저장소의 Cluster 설정은 URL 옆에서 `user`와 `password`를 받는다(SR-6.8, T1.83). 자격 증명을 따로 가진 application을 위한 것이다. 그것은 모든 node에 닿고, 그때 URL은 사용자나 비밀번호를 주지 않는다. `password` 없는 `user`는 `invalid_setting`으로 실패하고, `password`만 주면 사용자 `default`의 것이다. 두 field는 `setting`의 case `cluster`에 새로 생겼으므로 호출자가 그것을 말해야 하고, URL이 자격 증명을 주면 없음으로 준다. SR-6.8이 retire된 SR-6.6을 대신한다.
 ## 0.0.5
 
 - `file_sessions.open.cancel`은 취소 없이 여는 case를 가진다. 그 기본값은 core가 정한다(SF-3.8, T1.84). binding 0.0.21은 core가 기본값을 계산하는 optional parameter마다 아무것도 raise하지 않고 그것을 빼는 case를 요구한다(binding CK-103).

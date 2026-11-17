@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.0.5
+
+- `file_sessions.open.cancel` holds a case that opens without a cancellation, whose default the core decides (SF-3.8, T1.84): binding 0.0.21 requires for an optional parameter whose default the core computes a case that raises nothing and leaves it out (binding CK-103).
 - The tests of the store of Redis against real servers show a Cluster with an ACL user of its addresses and a setting that trusts the authorities of its file alone (SR-6.6, SR-6.7, T1.81); the second makes its authority and certificate with `rcgen`, a dependency of the tests alone (docs/operations/dependencies.md).
 - Each connection setting of the store of Redis takes `authorities`, the path of a file of PEM certificates or none (SR-6.7, T1.81): with it every connection of TLS of the setting trusts the authorities of that file alone, for a server whose authority the trust store of the machine does not hold. A setting that names it and connects nowhere with TLS, and a file that cannot be read or holds no PEM certificate, fail with `invalid_setting`. The field is new in the three cases of `setting`, so a caller states it, with none where it gives no file. The TLS and the user and password of a server and of a Cluster are those of their URLs (SR-6.6); the addresses of a Cluster that differ in their scheme, user or password now fail with `invalid_setting` by a check of the store.
 - The list of the binding targets of the Makefile is named `BINDING_TARGETS`, not `TARGETS` (T1.80): a `TARGETS` of the command line, with which a caller of ci-targets of kit gives its list, replaced the list of that name, and `make bindings` then generated the targets of the caller.

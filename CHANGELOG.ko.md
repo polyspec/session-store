@@ -3,6 +3,9 @@
 
 ## Unreleased
 
+## 0.0.5
+
+- `file_sessions.open.cancel`은 취소 없이 여는 case를 가진다. 그 기본값은 core가 정한다(SF-3.8, T1.84). binding 0.0.21은 core가 기본값을 계산하는 optional parameter마다 아무것도 raise하지 않고 그것을 빼는 case를 요구한다(binding CK-103).
 - 실제 서버에 대한 Redis 저장소의 시험이 주소의 ACL 사용자를 쓰는 Cluster와, 자기 파일의 인증 기관만 믿는 설정을 보인다(SR-6.6, SR-6.7, T1.81). 둘째 시험은 시험 전용 의존성인 `rcgen`으로 인증 기관과 인증서를 만든다(docs/operations/dependencies.md).
 - Redis 저장소의 각 연결 설정은 `authorities`, 곧 PEM 인증서 파일의 경로를 받거나 받지 않는다(SR-6.7, T1.81). 그것이 있으면 그 설정의 모든 TLS 연결이 그 파일의 인증 기관만 믿는다. 기계의 신뢰 저장소에 인증 기관이 없는 서버를 위한 것이다. 그것을 주고 어디에도 TLS로 연결하지 않는 설정, 읽을 수 없거나 PEM 인증서가 없는 파일은 `invalid_setting`으로 실패한다. 이 field는 `setting`의 세 case에 새로 생겼으므로 호출자는 그것을 적고, 파일을 주지 않을 때는 없음으로 적는다. 서버 하나와 Cluster의 TLS와 사용자와 비밀번호는 그 URL의 것이다(SR-6.6). scheme이나 사용자나 비밀번호가 서로 다른 Cluster의 주소는 이제 저장소의 검사로 `invalid_setting`이 된다.
 - Makefile의 binding target 목록의 이름은 `TARGETS`가 아니라 `BINDING_TARGETS`다(T1.80). kit의 ci-targets를 부르는 쪽이 자기 목록을 주는 명령줄의 `TARGETS`가 그 이름의 목록을 바꿨고, 그러면 `make bindings`가 호출자의 target을 생성했다.

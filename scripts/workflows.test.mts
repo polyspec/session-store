@@ -868,3 +868,21 @@ test('the job shared of ci builds the archives of a release from the commit of t
   const targets = lines.findIndex((line) => /ci-targets\.mjs .* release-candidate-assets( |$)/.test(line));
   assert.ok(uv !== -1 && targets !== -1 && uv < targets, 'the job shared does not install uv before its targets');
 });
+
+test('the job release pushes the tags of the Go modules after each release-go-module, once', () => {
+  // T1.88: binding 0.0.21 makes release-go-module write its tag into go-module-refs and pushes nothing; all tags go up in
+  // one `git push --atomic` by release-go-module-push. ci-release-release that runs release-go-module without it leaves
+  // the tag of the Go module of a release unpushed: json 0.0.37 lost its tag so. The dry run of the recipe with the
+  // arguments of the release job shows the order of the two.
+  const make = process.env.MAKE ?? 'make';
+  const lines = execFileSync(make, ['-n', '--no-print-directory', '-C', root, 'ci-release-release', 'TAG=v0.0.7'], {
+    encoding: 'utf8',
+    env: { ...process.env, MAKEFLAGS: '', GITHUB_ACTOR: 'dry-run' },
+  }).split('\n');
+  // The line of a sub-make names its target after --no-print-directory; the echo of release-go-module names the push too.
+  const module = lines.findIndex((line) => /--no-print-directory release-go-module$/.test(line));
+  const push = lines.findIndex((line) => /--no-print-directory release-go-module-push/.test(line));
+  assert.ok(module !== -1, 'ci-release-release does not run release-go-module');
+  assert.equal(lines.filter((line) => /--no-print-directory release-go-module-push/.test(line)).length, 1, 'release-go-module-push runs once');
+  assert.ok(push > module, 'release-go-module-push does not follow release-go-module');
+});

@@ -288,7 +288,8 @@ test('the hook commit-msg of .githooks refuses a message with the footer of an A
   assert.match(read('Makefile'), /^HOOK_DECLARATION := --hooks-path \.githooks --hook commit-msg /m);
   // T1.60: make hooks declares the merge of each changelog and checklist with a driver of kit, and each driver runs
   // twin-merge of the checkout; the recipes hooks and hooks-check give git-hooks of kit that one declaration.
-  const declaration = /^HOOK_DECLARATION := (.*(?:\\\n.*)*)$/m.exec(read('Makefile'))?.[1].replace(/\\\n\t/g, '') ?? '';
+  // The declaration is one logical line: each of its lines but the last ends with a backslash.
+  const declaration = /^HOOK_DECLARATION := ((?:.*\\\n)*.*)$/m.exec(read('Makefile'))?.[1].replace(/\\\n\t/g, '') ?? '';
   for (const merge of ['CHANGELOG.md=kit-changelog', 'CHANGELOG.ko.md=kit-twin', 'docs/plans/*/checklist.md=kit-checklist', 'docs/plans/*/checklist.ko.md=kit-twin']) {
     assert.ok(declaration.includes(`--merge '${merge}'`), `make hooks does not declare the merge ${merge}`);
   }

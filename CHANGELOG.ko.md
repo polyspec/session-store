@@ -1,8 +1,9 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: e9b87a61d8204b0241a1f13d7ca9b14d2e393e70dc53bf37f556f8bcb8c7ce87 -->
+<!-- source-sha256: 3343ffc245bf51cefaabca8d61960f8b0f13f94049463bd28d2915437a64efdf -->
 
 ## Unreleased
 
+- TLS 시험은 기계의 신뢰 저장소만으로 bay를 믿고 `SSL_CERT_FILE`을 쓰지 않는다. 시험 프로세스가 bay가 인증서를 발급한 서버에 두 번 연결한다. redis-rs가 연결마다 신뢰 저장소를 읽지 않는다는 것(SR-6.1a)은 빌드의 사실이고, `make servers-test`가 `cargo metadata`의 resolve features에서 offline으로 읽는다. redis-rs는 `tls-rustls-webpki-roots`로 빌드된다. 전에는 시험이 자기 프로세스에 `SSL_CERT_FILE`을 주고 두 연결 사이에 그 파일을 지웠고, `servers-test`의 시험 검사가 그것을 거부한다(SE-10.4).
 - `.githooks`의 hook `commit-msg`가 AI 도구의 꼬리말이나 identity 줄이 있는 커밋 메시지를 커밋이 생기기 전에 kit check-commits의 규칙 `commit-ai-footer`, `commit-ai-identity`로 거부한다. `make hooks`가 `core.hooksPath`를 `.githooks`로 두고, `make hooks-check`는 그것이 없는 checkout을 실패시키며, `make commit-msg-hook MESSAGE=<file>`이 hook의 검사를 돌린다. 전에는 메시지를 검사하는 hook이 없었다.
 - 바인딩은 binding 0.0.17과, binding 0.0.17 위에서 빌드한 php-serialization 0.0.15를 쓴다. 그래서 `Cargo.lock`에는 `polyspec-binding-core`가 하나만 있다(CK-20). `make test-go`는 link flag를 `binding go-link`에서 받고, 생성 파일의 tag로 Go 시험을 빌드한다. Cargo를 읽는 모든 binding 명령은 `--cargo "$(CARGO)"`를 받는다. `packages/ts`는 php-serialization을 버전 `0.0.15`로 요구하고, 루트 `package.json`이 그 release의 asset을 적는다.
 - changelog와 `docs/plans`의 checklist는 kit의 driver `kit-changelog`, `kit-twin`, `kit-checklist`로 합친다. 이 driver들은 `make twin-merge`를 돌린다. `make hooks`가 그것을 선언하고, `make hooks-check`는 그것이 없는 checkout을 실패시킨다. 전에는 git이 자기 기본 merge로 합쳤고, 그 merge는 한쪽이 상태를 바꾼 task 행을 두 번 남긴다.

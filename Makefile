@@ -164,11 +164,29 @@ ci-bindings:
 # workflow release passes, runs the release check of binding before it builds.
 release_check = $(if $(filter true,$(RELEASE)),$(MAKE) --no-print-directory release-binding-check)
 
+# ring, the cryptography of rustls (SR-6.1), compiles C in its build script, and on a Linux host release-go-static builds
+# the musl target of its arch, for which the cc crate looks for <arch>-linux-musl-gcc, which no runner holds. The C
+# compiler and the archiver of each musl target of rust-toolchain.toml are the clang and the llvm-ar of the LLVM of
+# config/toolchain.json, by their paths in LLVM_ROOT of packages/release.mk; musl-cc-check fails on Linux while that
+# clang is missing or is not the major release of the pin.
+export CC_x86_64_unknown_linux_musl = $(LLVM_ROOT)/bin/clang
+export AR_x86_64_unknown_linux_musl = $(LLVM_ROOT)/bin/llvm-ar
+export CC_aarch64_unknown_linux_musl = $(LLVM_ROOT)/bin/clang
+export AR_aarch64_unknown_linux_musl = $(LLVM_ROOT)/bin/llvm-ar
+.PHONY: musl-cc-check
+musl-cc-check:
+	@test "$$(uname -s)" != Linux || { \
+	test -n "$(LLVM_MAJOR)" || { echo 'musl-cc-check: config/toolchain.json pins no major release of LLVM (llvm.version), or packages/release.mk is not written (make release-recipes)' >&2; exit 2; }; \
+	test -x "$(LLVM_ROOT)/bin/clang" && test -x "$(LLVM_ROOT)/bin/llvm-ar" || { echo 'musl-cc-check: the musl targets build C with the clang and the llvm-ar of LLVM $(LLVM_MAJOR) (config/toolchain.json) in $(LLVM_ROOT), which are missing' >&2; exit 2; }; \
+	test "$$("$(LLVM_ROOT)/bin/clang" -dumpversion | cut -d. -f1)" = "$(LLVM_MAJOR)" || { echo "musl-cc-check: $(LLVM_ROOT)/bin/clang is clang $$("$(LLVM_ROOT)/bin/clang" -dumpversion), not $(LLVM_MAJOR) (config/toolchain.json)" >&2; exit 2; }; \
+	}
+
 # The job platform: the static library of the Go module, the wheel and the npm platform package of this host.
 ci-assets-platform:
 	$(MAKE) --no-print-directory install-rust
 	$(MAKE) --no-print-directory install-tools TOOLS="uv python"
 	$(MAKE) --no-print-directory release-recipes
+	$(MAKE) --no-print-directory musl-cc-check
 	$(release_check)
 	$(NODE) $(KIT)/ci-targets.mjs -k $(CI_REPORT) release-go-static release-wheel release-npm-platform
 

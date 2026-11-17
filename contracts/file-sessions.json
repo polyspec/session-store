@@ -1326,6 +1326,16 @@
     "category": "io",
     "message": null
    }
+  },
+  {
+   "id": "an_opening_without_a_cancellation_opens",
+   "note": "the opening of a found identifier that leaves its cancellation to the core opens the session without a wait (SF-3.8, binding CK-103)",
+   "rule": [
+    "SF-3.8"
+   ],
+   "directory": ".",
+   "lifetime": 1440,
+   "cookie": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
   }
  ],
  "file_session.close.made": [

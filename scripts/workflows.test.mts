@@ -587,7 +587,12 @@ ci-assets-other: ## Another job
 `;
 
 test('the tracked PHP asset workflow isolates each platform and minor (T1.33-1)', () => {
-  assert.deepEqual(phpMinorFindings(ASSETS, readFileSync(join(root, ASSETS), 'utf8'), ['8.4', '8.5'], readFileSync(join(root, 'Makefile'), 'utf8')), []);
+  // T1.73: the PHP minors of the extension are those of phpExtension.minors of config/toolchain.json (binding GN-19a),
+  // which release-platform-assets of binding reads when it requires one extension of each platform and minor; the
+  // matrix of the job php builds exactly these.
+  const minors = (JSON.parse(readFileSync(join(root, 'config/toolchain.json'), 'utf8')) as { phpExtension?: { minors?: string[] } }).phpExtension?.minors;
+  assert.ok(Array.isArray(minors) && minors.length > 0, 'config/toolchain.json names no PHP minor of the extension in phpExtension.minors');
+  assert.deepEqual(phpMinorFindings(ASSETS, readFileSync(join(root, ASSETS), 'utf8'), minors, readFileSync(join(root, 'Makefile'), 'utf8')), []);
 });
 
 test('PHP asset jobs isolate the exact platform and minor product (T1.33-1)', () => {

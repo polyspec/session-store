@@ -428,6 +428,32 @@ fn a_cluster_of_tls_keeps_sessions() -> Result<(), Failed> {
     runtime()?.block_on(round_trip(Setting::Cluster { urls: nodes, user: None, password: None, authorities: None }))
 }
 
+fn the_stores_of_one_setting_share_one_connection() -> Result<(), Failed> {
+    // SR-6.9: a store made for each request takes the connection that an earlier store of an equal setting made, and
+    // a store of a setting that differs in its password shares none, so the wrong password fails and tells nothing.
+    let (project, server) = plain(&["--user", "alice", "on", ">sesame", "~*", "&*", "+@all"])?;
+    let address = server.name.as_str();
+    let right = Setting::Server { url: format!("redis://alice:sesame@{address}/"), authorities: None };
+    let runtime = runtime()?;
+    for _request in 0..3 {
+        runtime.block_on(round_trip(right.clone()))?;
+    }
+    let clients = project.exec("server", &["redis-cli", "CLIENT", "LIST"]).map_err(Failed::from)?;
+    let alice = clients.lines().filter(|line| line.contains(" user=alice ")).count();
+    if alice != 1 {
+        return Err(format!("three stores of one setting hold {alice} connections, not 1: {clients}").into());
+    }
+    let wrong = Setting::Server { url: format!("redis://alice:wrongword@{address}/"), authorities: None };
+    refused(&runtime, wrong.clone(), "a setting that differs in its password")?;
+    let store = RedisSessions::new(&wrong, &options()).map_err(failed)?;
+    let opened = runtime.block_on(store.open(Some(&[b'a'; 32])));
+    let told = format!("{store:?} {opened:?}");
+    if told.contains("wrongword") || told.contains("sesame") {
+        return Err(format!("the store or its error tells a password: {told}").into());
+    }
+    Ok(())
+}
+
 fn main() {
     let arguments = Arguments::from_args();
     let trials = vec![
@@ -439,6 +465,7 @@ fn main() {
             "an_acl_user_connects_and_a_wrong_password_tells_nothing",
             an_acl_user_connects_and_a_wrong_password_tells_nothing,
         ),
+        Trial::test("the_stores_of_one_setting_share_one_connection", the_stores_of_one_setting_share_one_connection),
         Trial::test("sentinel_names_the_primary", sentinel_names_the_primary),
         Trial::test("a_cluster_keeps_sessions", a_cluster_keeps_sessions),
         Trial::test("a_cluster_with_an_acl_user_keeps_sessions", a_cluster_with_an_acl_user_keeps_sessions),

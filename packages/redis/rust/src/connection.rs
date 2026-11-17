@@ -420,7 +420,11 @@ impl Store for RedisSession {
 
 #[cfg(test)]
 mod trust_tests {
-    use super::{Link, Setting};
+    use std::sync::Arc;
+
+    use polyspec_session_store_core::Error;
+
+    use super::{Link, RedisSessions, Setting, StoreOptions};
 
     /// SR-6.1b: the links of TLS of a server, of Sentinel and of a Cluster take the authorities that this crate reads
     /// once in the process (`trust::authorities`), however many links there are; it counts the reads of this crate.
@@ -448,5 +452,27 @@ mod trust_tests {
             assert!(Link::new(setting).is_ok(), "the link of {setting:?} is not made");
         }
         assert_eq!(crate::trust::reads(), 1, "the reads of the trust store");
+    }
+
+    /// SR-6.9: the stores of an equal setting share the links of the process, the stores of settings that differ in a
+    /// field share none, and no store tells the password of its setting.
+    #[test]
+    fn the_stores_of_an_equal_setting_share_their_links() -> Result<(), Error> {
+        let options =
+            StoreOptions { lifetime: None, prefix: None, lock_expire: 30, lock_retries: None, lock_wait: None };
+        let setting = |password: &str| Setting::Server {
+            url: format!("redis://alice:{password}@localhost:6390/"),
+            authorities: None,
+        };
+        let first = RedisSessions::new(&setting("sesame"), &options)?;
+        let second = RedisSessions::new(&setting("sesame"), &options)?;
+        let other = RedisSessions::new(&setting("wrongword"), &options)?;
+        assert!(Arc::ptr_eq(&first.inner.links, &second.inner.links), "stores of an equal setting share no links");
+        assert!(!Arc::ptr_eq(&first.inner.links, &other.inner.links), "stores of two passwords share their links");
+        for store in [&first, &other] {
+            let told = format!("{store:?}");
+            assert!(!told.contains("sesame") && !told.contains("wrongword"), "{told} tells a password");
+        }
+        Ok(())
     }
 }

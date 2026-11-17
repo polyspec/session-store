@@ -814,3 +814,41 @@ test('the recipe of the job release adds the downloaded assets of each platform 
   }
   rmSync(directory, { recursive: true });
 });
+
+test('release-platform-assets names the asset of each platform and PHP minor of a tree of the job release', () => {
+  // T1.74: the recipe of binding that uploads the assets of a release (release-platform-assets, GN-19g) runs here to its
+  // gh, a stand-in that records its arguments, on a tree of the names that the jobs of assets.yml give their assets, for
+  // the platforms of the job platform and the PHP minors of config/toolchain.json. It reads phpExtension.minors, without
+  // which it fails; no run of ci reaches it, and the release run of 0.0.3 stopped one line before it.
+  const make = process.env.MAKE ?? 'make';
+  const directory = mkdtempSync(join(tmpdir(), 'platform-assets-'));
+  const assets = join(directory, 'assets');
+  const version = '9.9.9';
+  const minors = (JSON.parse(readFileSync(join(root, 'config/toolchain.json'), 'utf8')) as { phpExtension: { minors: string[] } }).phpExtension.minors;
+  const files = [
+    ...['manylinux_2_34_x86_64', 'manylinux_2_34_aarch64', 'macosx_11_0_arm64'].map((tag) => `wheel/polyspec_session_store-${version}-cp314-abi3-${tag}.whl`),
+    ...['', '-linux-x64-gnu', '-linux-arm64-gnu', '-darwin-arm64'].map((platform) => `npm/polyspec-session-store${platform}-${version}.tgz`),
+    ...minors.flatMap((minor) => ['x86_64-linux-glibc', 'arm64-linux-glibc', 'arm64-darwin-bsdlibc'].map((platform) => `php-ext/php_polyspec_session_store-v${version}_php${minor}-${platform}-nts.zip`)),
+  ];
+  for (const file of files) {
+    mkdirSync(dirname(join(assets, file)), { recursive: true });
+    writeFileSync(join(assets, file), file);
+  }
+  const bin = join(directory, 'bin');
+  mkdirSync(bin);
+  writeFileSync(join(bin, 'gh'), `#!/bin/sh\nprintf '%s\\n' "$@" > "${join(directory, 'gh.arguments')}"\n`, { mode: 0o755 });
+  const environment = { ...process.env, MAKEFLAGS: '', PATH: `${bin}:${process.env.PATH ?? ''}`, TAG: `v${version}` };
+  execFileSync(make, ['-s', '--no-print-directory', '-C', root, 'release-recipes'], { env: environment, stdio: ['ignore', 'ignore', 'inherit'] });
+  execFileSync(make, ['--no-print-directory', '-C', root, 'release-platform-assets', `RELEASE_ASSETS=${assets}`], { env: environment, stdio: ['ignore', 'ignore', 'inherit'] });
+  const given = readFileSync(join(directory, 'gh.arguments'), 'utf8').trim().split('\n');
+  assert.deepEqual(given.slice(0, 3), ['release', 'upload', `v${version}`]);
+  const labels = given.slice(3).map((argument) => argument.split('#')[1]).sort();
+  const platforms = ['darwin-arm64', 'linux-arm64-gnu', 'linux-x64-gnu'];
+  assert.deepEqual(labels, [
+    ...minors.flatMap((minor) => platforms.map((platform) => `polyspec-session-store-php-ext-${version}-php${minor}-${platform}`)),
+    ...platforms.map((platform) => `polyspec-session-store-python-${version}-${platform}`),
+    `polyspec-session-store-ts-${version}`,
+    ...platforms.map((platform) => `polyspec-session-store-ts-${version}-${platform}`),
+  ].sort());
+  rmSync(directory, { recursive: true });
+});

@@ -3,7 +3,7 @@
 // stand-in of bay that it writes into a directory of its own, the only program of PATH besides /usr/bin and /bin, which
 // records its arguments, so it needs neither bay nor a container runtime.
 import assert from 'node:assert/strict';
-import { spawn, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
@@ -386,4 +386,23 @@ test('the test of TLS trusts bay through the trust store of the machine and chan
   // The trial of TLS is one of the trials of tests/server.rs.
   assert.match(readFileSync(join(tests, 'server.rs'), 'utf8'), /Trial::test\("a_tls_connection_reads_and_writes"/);
   assert.equal(files.includes('tls.rs'), false, 'tests/tls.rs is a test binary of its own');
+});
+
+test('redis-rs is built with the roots of webpki, so it reads no trust store for a connection', () => {
+  // SR-6.1a: without its feature tls-rustls-webpki-roots, redis-rs 1.8.1 reads the trust store of the machine for each
+  // connection of TLS, also when the store gives its authorities (docs/operations/dependencies.md); the feature leaves
+  // that read out at compile time, so the resolved features of the build, which cargo metadata gives offline, show it.
+  const root = join(scripts, '..');
+  const metadata = JSON.parse(
+    execFileSync('cargo', ['metadata', '--format-version', '1', '--locked', '--offline', '--manifest-path', join(root, 'Cargo.toml')], {
+      encoding: 'utf8',
+      // The metadata of this workspace is larger than the default buffer of 1 MiB.
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'inherit'],
+    }),
+  ) as { packages: { id: string; name: string }[]; resolve: { nodes: { id: string; features: string[] }[] } };
+  const ids = new Set(metadata.packages.filter((crate) => crate.name === 'redis').map((crate) => crate.id));
+  const nodes = metadata.resolve.nodes.filter((node) => ids.has(node.id));
+  assert.equal(nodes.length, 1, 'the build resolves one redis-rs');
+  assert.ok(nodes[0].features.includes('tls-rustls-webpki-roots'), `redis-rs is built without tls-rustls-webpki-roots: ${nodes[0].features.join(', ')}`);
 });

@@ -339,7 +339,17 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   reads the trust store of the machine once in a process and gives its authorities to every client of TLS that it
   builds: of a server, of the Sentinel nodes and of the primary that they name, and of the nodes of a Cluster. A trust store that cannot be read fails the connection with the kind
   `connection` (SR-6.4) and is read again by the next connection. The Sentinel addresses are all `rediss://` or all
-  `redis://` and share one user and password; another list fails with the kind `invalid_setting`. <a id="SR-6.2"></a> With Sentinel, a request that sends a command asks Sentinel for the
+  `redis://` and share one user and password; another list fails with the kind `invalid_setting`. <a id="SR-6.1c"></a> The TLS and the
+  user and password of a server whose address the setting gives are those of its URL: the scheme `rediss://` and the
+  user and password of the URL, for the URL of a server and for the addresses of a Cluster. The addresses of a Cluster
+  are all `rediss://` or all `redis://` and share one user and password; another list fails with the kind
+  `invalid_setting`. The primary of Sentinel has no address in the setting, so `tls`, `user` and `password` of the
+  Sentinel setting are those of the primary. <a id="SR-6.1d"></a> Each setting takes `authorities`, the path of a file
+  of PEM certificates, or none. With it every connection of TLS of the setting, to a server, to the Sentinel nodes and
+  their primary and to the nodes of a Cluster, trusts the authorities of that file alone, which the store reads at the
+  first connection of TLS and once in a process for a path; without it the connections trust those of the trust store
+  of the machine (SR-6.1b). A setting that gives `authorities` and connects nowhere with TLS, and a file that cannot be
+  read or that holds no PEM certificate, fail with the kind `invalid_setting`, whose text names the path. <a id="SR-6.2"></a> With Sentinel, a request that sends a command asks Sentinel for the
   primary of its service before its first command, also when a connection to the former primary is open, because a
   former primary accepts writes for some seconds after a promotion. <a id="SR-6.3"></a> With Cluster every command of
   the protocol has one key, so a session and its lock may live on different primaries; the release script names its one
@@ -366,7 +376,7 @@ the statement that it checks. A PHP value and its serialize form are those of ph
   |---|---|---|---|
   | `invalid_lifetime` | none | `value` | SR-1.2 |
   | `invalid_lock_expire` | none | `value` | SR-1.2 |
-  | `invalid_setting` | none | `value` | SR-6.1: an address that is no URL of Redis or an empty list of addresses |
+  | `invalid_setting` | none | `value` | SR-6.1, SR-6.1c, SR-6.1d: an address that is no URL of Redis, an empty list of addresses, addresses of Sentinel or of a Cluster that differ in their scheme, user or password, `authorities` in a setting without TLS, or a file of `authorities` that cannot be read or holds no PEM certificate |
   | `lock_timeout` | 500 | `store` | SR-3.3 |
   | `lock_lost` | 500 | `store` | SR-4.3 |
   | `reply` | 500 | `store` | SR-5.1 |

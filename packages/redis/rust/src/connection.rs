@@ -5,7 +5,7 @@ use std::sync::Arc;
 use redis::aio::MultiplexedConnection;
 use redis::cluster_async::ClusterConnection;
 use redis::sentinel::{SentinelClient, SentinelClientBuilder, SentinelServerType};
-use redis::{IntoConnectionInfo, TlsMode};
+use redis::{IntoConnectionInfo, TlsCertificates, TlsMode};
 use tokio::sync::Mutex;
 
 use polyspec_php_serialization::PhpValue;
@@ -20,12 +20,20 @@ use crate::turns::{Turn, Turns};
 /// `rediss://` (TLS), with the ACL user and password as its user information.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Setting {
-    /// One server.
-    Server { url: String },
-    /// The primary of a service that Sentinel names (SR-6.2); `tls`, `user` and `password` are those of the primary.
-    Sentinel { urls: Vec<String>, service: String, tls: bool, user: Option<String>, password: Option<String> },
-    /// A Redis Cluster from its first nodes (SR-6.3).
-    Cluster { urls: Vec<String> },
+    /// One server, whose URL gives its TLS, user and password (SR-6.6).
+    Server { url: String, authorities: Option<String> },
+    /// The primary of a service that Sentinel names (SR-6.2); `tls`, `user` and `password` are those of the primary,
+    /// which has no address in the setting (SR-6.6).
+    Sentinel {
+        urls: Vec<String>,
+        service: String,
+        tls: bool,
+        user: Option<String>,
+        password: Option<String>,
+        authorities: Option<String>,
+    },
+    /// A Redis Cluster from its first nodes (SR-6.3), whose URLs give its TLS, user and password (SR-6.6).
+    Cluster { urls: Vec<String>, authorities: Option<String> },
 }
 
 /// The connections of one process (SR-6.5).
@@ -107,6 +115,40 @@ fn invalid(detail: &str) -> Error {
     Error::InvalidSetting { detail: detail.to_owned() }
 }
 
+/// The authorities of the connections of TLS of a setting (SR-6.1b, SR-6.7). A setting that names a file of
+/// authorities and connects nowhere with TLS is not valid: the file would be read by no connection.
+fn authorities_for(with_tls: bool, authorities: &Option<String>) -> Result<Option<TlsCertificates>, Error> {
+    if !with_tls {
+        return match authorities {
+            Some(_) => Err(invalid("authorities are given and no connection of the setting uses TLS")),
+            None => Ok(None),
+        };
+    }
+    Ok(Some(trust::certificates(&trust::authorities_of(authorities.as_deref())?)))
+}
+
+/// The addresses `urls` of `named` nodes, which are all `redis://` or all `rediss://` and share one user and password
+/// (SR-6.1, SR-6.6); the scheme of TLS and the first address.
+fn shared(urls: &[String], named: &str) -> Result<(bool, Vec<redis::ConnectionInfo>), Error> {
+    let nodes = urls
+        .iter()
+        .map(|url| url.as_str().into_connection_info().map_err(|error| invalid(error.category())))
+        .collect::<Result<Vec<_>, Error>>()?;
+    let Some(first) = nodes.first() else {
+        return Err(invalid(&format!("the list of {named} addresses is empty")));
+    };
+    let with_tls = tls(&urls[0]);
+    if urls.iter().any(|url| tls(url) != with_tls) {
+        return Err(invalid(&format!("the {named} addresses are not all redis:// or all rediss://")));
+    }
+    let (user, password) = (first.redis_settings().username(), first.redis_settings().password());
+    if nodes.iter().any(|node| node.redis_settings().username() != user || node.redis_settings().password() != password)
+    {
+        return Err(invalid(&format!("the {named} addresses do not share one user and password")));
+    }
+    Ok((with_tls, nodes))
+}
+
 /// The client of Sentinel (SR-6.1b, SR-6.2): the Sentinel nodes share one scheme, one user and one password, and every
 /// connection of TLS, to a node or to the primary that it names, trusts the authorities read once.
 fn sentinel(
@@ -115,26 +157,16 @@ fn sentinel(
     tls: bool,
     user: &Option<String>,
     password: &Option<String>,
+    authorities: &Option<String>,
 ) -> Result<SentinelClient, Error> {
-    let nodes = urls
-        .iter()
-        .map(|url| url.as_str().into_connection_info().map_err(|error| invalid(error.category())))
-        .collect::<Result<Vec<_>, Error>>()?;
-    let Some(first) = nodes.first() else {
-        return Err(invalid("the list of Sentinel addresses is empty"));
+    let (nodes_tls, nodes) = shared(urls, "Sentinel")?;
+    let certificates = authorities_for(nodes_tls || tls, authorities)?;
+    let (node_user, node_password) = match nodes.first() {
+        Some(first) => {
+            (first.redis_settings().username().map(str::to_owned), first.redis_settings().password().map(str::to_owned))
+        }
+        None => (None, None),
     };
-    let nodes_tls = self::tls(&urls[0]);
-    if urls.iter().any(|url| self::tls(url) != nodes_tls) {
-        return Err(invalid("the Sentinel addresses are not all redis:// or all rediss://"));
-    }
-    let (node_user, node_password) = (first.redis_settings().username(), first.redis_settings().password());
-    if nodes
-        .iter()
-        .any(|node| node.redis_settings().username() != node_user || node.redis_settings().password() != node_password)
-    {
-        return Err(invalid("the Sentinel addresses do not share one user and password"));
-    }
-    let (node_user, node_password) = (node_user.map(str::to_owned), node_password.map(str::to_owned));
     let addresses = nodes.into_iter().map(|node| node.addr().clone());
     let mut builder = SentinelClientBuilder::new(addresses, service, SentinelServerType::Master)
         .map_err(|error| invalid(error.category()))?;
@@ -150,13 +182,11 @@ fn sentinel(
     if let Some(secret) = password {
         builder = builder.set_client_to_redis_password(secret);
     }
-    if nodes_tls {
-        builder = builder.set_client_to_sentinel_certificates(trust::certificates(&trust::authorities()?));
+    if let (true, Some(trusted)) = (nodes_tls, certificates.clone()) {
+        builder = builder.set_client_to_sentinel_certificates(trusted);
     }
-    if tls {
-        builder = builder
-            .set_client_to_redis_tls_mode(TlsMode::Secure)
-            .set_client_to_redis_certificates(trust::certificates(&trust::authorities()?));
+    if let (true, Some(trusted)) = (tls, certificates) {
+        builder = builder.set_client_to_redis_tls_mode(TlsMode::Secure).set_client_to_redis_certificates(trusted);
     }
     builder.build().map_err(|error| invalid(error.category()))
 }
@@ -164,27 +194,22 @@ fn sentinel(
 impl Link {
     fn new(setting: &Setting) -> Result<Self, Error> {
         match setting {
-            Setting::Server { url } => {
-                let client = if tls(url) {
-                    redis::Client::build_with_tls(url.as_str(), trust::certificates(&trust::authorities()?))
-                } else {
-                    redis::Client::open(url.as_str())
+            Setting::Server { url, authorities } => {
+                let client = match authorities_for(tls(url), authorities)? {
+                    Some(trusted) => redis::Client::build_with_tls(url.as_str(), trusted),
+                    None => redis::Client::open(url.as_str()),
                 };
                 Ok(Self::Server { client: client.map_err(|error| invalid(error.category()))?, connection: None })
             }
-            Setting::Sentinel { urls, service, tls, user, password } => {
-                if urls.is_empty() {
-                    return Err(invalid("the list of Sentinel addresses is empty"));
-                }
-                Ok(Self::Sentinel { sentinel: Box::new(sentinel(urls, service, *tls, user, password)?), primary: None })
-            }
-            Setting::Cluster { urls } => {
-                if urls.is_empty() {
-                    return Err(invalid("the list of Cluster addresses is empty"));
-                }
+            Setting::Sentinel { urls, service, tls, user, password, authorities } => Ok(Self::Sentinel {
+                sentinel: Box::new(sentinel(urls, service, *tls, user, password, authorities)?),
+                primary: None,
+            }),
+            Setting::Cluster { urls, authorities } => {
+                let (with_tls, _) = shared(urls, "Cluster")?;
                 let mut builder = redis::cluster::ClusterClientBuilder::new(urls.iter().map(String::as_str));
-                if urls.iter().any(|url| tls(url)) {
-                    builder = builder.certs(trust::certificates(&trust::authorities()?));
+                if let Some(trusted) = authorities_for(with_tls, authorities)? {
+                    builder = builder.certs(trusted);
                 }
                 let client = builder.build().map_err(|error| invalid(error.category()))?;
                 Ok(Self::Cluster { client, connection: None })
@@ -386,16 +411,17 @@ mod trust_tests {
     #[test]
     fn the_links_of_tls_read_the_trust_store_once() {
         let settings = [
-            Setting::Server { url: "rediss://localhost:6379/".to_owned() },
-            Setting::Server { url: "rediss://localhost:6380/".to_owned() },
+            Setting::Server { url: "rediss://localhost:6379/".to_owned(), authorities: None },
+            Setting::Server { url: "rediss://localhost:6380/".to_owned(), authorities: None },
             Setting::Sentinel {
                 urls: vec!["redis://localhost:26379/".to_owned()],
                 service: "main".to_owned(),
                 tls: true,
                 user: None,
                 password: None,
+                authorities: None,
             },
-            Setting::Cluster { urls: vec!["rediss://localhost:7000/".to_owned()] },
+            Setting::Cluster { urls: vec!["rediss://localhost:7000/".to_owned()], authorities: None },
         ];
         for setting in &settings {
             assert!(Link::new(setting).is_ok(), "the link of {setting:?} is not made");

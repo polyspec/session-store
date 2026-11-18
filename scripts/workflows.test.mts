@@ -886,3 +886,17 @@ test('the job release pushes the tags of the Go modules after each release-go-mo
   assert.equal(lines.filter((line) => /--no-print-directory release-go-module-push/.test(line)).length, 1, 'release-go-module-push runs once');
   assert.ok(push > module, 'release-go-module-push does not follow release-go-module');
 });
+
+test('the job release rehearses the Go module of its tag before release-go-module, once', () => {
+  // T1.91: binding 0.0.21 proves the Go module of a tag by a consumer that the rehearsal (B2.539) runs on HEAD before the
+  // tag exists; release-go-module then makes the tag. The dry run of ci-release-release names the rehearsal once, before it.
+  const make = process.env.MAKE ?? 'make';
+  const lines = execFileSync(make, ['-n', '--no-print-directory', '-C', root, 'ci-release-release', 'TAG=v0.0.8'], {
+    encoding: 'utf8',
+    env: { ...process.env, MAKEFLAGS: '', GITHUB_ACTOR: 'dry-run' },
+  }).split('\n');
+  const rehearse = lines.filter((line) => /--no-print-directory rehearse-go-module$/.test(line));
+  const module = lines.findIndex((line) => /--no-print-directory release-go-module$/.test(line));
+  assert.equal(rehearse.length, 1, 'rehearse-go-module runs once in ci-release-release');
+  assert.ok(lines.indexOf(rehearse[0]) < module, 'the rehearsal does not precede release-go-module');
+});

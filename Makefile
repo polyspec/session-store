@@ -115,6 +115,10 @@ endif
 install-packages:
 	$(NPM) ci
 
+# Writes package-lock.json with the pinned npm of var/tools and no install (T1.97); the one target that writes the npm lock.
+npm-lock:
+	$(ONLINE) $(NPM) install --package-lock-only
+
 # The PHPUnit of composer.lock into vendor, with the Composer of mise.toml; the one target that installs PHP packages.
 install-php-tools:
 	$(COMPOSER) install --no-interaction --no-progress

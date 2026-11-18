@@ -900,3 +900,14 @@ test('the job release rehearses the Go module of its tag before release-go-modul
   assert.equal(rehearse.length, 1, 'rehearse-go-module runs once in ci-release-release');
   assert.ok(lines.indexOf(rehearse[0]) < module, 'the rehearsal does not precede release-go-module');
 });
+
+test('the workflow ci has the job release-rehearsal, which ci-passed needs, and runs make ci-release-rehearsal', () => {
+  // T1.92: the rehearsal of the Go module runs on main push CI before the tag exists, so a release is gated by it (ci-passed).
+  // The file is read only; no make target that calls binding runs here.
+  const ci = readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8');
+  const job = ci.match(/^ {2}release-rehearsal:\n([\s\S]*?)(?=^ {2}\S|$(?![\s\S]))/m);
+  assert.ok(job, 'the job release-rehearsal exists in ci.yml');
+  assert.match(job[1], /run: make ci-release-rehearsal\b/, 'the job runs make ci-release-rehearsal');
+  const passed = ci.match(/^ {2}ci-passed:\n[\s\S]*?needs: \[([^\]]*)\]/m);
+  assert.ok(passed && passed[1].split(',').map((s) => s.trim()).includes('release-rehearsal'), 'ci-passed needs release-rehearsal');
+});

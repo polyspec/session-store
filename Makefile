@@ -137,6 +137,11 @@ install-php-tools:
 install-python-packages:
 	$(ONLINE) $(UV) sync --locked
 
+# Writes uv.lock with the pinned uv of mise.lock, inside make, as npm-lock writes the npm lock (T1.95).
+python-lock:
+	rm -f uv.lock
+	$(ONLINE) $(UV) lock
+
 # Writes mise.lock with mise lock for each platform that has the archives of the tools.
 TOOLCHAIN_LOCK_PLATFORMS := linux-x64,linux-arm64,macos-arm64,macos-x64,windows-x64,windows-arm64
 toolchain-lock:

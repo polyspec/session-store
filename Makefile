@@ -287,7 +287,7 @@ owner-validate:
 
 # The rules of the GitHub workflows (AGENTS.md, "CI and release"), on the installed test runner of kit.
 workflows-test:
-	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/workflows.test.mts
+	$(NODE) $(KIT)/run-tests.mjs node -- --test-concurrency=1 scripts/workflows.test.mts scripts/release-version.test.mts
 
 # The pins of the tools of the checkout (AGENTS.md, "Tools"): mise.toml with mise.lock, devEngines of package.json,
 # config/toolchain.json, the bootstrap action and the node that the recipes start.

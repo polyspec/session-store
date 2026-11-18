@@ -1,0 +1,12 @@
+{
+  "sites": [
+    { "file": "Cargo.toml", "path": ["workspace", "package", "version"] },
+    { "file": "packages/go/internal/ffi/Cargo.toml", "path": ["package", "version"] },
+    { "file": "packages/php-ext/Cargo.toml", "path": ["package", "version"] },
+    { "file": "packages/python/Cargo.toml", "path": ["package", "version"] },
+    { "file": "packages/ts/Cargo.toml", "path": ["package", "version"] },
+    { "file": "packages/ts/wasm/Cargo.toml", "path": ["package", "version"] },
+    { "file": "packages/python/pyproject.toml", "path": ["project", "version"] },
+    { "file": "packages/ts/package.json", "path": ["version"] }
+  ]
+}

@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: c991abc2fbbe1e1d81e74d617069a8621a82b0b75e1dfd4c35bbf7b64e16c508 -->
+<!-- source-sha256: 47d24e1b5f46f886aff0bc272f02ef813749105dcc8efd7a80fde1adac6df6d8 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -114,3 +114,4 @@
 | T1.95 | `uv.lock`을 쓰는 make target `make python-lock`을 추가한다(mise.lock의 uv를 make 안에서 쓴다, make 밖의 설치 경로 복사를 쓰지 않는다). T1.93의 php-serialization 0.0.17 pin은 mise shim이 신뢰되지 않은 `mise.toml`을 거부해서 설치 경로의 uv를 make 밖에서 직접 돌렸다. uv.lock을 쓰는 make target이 없으므로 저장소의 결함이다. | `Makefile`; `uv.lock` | make docs-check | [ ] |
 | T1.97 | `npm-lock` target을 추가한다. pinned npm으로 `$(NPM) install --package-lock-only`를 돌려 `package-lock.json`을 쓴다(ONLINE 아래). 44be813의 lock은 make 밖의 `npm install`로 썼으므로 저장소의 결함이다. | `Makefile`; `scripts/workflows.test.mts`; `package-lock.json` | make workflows-test | [v] |
 | T1.98 | `make release-version VERSION=X.Y.Z`가 config/release-version.json의 모든 판 자리를 쓴다(TOML과 JSON은 parse로, scripts/release-version.mts). 목록 밖에 옛 판이 남은 manifest가 있으면 거부하고, Cargo.lock(cargo update --workspace --offline)과 package-lock.json(npm-lock)을 pinned 도구로 쓴다. 두 번 돌리면 같은 bytes다. 0.0.7에서 0.0.8로의 bump는 손으로 했으므로 판을 쓰는 make target이 없었다. | `config/release-version.json`; `scripts/release-version.mts`; `scripts/release-version.test.mts`; `Makefile` | make workflows-test | [v] |
+| T1.99 | `docs/spec/sessions.md`의 한국어 번역을 현재 원문에 맞춘다. 원문이 마지막 번역 뒤에 바뀌어서 `make documents-stamp`가 옮겨졌지만 지정되지 않은 것으로 나열한다. 번역은 손으로 쓰고 `make documents-stamp PATHS=docs/spec/sessions.ko.md`로 stamp한다. 0.0.8의 결함이 아니다. | `docs/spec/sessions.ko.md` | make docs-check | [ ] |

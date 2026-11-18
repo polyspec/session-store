@@ -119,6 +119,14 @@ install-packages:
 npm-lock:
 	$(ONLINE) $(NPM) install --package-lock-only
 
+# Sets the version of the release on every place of config/release-version.json (T1.98) and then writes the locks: cargo
+# for Cargo.lock, with the workspace only, and the pinned npm for package-lock.json. make release-version VERSION=X.Y.Z.
+release-version:
+	test -n "$(VERSION)" || { echo 'release-version: VERSION=X.Y.Z is required' >&2; exit 2; }
+	$(NODE) scripts/release-version.mts $(VERSION)
+	$(CARGO) update --workspace --offline
+	$(MAKE) --no-print-directory npm-lock
+
 # The PHPUnit of composer.lock into vendor, with the Composer of mise.toml; the one target that installs PHP packages.
 install-php-tools:
 	$(COMPOSER) install --no-interaction --no-progress

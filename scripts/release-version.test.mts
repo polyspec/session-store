@@ -100,3 +100,19 @@ test('the version must be X.Y.Z', () => {
   }
 });
 
+
+test('the make path passes VERSION as the only argument, with no --root, and the tool sets it (T1.98)', () => {
+  // The recipe of make release-version runs `node scripts/release-version.mts $(VERSION)`: the tool is run from its own
+  // copy in a fixture, with the version as the one argument, and it reads the version and writes every place.
+  const dir = fixture();
+  try {
+    mkdirSync(join(dir, 'scripts'), { recursive: true });
+    cpSync(tool, join(dir, 'scripts', 'release-version.mts'));
+    const result = spawnSync(process.execPath, [join(dir, 'scripts', 'release-version.mts'), '0.0.8'], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(readFileSync(join(dir, 'Cargo.toml'), 'utf8'), /version = "0\.0\.8"/);
+    assert.match(readFileSync(join(dir, 'packages/ts/package.json'), 'utf8'), /"version": "0\.0\.8"/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

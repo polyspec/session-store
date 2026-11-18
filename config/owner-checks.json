@@ -75,7 +75,11 @@
         "Makefile",
         ".github/workflows/*.yml",
         ".github/actions/**",
-        "scripts/workflows.test.mts"
+        "scripts/workflows.test.mts",
+        "config/release-version.json",
+        "scripts/release-version.mts",
+        "scripts/release-version.test.mts",
+        "scripts/rehearsal-version.mts"
       ],
       "targets": [
         "workflows-test"

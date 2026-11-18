@@ -39,6 +39,6 @@
     ]
   },
   "dependencies": {
-    "@polyspec/php-serialization": "0.0.16"
+    "@polyspec/php-serialization": "0.0.17"
   }
 }

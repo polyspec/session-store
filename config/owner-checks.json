@@ -79,7 +79,8 @@
         "config/release-version.json",
         "scripts/release-version.mts",
         "scripts/release-version.test.mts",
-        "scripts/rehearsal-version.mts"
+        "scripts/rehearsal-version.mts",
+        "scripts/ci-tools.test.mts"
       ],
       "targets": [
         "workflows-test"

@@ -19,7 +19,7 @@ interface Site {
 const args = process.argv.slice(2);
 const rootIndex = args.indexOf('--root');
 const root = rootIndex >= 0 ? args[rootIndex + 1] : join(dirname(fileURLToPath(import.meta.url)), '..');
-const version = args.find((arg, index) => index !== rootIndex && index !== rootIndex + 1 && !arg.startsWith('--'));
+const version = args.find((arg, index) => !(rootIndex >= 0 && (index === rootIndex || index === rootIndex + 1)) && !arg.startsWith('--'));
 
 function fail(reason: string): never {
   console.error(`release-version: ${reason}`);

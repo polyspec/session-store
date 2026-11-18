@@ -118,12 +118,22 @@ jobs:
   assets:
     uses: ./.github/workflows/assets.yml
 
+  # The rehearsal of the Go module of the next release before its tag exists (T1.92): make ci-release-rehearsal reads the
+  # version from CHANGELOG.md, and ci-passed needs it, so a release follows only a rehearsal that passed.
+  release-rehearsal:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/bootstrap
+      - name: rehearse the Go module of the next release
+        run: make ci-release-rehearsal
+
   # The result of the run: the job runs after every other job, also after a failed or cancelled one, and make ci-passed
   # passes only when each job of needs has the result success; a skipped job fails it (FAIL_SKIPPED=1). make
   # workflows-test fails this workflow when ci-passed is not its last job or when needs leaves a job out.
   ci-passed:
     if: ${{ always() }}
-    needs: [shared, rust, test, bindings, assets]
+    needs: [shared, rust, test, bindings, assets, release-rehearsal]
     runs-on: ubuntu-26.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

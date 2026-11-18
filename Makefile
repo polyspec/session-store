@@ -224,6 +224,15 @@ ci-assets-npm:
 	$(MAKE) --no-print-directory release-binding-check
 	$(MAKE) --no-print-directory release-npm
 
+# ci-release-rehearsal: the job release-rehearsal of ci.yml rehearses the Go module of the next release before its tag exists
+# (T1.92). The version is the first ## X.Y.Z section of CHANGELOG.md after ## Unreleased, read by scripts/rehearsal-version.mts
+# on the change log itself. The rehearsal runs whether or not that tag exists, and builds its own Go library.
+ci-release-rehearsal:
+	$(MAKE) --no-print-directory install-rust
+	$(MAKE) --no-print-directory release-recipes
+	$(MAKE) --no-print-directory release-go-static
+	$(MAKE) --no-print-directory rehearse-go-module TAG=v$$($(NODE) scripts/rehearsal-version.mts)
+
 # The last job of .github/workflows/ci.yml: fails unless every job of RESULTS, the JSON of toJSON(needs), has the result
 # success; with FAIL_SKIPPED=1 a skipped job fails it too. RESULTS that is not set or names no job fails it with status 2.
 ci-passed:

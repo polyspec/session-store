@@ -948,3 +948,11 @@ test('a change log with no version section fails the rehearsal version (T1.92)',
   assert.notEqual(result.status, 0, 'the rehearsal version is refused');
   assert.match(result.err, /no ## X\.Y\.Z/);
 });
+
+test('the target npm-lock writes package-lock.json with the pinned npm and no other tool (T1.97)', () => {
+  // The lock of the repository is written inside make by the npm of the checkout (the pinned tool), never by a command outside make.
+  const makefile = readFileSync(join(root, 'Makefile'), 'utf8');
+  const recipe = makefile.match(/^npm-lock:[^\n]*\n((?:\t[^\n]*\n?)+)/m);
+  assert.ok(recipe, 'the target npm-lock exists in the Makefile');
+  assert.match(recipe[1], /\$\(ONLINE\) \$\(NPM\) install --package-lock-only\b/, 'npm-lock runs the pinned npm with --package-lock-only');
+});

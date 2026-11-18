@@ -1,6 +1,6 @@
 {
   "name": "@polyspec/session-store",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "The session-store library of polyspec for Node and the browser",
   "license": "MIT",
   "type": "module",

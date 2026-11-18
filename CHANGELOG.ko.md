@@ -1,7 +1,15 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: e4546664518685e22a0c2c3e6d53bf50a90e196b26ceb3c9dcd579adfd386b66 -->
+<!-- source-sha256: 9374b0eed5de43ed6b5650b0ce8c329ab3b5b046ddeded2aa725c2eed467b03e -->
 
 ## Unreleased
+
+## 0.0.8
+
+- release의 판은 `make release-version VERSION=X.Y.Z`가 config/release-version.json이 적은 모든 자리에 쓴다. lock은 pinned 도구가 쓴다(T1.98). 0.0.7에서 0.0.8로의 bump는 손으로 했으므로 판을 쓰는 make target이 없었다.
+- npm lock은 `make npm-lock`이 pinned npm의 `--package-lock-only`로 쓴다(T1.97).
+- `make python-lock`이 pinned uv로 uv.lock을 쓴다. uv.lock의 wheel digest는 release asset의 digest다(T1.95).
+- php-serialization 0.0.17의 pin(T1.93)이 0.0.16을 대신한다. 그것을 적은 모든 manifest, lock과 go.mod에서. binding은 0.0.22이므로 binding 0.0.21은 Cargo.lock에서 빠진다.
+- `make pin`은 열려 있다(T1.94).
 
 ## 0.0.7
 

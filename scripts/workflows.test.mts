@@ -964,3 +964,12 @@ test('the target python-lock writes uv.lock with the pinned uv of mise.lock, and
   assert.ok(recipe, 'the target python-lock exists in the Makefile');
   assert.match(recipe[1], /\$\(ONLINE\) \$\(UV\) lock\b/, 'python-lock runs the pinned uv with lock');
 });
+
+test('the job release-rehearsal of ci checks out the whole history, which the rehearsal of the Go module reads (T1.102)', () => {
+  // binding release-go-module traverses the parents of the commit in its own clone of the checkout: a shallow checkout
+  // fails there ("Failed to traverse parents of commit"), as the job of ci-run 44317133109 showed.
+  const workflow = readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8');
+  const job = workflow.split('\n  release-rehearsal:\n')[1]?.split('\n  ci-passed:')[0];
+  assert.ok(job, 'the workflow ci has the job release-rehearsal');
+  assert.match(job, /actions\/checkout@[0-9a-f]{40}\n\s+with:\n\s+fetch-depth: 0\n/, 'the checkout of the job takes fetch-depth 0');
+});

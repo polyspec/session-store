@@ -956,3 +956,11 @@ test('the target npm-lock writes package-lock.json with the pinned npm and no ot
   assert.ok(recipe, 'the target npm-lock exists in the Makefile');
   assert.match(recipe[1], /\$\(ONLINE\) \$\(NPM\) install --package-lock-only\b/, 'npm-lock runs the pinned npm with --package-lock-only');
 });
+
+test('the target python-lock writes uv.lock with the pinned uv of mise.lock, and no other tool (T1.95)', () => {
+  // The lock of Python is written inside make by the uv of the checkout, as npm-lock writes the npm lock (T1.97).
+  const makefile = readFileSync(join(root, 'Makefile'), 'utf8');
+  const recipe = makefile.match(/^python-lock:[^\n]*\n((?:\t[^\n]*\n?)+)/m);
+  assert.ok(recipe, 'the target python-lock exists in the Makefile');
+  assert.match(recipe[1], /\$\(ONLINE\) \$\(UV\) lock\b/, 'python-lock runs the pinned uv with lock');
+});

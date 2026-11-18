@@ -7,6 +7,8 @@
 - The version of the release is set by `make release-version VERSION=X.Y.Z` on every place that config/release-version.json lists, with the locks written by the pinned tools (T1.98): the change of 0.0.7 to 0.0.8 was made by hand, which left no make target for the version.
 - The npm lock is written by `make npm-lock`, with the pinned npm and `--package-lock-only` (T1.97).
 - Each job target of ci.yml and assets.yml installs the mise tools that it calls: `ci-release-rehearsal` installs Go, which `rehearse-go-module` calls and the job did not install (T1.100).
+- The checkout of the job release-rehearsal of ci.yml has the whole history (`fetch-depth: 0`), which the rehearsal of the Go module reads; the test of the release recipes runs `make release-recipes` when packages/release.mk is missing (T1.102).
+- `.gitignore` ignores the generated Node addon `packages/ts/session-store.<platform>.node` (T1.101).
 - `make python-lock` writes uv.lock with the pinned uv, and the wheel digests of uv.lock are the digests of the release assets (T1.95).
 - The pin of php-serialization 0.0.17 (T1.93) replaces 0.0.16 in every manifest, lock and go.mod that named it; its binding is 0.0.22, so binding 0.0.21 is gone from Cargo.lock.
 - `make pin` is open (T1.94).

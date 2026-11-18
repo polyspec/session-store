@@ -911,3 +911,40 @@ test('the workflow ci has the job release-rehearsal, which ci-passed needs, and 
   const passed = ci.match(/^ {2}ci-passed:\n[\s\S]*?needs: \[([^\]]*)\]/m);
   assert.ok(passed && passed[1].split(',').map((s) => s.trim()).includes('release-rehearsal'), 'ci-passed needs release-rehearsal');
 });
+
+// The rehearsal version of ci-release-rehearsal, read by scripts/rehearsal-version.mts from a change log of its own (T1.92).
+function rehearsalVersion(changelog: string): { status: number; out: string; err: string } {
+  const dir = mkdtempSync(join(tmpdir(), 'rehearsal-version-'));
+  const file = join(dir, 'CHANGELOG.md');
+  writeFileSync(file, changelog);
+  try {
+    const out = execFileSync(process.execPath, [join(root, 'scripts/rehearsal-version.mts'), file], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return { status: 0, out, err: '' };
+  } catch (error) {
+    const failed = error as { status: number; stderr: string };
+    return { status: failed.status, out: '', err: failed.stderr };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('the rehearsal version is the first ## X.Y.Z section after ## Unreleased (T1.92)', () => {
+  const result = rehearsalVersion('# Change log\n\n## Unreleased\n\n- a change\n\n## 0.1.0\n\n## 0.0.9\n');
+  assert.equal(result.status, 0, result.err);
+  assert.equal(result.out, '0.1.0\n');
+});
+
+test('a section whose title has text after the version fails the rehearsal version (T1.92)', () => {
+  const result = rehearsalVersion('## 0.0.7 extra\n');
+  assert.notEqual(result.status, 0, 'the rehearsal version is refused');
+  assert.match(result.err, /0\.0\.7 extra/);
+});
+
+test('a change log with no version section fails the rehearsal version (T1.92)', () => {
+  const result = rehearsalVersion('# Change log\n\n## Unreleased\n');
+  assert.notEqual(result.status, 0, 'the rehearsal version is refused');
+  assert.match(result.err, /no ## X\.Y\.Z/);
+});

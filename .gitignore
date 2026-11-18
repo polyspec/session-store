@@ -20,3 +20,4 @@ go.work.sum
 /.links
 # The environment of the Python root, which make install-python-packages installs from uv.lock.
 /.venv/
+packages/ts/session-store.*.node

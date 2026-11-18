@@ -246,6 +246,7 @@ ci-assets-npm:
 # on the change log itself. The rehearsal runs whether or not that tag exists, and builds its own Go library.
 ci-release-rehearsal:
 	$(MAKE) --no-print-directory install-rust
+	$(MAKE) --no-print-directory install-tools TOOLS=go
 	$(MAKE) --no-print-directory release-recipes
 	$(MAKE) --no-print-directory release-go-static
 	$(MAKE) --no-print-directory rehearse-go-module TAG=v$$($(NODE) scripts/rehearsal-version.mts)

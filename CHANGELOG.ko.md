@@ -1,5 +1,5 @@
 <!-- doc-id: changelog -->
-<!-- source-sha256: 9374b0eed5de43ed6b5650b0ce8c329ab3b5b046ddeded2aa725c2eed467b03e -->
+<!-- source-sha256: 47daea5954c770138b269eea15709cd814e3d8fb242da0d77c203e31b93add36 -->
 
 ## Unreleased
 
@@ -7,6 +7,7 @@
 
 - release의 판은 `make release-version VERSION=X.Y.Z`가 config/release-version.json이 적은 모든 자리에 쓴다. lock은 pinned 도구가 쓴다(T1.98). 0.0.7에서 0.0.8로의 bump는 손으로 했으므로 판을 쓰는 make target이 없었다.
 - npm lock은 `make npm-lock`이 pinned npm의 `--package-lock-only`로 쓴다(T1.97).
+- ci.yml과 assets.yml의 모든 job target은 자기가 부르는 mise 도구를 설치한다. `ci-release-rehearsal`은 `rehearse-go-module`이 부르는 Go를 설치한다. job이 설치하지 않았었다(T1.100).
 - `make python-lock`이 pinned uv로 uv.lock을 쓴다. uv.lock의 wheel digest는 release asset의 digest다(T1.95).
 - php-serialization 0.0.17의 pin(T1.93)이 0.0.16을 대신한다. 그것을 적은 모든 manifest, lock과 go.mod에서. binding은 0.0.22이므로 binding 0.0.21은 Cargo.lock에서 빠진다.
 - `make pin`은 열려 있다(T1.94).

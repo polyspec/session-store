@@ -1,5 +1,5 @@
 <!-- doc-id: checklist-rust-core -->
-<!-- source-sha256: 0bddf44ea56c3ac25a00427696250e8faac08d6a34ce5fa83425d885b276db60 -->
+<!-- source-sha256: 8faa69db4cf0ca92bfd59e88999c7cef7b70f457f7ccd20a63c8d873b6a50547 -->
 # Rust 코어 체크리스트
 
 | ID | Task | Deliverables | Verification | State |
@@ -116,3 +116,5 @@
 | T1.97 | `npm-lock` target을 추가한다. pinned npm으로 `$(NPM) install --package-lock-only`를 돌려 `package-lock.json`을 쓴다(ONLINE 아래). T1.93 pin의 lock은 make 밖의 `npm install`로 썼으므로 저장소의 결함이다. | `Makefile`; `scripts/workflows.test.mts`; `package-lock.json` | make workflows-test | [v] |
 | T1.98 | `make release-version VERSION=X.Y.Z`가 config/release-version.json의 모든 판 자리를 쓴다(TOML과 JSON은 parse로, scripts/release-version.mts). 목록 밖에 옛 판이 남은 manifest가 있으면 거부하고, Cargo.lock(cargo update --workspace --offline)과 package-lock.json(npm-lock)을 pinned 도구로 쓴다. 두 번 돌리면 같은 bytes다. 0.0.7에서 0.0.8로의 bump는 손으로 했으므로 판을 쓰는 make target이 없었다. | `config/release-version.json`; `scripts/release-version.mts`; `scripts/release-version.test.mts`; `Makefile` | make workflows-test | [v] |
 | T1.99 | `docs/spec/sessions.md`의 한국어 번역을 현재 원문에 맞춘다. 원문이 마지막 번역 뒤에 바뀌어서 `make documents-stamp`가 옮겨졌지만 지정되지 않은 것으로 나열한다. 번역은 손으로 쓰고 `make documents-stamp PATHS=docs/spec/sessions.ko.md`로 stamp한다. 0.0.8의 결함이 아니다. | `docs/spec/sessions.ko.md` | make docs-check | [ ] |
+| T1.100 | ci.yml과 assets.yml의 모든 job target은 자기와 그것이 시작하는 target이 부르는 mise 도구를 스스로 설치한다. job `release-rehearsal`은 `make rehearse-go-module`이 부르는 Go를 설치하지 않았다(로컬 clone은 앞 단계 install-tools가 Go를 깔아 두어 가려졌다). `ci-release-rehearsal`이 `install-tools TOOLS=go`로 Go를 설치한다. `make workflows-test`가 `scripts/ci-tools.test.mts`로 각 job을 검사한다. | `Makefile`; `scripts/ci-tools.test.mts` | make workflows-test | [ ] |
+| T1.101 | 생성된 Node addon `packages/ts/session-store.<platform>.node`를 다른 빌드 산출물처럼 git이 무시한다. 패키지를 빌드한 뒤 checkout에 추적되지 않는 파일로 남았었다. | `.gitignore` | make docs-check | [v] |
